@@ -1,6 +1,6 @@
 import { Builder, WebDriver } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
-import AxeBuilder from 'axe-webdriverjs';
+import AxeBuilder = require('axe-webdriverjs');
 import { Result } from 'axe-core';
 import * as fs from 'fs';
 import * as path from 'path';
