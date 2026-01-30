@@ -32,7 +32,8 @@ jobs:
     - name: Build App
       run: npm run build
       env:
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test-secret' }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
+        NEXTAUTH_URL: http://localhost:3000
         ENABLE_RBAC: 'true'
 
     - name: Run Accessibility Tests
@@ -53,6 +54,8 @@ jobs:
         exit $TEST_EXIT_CODE
       env:
         ENABLE_RBAC: 'true'
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
+        NEXTAUTH_URL: http://localhost:3000
 
     - name: Upload Accessibility Reports
       if: always()
