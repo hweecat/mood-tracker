@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import { useTheme, ThemeProvider } from '../src/components/ThemeProvider';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 
 // Mock localStorage

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         const data = JSON.parse(content);
         moodEntries = data.moodEntries || [];
         cbtLogs = data.cbtLogs || [];
-      } catch (e: unknown) {
+      } catch {
         throw new Error(`Invalid JSON format`);
       }
     } else if (format === 'csv') {

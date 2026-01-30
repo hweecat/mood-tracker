@@ -43,24 +43,24 @@ db.exec(`
 // Seed demo user
 try {
   db.prepare("INSERT OR IGNORE INTO users (id, name, email) VALUES (?, ?, ?)").run('1', 'Demo User', 'demo@example.com');
-} catch (e) {}
+} catch {}
 
 // Add columns if they don't exist (migration for existing db)
 try {
   db.exec("ALTER TABLE mood_entries ADD COLUMN trigger TEXT");
-} catch (e) {}
+} catch {}
 try {
   db.exec("ALTER TABLE mood_entries ADD COLUMN behavior TEXT");
-} catch (e) {}
+} catch {}
 try {
   db.exec("ALTER TABLE cbt_logs ADD COLUMN behavioral_link TEXT");
-} catch (e) {}
+} catch {}
 try {
   db.exec("ALTER TABLE mood_entries ADD COLUMN user_id TEXT DEFAULT '1'");
-} catch (e) {}
+} catch {}
 try {
   db.exec("ALTER TABLE cbt_logs ADD COLUMN user_id TEXT DEFAULT '1'");
-} catch (e) {}
+} catch {}
 
 // Create indexes for performance
 try {
@@ -68,6 +68,6 @@ try {
   db.exec("CREATE INDEX IF NOT EXISTS idx_cbt_logs_timestamp ON cbt_logs(timestamp)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_mood_entries_user_id ON mood_entries(user_id)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_cbt_logs_user_id ON cbt_logs(user_id)");
-} catch (e) {}
+} catch {}
 
 export default db;

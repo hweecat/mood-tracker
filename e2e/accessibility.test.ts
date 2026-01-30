@@ -1,6 +1,7 @@
-import { Builder, WebDriver, Capabilities } from 'selenium-webdriver';
+import { Builder, WebDriver } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
-const AxeBuilder = require('axe-webdriverjs');
+import { AxeBuilder } from 'axe-webdriverjs';
+import { Result } from 'axe-core';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,8 +15,8 @@ if (!fs.existsSync(REPORT_DIR)) {
 
 interface AxeResult {
   url: string;
-  violations: any[];
-  passes: any[];
+  violations: Result[];
+  passes: Result[];
 }
 
 async function runAccessibilityTests() {
@@ -52,7 +53,7 @@ async function runAccessibilityTests() {
       await driver.sleep(2000);
 
       // Analyze with Axe
-      const builder = AxeBuilder(driver);
+      const builder = new AxeBuilder(driver);
       const result = await builder.analyze();
 
       results.push({

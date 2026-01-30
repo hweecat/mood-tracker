@@ -212,6 +212,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           const { type: _type, ...logData } = entry;
                           onEditCBT(logData as CBTLog);
                         }}

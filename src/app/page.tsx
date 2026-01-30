@@ -28,8 +28,7 @@ import {
   Menu,
   ChevronRight,
   ShieldAlert,
-  ArrowLeft,
-  LogOut
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CBTLog } from '@/types';

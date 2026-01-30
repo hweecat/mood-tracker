@@ -20,7 +20,7 @@ interface MoodChartProps {
 
 export function MoodChart({ entries }: MoodChartProps) {
   const [mounted, setMounted] = useState(false);
-  const { theme, resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
