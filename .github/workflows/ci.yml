@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -25,25 +25,7 @@ jobs:
     - name: Run Lint
       run: npm run lint
 
-    - name: Run Unit Tests
-      run: npm test
-
-    - name: Build App
-      run: npm run build
-      env:
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
-        NEXTAUTH_URL: http://localhost:3000
-        ENABLE_RBAC: 'true'
-    
-    - name: Upload Build
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-output
-        path: .next/
-        retention-days: 1
-
-  test-e2e:
-    needs: build
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -58,11 +40,31 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
-    - name: Download Build
-      uses: actions/download-artifact@v4
+    - name: Run Unit Tests
+      run: npm test
+
+  build-and-test-e2e:
+    needs: [lint, unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        name: build-output
-        path: .next/
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Build App
+      run: npm run build
+      env:
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
+        NEXTAUTH_URL: http://localhost:3000
+        ENABLE_RBAC: 'true'
 
     - name: Run Accessibility Tests
       run: |
