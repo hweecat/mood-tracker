@@ -1,7 +1,6 @@
 import { Builder, WebDriver } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import AxeBuilder = require('axe-webdriverjs');
+import { AxeBuilder } from 'axe-webdriverjs';
 import { Result } from 'axe-core';
 import * as fs from 'fs';
 import * as path from 'path';
