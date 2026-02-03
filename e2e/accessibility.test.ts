@@ -1,9 +1,12 @@
 import { Builder, WebDriver } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
-import { AxeBuilder } from 'axe-webdriverjs';
 import { Result } from 'axe-core';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Import AxeBuilder using require for CommonJS compatibility
+const axeWebdriverjs = require('axe-webdriverjs');
+const AxeBuilder = axeWebdriverjs.default || axeWebdriverjs;
 
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const REPORT_DIR = path.join(process.cwd(), 'reports');
