@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Import AxeBuilder using require for CommonJS compatibility
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const axeWebdriverjs = require('axe-webdriverjs');
 const AxeBuilder = axeWebdriverjs.default || axeWebdriverjs;
 
