@@ -98,9 +98,9 @@ export function DataManagement({ onDataImported }: DataManagementProps) {
       {status && (
         <div className={cn(
           "p-5 rounded-3xl flex items-start gap-4 animate-in zoom-in-95 duration-300 border-2 shadow-lg",
-          status.type === 'success' 
-            ? "bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-300 border-green-500" 
-            : "bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 border-red-500"
+          status.type === 'success'
+            ? "bg-green-100 dark:bg-green-900/20 text-green-900 dark:text-green-300 border-green-600 dark:border-green-500"
+            : "bg-red-100 dark:bg-red-900/20 text-red-900 dark:text-red-300 border-red-600 dark:border-red-500"
         )}>
           {status.type === 'success' ? <CheckCircle2 className="w-6 h-6 flex-shrink-0" /> : <AlertCircle className="w-6 h-6 flex-shrink-0" />}
           <p className="text-sm font-black tracking-tight leading-snug">{status.message}</p>
