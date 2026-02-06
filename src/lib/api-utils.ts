@@ -29,10 +29,10 @@ export async function getAuthContext() {
   return { authorized: true as const, userId, rbac };
 }
 
-export function apiError(message: string, status: number = 500, details?: any) {
+export function apiError(message: string, status: number = 500, details?: unknown) {
   return NextResponse.json({ error: message, details }, { status });
 }
 
-export function apiSuccess(data: any) {
+export function apiSuccess(data: unknown) {
   return NextResponse.json(data);
 }

@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { z } from 'zod';
 import { getAuthContext, apiError, apiSuccess } from '@/lib/api-utils';
@@ -101,6 +100,7 @@ export async function DELETE(request: Request) {
 
     return apiSuccess({ success: true });
   } catch (error) {
+    console.error('DELETE /api/mood Error:', error);
     return apiError('Internal Server Error');
   }
 }
