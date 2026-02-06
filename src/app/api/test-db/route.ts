@@ -25,8 +25,14 @@ export async function GET() {
       moodEntries: moodCount.count,
       cbtLogs: cbtCount.count,
       users: userCount.count,
-      recentMoods: recentMoods.map(m => ({ ...m, user_id: m.user_id || 'NULL' })),
-      recentCbt: recentCbt.map(c => ({ ...c, user_id: c.user_id || 'NULL' })),
+      recentMoods: recentMoods.map((m) => {
+        const row = m as Record<string, unknown>;
+        return { ...row, user_id: row.user_id || 'NULL' };
+      }),
+      recentCbt: recentCbt.map((c) => {
+        const row = c as Record<string, unknown>;
+        return { ...row, user_id: row.user_id || 'NULL' };
+      }),
       databasePath: process.cwd() + '/mood-tracker.db'
     });
   } catch (error) {
