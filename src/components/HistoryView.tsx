@@ -32,6 +32,16 @@ const PAGE_SIZE = 10;
 export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onDeleteCBT }: HistoryViewProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  // Generate unique months from entries for the filter
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    [...moodEntries, ...cbtLogs].forEach(entry => {
+      months.add(format(entry.timestamp, 'yyyy-MM'));
+    });
+    return Array.from(months).sort().reverse();
+  }, [moodEntries, cbtLogs]);
 
   // Combine, filter, and sort
   const filteredEntries = useMemo(() => {
@@ -41,6 +51,13 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
       ...cbtLogs.map(l => ({ ...l, type: 'cbt' as const }))
     ]
     .filter(item => {
+      // Month Filter
+      if (selectedMonth !== 'all') {
+        const itemMonth = format(item.timestamp, 'yyyy-MM');
+        if (itemMonth !== selectedMonth) return false;
+      }
+
+      // Search Query
       if (!query) return true;
       if (item.type === 'mood') {
         return (
@@ -59,7 +76,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
       }
     })
     .sort((a, b) => b.timestamp - a.timestamp);
-  }, [moodEntries, cbtLogs, searchQuery]);
+  }, [moodEntries, cbtLogs, searchQuery, selectedMonth]);
 
   const displayedEntries = filteredEntries.slice(0, visibleCount);
   const hasMore = filteredEntries.length > visibleCount;
@@ -93,25 +110,41 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
 
   return (
     <div className="space-y-6">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-        <input
-          type="search"
-          placeholder="Search entries by content, emotion, or distortion..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-border focus:border-brand-500 outline-none transition-all shadow-sm text-foreground placeholder:text-muted-foreground font-medium"
-          aria-label="Search history"
-        />
-        {searchQuery && (
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+      {/* Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <input
+            type="search"
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-border focus:border-brand-500 outline-none transition-all shadow-sm text-foreground placeholder:text-muted-foreground font-medium"
+            aria-label="Search history"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="px-6 py-4 rounded-2xl bg-card border-2 border-border focus:border-brand-500 outline-none transition-all shadow-sm text-foreground font-bold appearance-none cursor-pointer hover:bg-secondary min-w-[160px]"
+          aria-label="Filter by month"
+        >
+          <option value="all">All Time</option>
+          {availableMonths.map(month => (
+            <option key={month} value={month}>
+              {format(new Date(month + '-01'), 'MMMM yyyy')}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Journal Summary Section */}

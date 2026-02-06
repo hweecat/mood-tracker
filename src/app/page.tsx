@@ -28,7 +28,9 @@ import {
   Menu,
   ChevronRight,
   ShieldAlert,
-  ArrowLeft
+  ArrowLeft,
+  User,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CBTLog } from '@/types';
@@ -43,6 +45,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<MainTab>('dashboard');
   const [menuTab, setMenuTab] = useState<MenuTab | null>(null);
   const [editingCBTLog, setEditingCBTLog] = useState<CBTLog | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
@@ -89,7 +92,7 @@ export default function Home() {
       <header className="bg-background border-b-2 border-border sticky top-0 z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-black text-brand-600 tracking-tighter uppercase">MindfulTrack</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 relative">
             {mounted && (
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -103,9 +106,47 @@ export default function Home() {
                 )}
               </button>
             )}
-            <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center border-2 border-brand-500 dark:border-brand-800 shadow-sm">
-              <span className="text-sm font-black text-brand-700 dark:text-brand-400 uppercase">{userInitials}</span>
-            </div>
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 p-1 rounded-full hover:bg-secondary transition-all active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+            >
+              <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center border-2 border-brand-500 dark:border-brand-800 shadow-sm">
+                <span className="text-sm font-black text-brand-700 dark:text-brand-400 uppercase">{userInitials}</span>
+              </div>
+            </button>
+
+            {/* Profile Dropdown Menu */}
+            {showProfileMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowProfileMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-64 bg-card border-2 border-border rounded-[2rem] shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-6 border-b-2 border-border bg-muted/30">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Signed in as</p>
+                    <p className="font-black text-foreground truncate">{session?.user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{session?.user?.email || 'demo@example.com'}</p>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => { navigateTo('menu'); navigateToMenu('settings'); setShowProfileMenu(false); }}
+                      className="w-full flex items-center gap-3 p-4 text-sm font-bold text-foreground hover:bg-secondary rounded-2xl transition-all"
+                    >
+                      <User size={18} className="text-muted-foreground" />
+                      Profile Settings
+                    </button>
+                    <button
+                      onClick={() => signOut()}
+                      className="w-full flex items-center gap-3 p-4 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all"
+                    >
+                      <LogOut size={18} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

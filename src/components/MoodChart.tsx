@@ -2,7 +2,7 @@
 
 import { MoodEntry } from '@/types';
 import { format, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { DateRangeSelector } from '@/components/DateRangeSelector';
 import {
@@ -36,9 +36,23 @@ export function MoodChart({ entries }: MoodChartProps) {
     setMounted(true);
   }, []);
 
+  // Determine actual start date (handle "All Time" logic)
+  const actualStartDate = useMemo(() => {
+    // Check if it's the "All Time" placeholder (Jan 1, 2000)
+    const isAllTimePlaceholder = dateRange.startDate.getFullYear() === 2000 && 
+                                 dateRange.startDate.getMonth() === 0 && 
+                                 dateRange.startDate.getDate() === 1;
+
+    if (isAllTimePlaceholder && entries.length > 0) {
+      const earliestTimestamp = Math.min(...entries.map(e => e.timestamp));
+      return startOfDay(new Date(earliestTimestamp));
+    }
+    return dateRange.startDate;
+  }, [dateRange.startDate, entries]);
+
   // Get all days in the selected range
   const daysInRange = eachDayOfInterval({
-    start: dateRange.startDate,
+    start: actualStartDate,
     end: dateRange.endDate
   });
 
@@ -117,9 +131,10 @@ export function MoodChart({ entries }: MoodChartProps) {
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }}
+                tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }}
                 dy={10}
-                interval={displayDays.length > 30 ? 'preserveStartEnd' : 0}
+                interval={displayDays.length > 7 ? 'preserveStartEnd' : 0}
+                minTickGap={20}
               />
               <YAxis
                 domain={[1, 10]}

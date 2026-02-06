@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { z } from 'zod';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthContext, apiError, apiSuccess } from '@/lib/api-utils';
 
 const MoodEntrySchema = z.object({
   id: z.string(),
@@ -26,65 +25,52 @@ interface MoodEntryRow {
 }
 
 export async function GET() {
-  const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-  let userId = '1';
-
-  if (isRbacEnabled) {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
     }
-                  userId = (session.user as { id: string }).id;
-                }  // If RBAC is disabled, we currently fetch all entries (or default user's entries?)
-  // The original code fetched ALL entries: `SELECT * FROM mood_entries`.
-  // To preserve "feature flag" behavior:
-  // If RBAC is enabled -> filter by user.
-  // If RBAC is disabled -> fetch ALL (as before).
-  
-  let stmt;
-  let rows;
 
-  if (isRbacEnabled) {
-    stmt = db.prepare('SELECT * FROM mood_entries WHERE user_id = ? ORDER BY timestamp DESC');
-    rows = stmt.all(userId) as MoodEntryRow[];
-  } else {
-    stmt = db.prepare('SELECT * FROM mood_entries ORDER BY timestamp DESC');
-    rows = stmt.all() as MoodEntryRow[];
+    let rows: MoodEntryRow[];
+    if (auth.rbac) {
+      rows = db.prepare('SELECT * FROM mood_entries WHERE user_id = ? ORDER BY timestamp DESC').all(auth.userId) as MoodEntryRow[];
+    } else {
+      rows = db.prepare('SELECT * FROM mood_entries ORDER BY timestamp DESC').all() as MoodEntryRow[];
+    }
+    
+    const moodEntries = rows.map(row => ({
+      ...row,
+      emotions: JSON.parse(row.emotions),
+      userId: row.user_id
+    }));
+
+    return apiSuccess(moodEntries);
+  } catch (error) {
+    console.error('GET /api/mood Error:', error);
+    return apiError('Internal Server Error');
   }
-  
-  const moodEntries = rows.map(row => ({
-    ...row,
-    emotions: JSON.parse(row.emotions),
-    userId: row.user_id // Map DB column to API field
-  }));
-
-  return NextResponse.json(moodEntries);
 }
 
 export async function POST(request: Request) {
   try {
-    const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-    let userId = '1';
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
+    }
 
-    if (isRbacEnabled) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-                    userId = (session.user as { id: string }).id;
-                  }    const body = await request.json();
+    const body = await request.json();
     const validatedData = MoodEntrySchema.parse(body);
     const { id, rating, emotions, note, trigger, behavior, timestamp } = validatedData;
 
     const stmt = db.prepare('INSERT INTO mood_entries (id, rating, emotions, note, trigger, behavior, timestamp, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, rating, JSON.stringify(emotions), note || null, trigger || null, behavior || null, timestamp, userId);
+    stmt.run(id, rating, JSON.stringify(emotions), note || null, trigger || null, behavior || null, timestamp, auth.userId);
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
+      return apiError('Invalid input', 400, error.issues);
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return apiError('Internal Server Error');
   }
 }
 
@@ -94,34 +80,27 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return apiError('ID is required', 400);
     }
 
-    const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-    let userId = '1';
-    if (isRbacEnabled) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-                    userId = (session.user as { id: string }).id;
-                  }    let stmt;
-    let result;
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
+    }
 
-    if (isRbacEnabled) {
-      stmt = db.prepare('DELETE FROM mood_entries WHERE id = ? AND user_id = ?');
-      result = stmt.run(id, userId);
+    let result;
+    if (auth.rbac) {
+      result = db.prepare('DELETE FROM mood_entries WHERE id = ? AND user_id = ?').run(id, auth.userId);
     } else {
-      stmt = db.prepare('DELETE FROM mood_entries WHERE id = ?');
-      result = stmt.run(id);
+      result = db.prepare('DELETE FROM mood_entries WHERE id = ?').run(id);
     }
 
     if (result.changes === 0) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+      return apiError('Entry not found', 404);
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return apiSuccess({ success: true });
+  } catch (error) {
+    return apiError('Internal Server Error');
   }
 }

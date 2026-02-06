@@ -13,9 +13,11 @@ describe('useTrackerData', () => {
 
     (global.fetch as Mock)
       .mockResolvedValueOnce({
+        ok: true,
         json: async () => mockMoods,
       })
       .mockResolvedValueOnce({
+        ok: true,
         json: async () => mockCBT,
       });
 
@@ -35,8 +37,8 @@ describe('useTrackerData', () => {
   it('adds a mood entry', async () => {
      // Mock initial fetch
     (global.fetch as Mock)
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({ json: async () => [] });
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
 
     const { result } = renderHook(() => useTrackerData());
     
@@ -66,8 +68,8 @@ describe('useTrackerData', () => {
   it('adds a CBT log', async () => {
      // Mock initial fetch
     (global.fetch as Mock)
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({ json: async () => [] });
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
 
     const { result } = renderHook(() => useTrackerData());
     
@@ -113,8 +115,8 @@ describe('useTrackerData', () => {
     };
 
     (global.fetch as Mock)
-      .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({ json: async () => [initialLog] });
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [initialLog] });
 
     const { result } = renderHook(() => useTrackerData());
     

@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import db from "./db";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,8 +11,13 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Hardcoded demo user for this local app
+        // Hardcoded demo user check for this local app
         if (credentials?.username === "demo" && credentials?.password === "demo") {
+          const user = db.prepare("SELECT id, name, email FROM users WHERE id = ?").get('1') as { id: string, name: string, email: string };
+          if (user) {
+            return { id: user.id, name: user.name, email: user.email };
+          }
+          // Fallback if user doesn't exist for some reason (should be seeded)
           return { id: "1", name: "Demo User", email: "demo@example.com" };
         }
         return null;
@@ -20,6 +26,39 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: '/login',
+  },
+  callbacks: {
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.sub = user.id;
+      }
+      
+      // Fetch latest user data from DB to keep session updated
+      if (token.sub) {
+        const dbUser = db.prepare("SELECT name, email FROM users WHERE id = ?").get(token.sub) as { name: string, email: string };
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+        }
+      }
+
+      if (trigger === "update" && session?.name) {
+        token.name = session.name;
+      }
+      if (trigger === "update" && session?.email) {
+        token.email = session.email;
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { id?: string }).id = token.sub;
+        session.user.name = token.name;
+        session.user.email = token.email;
+      }
+      return session;
+    }
   },
   secret: process.env.NEXTAUTH_SECRET || "moodtrackersecret123",
 };

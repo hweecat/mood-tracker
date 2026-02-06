@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { z } from 'zod';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthContext, apiError, apiSuccess } from '@/lib/api-utils';
 
 const CBTLogSchema = z.object({
   id: z.string(),
@@ -30,22 +29,14 @@ interface CBTLogRow {
 }
 
 export async function GET() {
-  const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-  let userId = '1';
-
-  if (isRbacEnabled) {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
     }
-        userId = (session.user as { id: string }).id;
-  }
 
-  let stmt;
-  let rows;
-
-  if (isRbacEnabled) {
-    stmt = db.prepare(`
+    let rows: CBTLogRow[];
+    const selectQuery = `
       SELECT 
         id, 
         timestamp, 
@@ -58,50 +49,34 @@ export async function GET() {
         behavioral_link as behavioralLink,
         user_id
       FROM cbt_logs 
-      WHERE user_id = ?
-      ORDER BY timestamp DESC
-    `);
-    rows = stmt.all(userId) as CBTLogRow[];
-  } else {
-    stmt = db.prepare(`
-      SELECT 
-        id, 
-        timestamp, 
-        situation, 
-        automatic_thoughts as automaticThoughts, 
-        distortions, 
-        rational_response as rationalResponse, 
-        mood_before as moodBefore, 
-        mood_after as moodAfter,
-        behavioral_link as behavioralLink,
-        user_id
-      FROM cbt_logs 
-      ORDER BY timestamp DESC
-    `);
-    rows = stmt.all() as CBTLogRow[];
-  }
-  
-  const cbtLogs = rows.map(row => ({
-    ...row,
-    distortions: JSON.parse(row.distortions),
-    userId: row.user_id
-  }));
+    `;
 
-  return NextResponse.json(cbtLogs);
+    if (auth.rbac) {
+      rows = db.prepare(`${selectQuery} WHERE user_id = ? ORDER BY timestamp DESC`).all(auth.userId) as CBTLogRow[];
+    } else {
+      rows = db.prepare(`${selectQuery} ORDER BY timestamp DESC`).all() as CBTLogRow[];
+    }
+    
+    const cbtLogs = rows.map(row => ({
+      ...row,
+      distortions: JSON.parse(row.distortions),
+      userId: row.user_id
+    }));
+
+    return apiSuccess(cbtLogs);
+  } catch (error) {
+    console.error('GET /api/cbt Error:', error);
+    return apiError('Internal Server Error');
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    let userId = '1';
-    
-    const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-    if (isRbacEnabled) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-              userId = (session.user as { id: string }).id;
-        }
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
+    }
+
     const body = await request.json();
     const validatedData = CBTLogSchema.parse(body);
     const { 
@@ -142,28 +117,23 @@ export async function POST(request: Request) {
       moodBefore, 
       moodAfter || null,
       behavioralLink || null,
-      userId
+      auth.userId
     );
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
+      return apiError('Invalid input', 400, error.issues);
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return apiError('Internal Server Error');
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    let userId = '1';
-    const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-    if (isRbacEnabled) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-          userId = (session.user as { id: string }).id;
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
     }
 
     const body = await request.json();
@@ -180,24 +150,22 @@ export async function PUT(request: Request) {
       timestamp 
     } = validatedData;
 
-    let stmt;
     let result;
+    const updateQuery = `
+      UPDATE cbt_logs 
+      SET 
+        situation = ?, 
+        automatic_thoughts = ?, 
+        distortions = ?, 
+        rational_response = ?, 
+        mood_before = ?, 
+        mood_after = ?, 
+        behavioral_link = ?,
+        timestamp = ?
+    `;
 
-    if (isRbacEnabled) {
-      stmt = db.prepare(`
-        UPDATE cbt_logs 
-        SET 
-          situation = ?, 
-          automatic_thoughts = ?, 
-          distortions = ?, 
-          rational_response = ?, 
-          mood_before = ?, 
-          mood_after = ?, 
-          behavioral_link = ?,
-          timestamp = ?
-        WHERE id = ? AND user_id = ?
-      `);
-      result = stmt.run(
+    if (auth.rbac) {
+      result = db.prepare(`${updateQuery} WHERE id = ? AND user_id = ?`).run(
         situation, 
         automaticThoughts, 
         JSON.stringify(distortions), 
@@ -207,23 +175,10 @@ export async function PUT(request: Request) {
         behavioralLink || null,
         timestamp,
         id, 
-        userId
+        auth.userId
       );
     } else {
-      stmt = db.prepare(`
-        UPDATE cbt_logs 
-        SET 
-          situation = ?, 
-          automatic_thoughts = ?, 
-          distortions = ?, 
-          rational_response = ?, 
-          mood_before = ?, 
-          mood_after = ?, 
-          behavioral_link = ?,
-          timestamp = ?
-        WHERE id = ?
-      `);
-      result = stmt.run(
+      result = db.prepare(`${updateQuery} WHERE id = ?`).run(
         situation, 
         automaticThoughts, 
         JSON.stringify(distortions), 
@@ -237,18 +192,17 @@ export async function PUT(request: Request) {
     }
 
     if (result.changes === 0) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+      return apiError('Entry not found', 404);
     }
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 });
+      return apiError('Invalid input', 400, error.issues);
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return apiError('Internal Server Error');
   }
 }
-
 
 export async function DELETE(request: Request) {
   try {
@@ -256,35 +210,27 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return apiError('ID is required', 400);
     }
 
-    let userId = '1';
-    const isRbacEnabled = process.env.ENABLE_RBAC === 'true';
-    if (isRbacEnabled) {
-      const session = await getServerSession(authOptions);
-      if (!session || !session.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-              userId = (session.user as { id: string }).id;
-        }
-    let stmt;
-    let result;
+    const auth = await getAuthContext();
+    if (!auth.authorized) {
+      return apiError('Unauthorized', 401);
+    }
 
-    if (isRbacEnabled) {
-      stmt = db.prepare('DELETE FROM cbt_logs WHERE id = ? AND user_id = ?');
-      result = stmt.run(id, userId);
+    let result;
+    if (auth.rbac) {
+      result = db.prepare('DELETE FROM cbt_logs WHERE id = ? AND user_id = ?').run(id, auth.userId);
     } else {
-      stmt = db.prepare('DELETE FROM cbt_logs WHERE id = ?');
-      result = stmt.run(id);
+      result = db.prepare('DELETE FROM cbt_logs WHERE id = ?').run(id);
     }
 
     if (result.changes === 0) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+      return apiError('Entry not found', 404);
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return apiSuccess({ success: true });
+  } catch (error) {
+    return apiError('Internal Server Error');
   }
 }
