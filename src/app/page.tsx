@@ -1,17 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useTrackerData } from '@/hooks/useTrackerData';
 import { useTheme } from '@/components/ThemeProvider';
 import { MoodEntryForm } from '@/components/MoodEntryForm';
 import { CBTLogForm } from '@/components/CBTLogForm';
-import { HistoryView } from '@/components/HistoryView';
-import { MoodChart } from '@/components/MoodChart';
-import { CBTGuide } from '@/components/CBTGuide';
-import { InsightsView } from '@/components/InsightsView';
-import { DataManagement } from '@/components/DataManagement';
-import { SettingsView } from '@/components/SettingsView';
-import { CrisisResources } from '@/components/CrisisResources';
 import { ActionItemsWidget } from '@/components/ActionItemsWidget';
 import { 
   LayoutDashboard, 
@@ -35,6 +29,26 @@ import {
 import { cn } from '@/lib/utils';
 import { CBTLog } from '@/types';
 import { useSession, signOut } from 'next-auth/react';
+
+// Dynamic imports for components not immediately visible
+const HistoryView = dynamic(() => import('@/components/HistoryView').then(mod => mod.HistoryView), {
+  loading: () => <div className="h-40 flex items-center justify-center bg-muted/20 rounded-3xl animate-pulse text-muted-foreground font-bold uppercase tracking-widest text-xs">Loading History...</div>
+});
+
+const MoodChart = dynamic(() => import('@/components/MoodChart').then(mod => mod.MoodChart), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center bg-muted/20 rounded-3xl animate-pulse text-muted-foreground font-bold uppercase tracking-widest text-xs">Loading Chart...</div>
+});
+
+const InsightsView = dynamic(() => import('@/components/InsightsView').then(mod => mod.InsightsView), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center bg-muted/20 rounded-3xl animate-pulse text-muted-foreground font-bold uppercase tracking-widest text-xs">Loading Insights...</div>
+});
+
+const CBTGuide = dynamic(() => import('@/components/CBTGuide').then(mod => mod.CBTGuide));
+const DataManagement = dynamic(() => import('@/components/DataManagement').then(mod => mod.DataManagement));
+const SettingsView = dynamic(() => import('@/components/SettingsView').then(mod => mod.SettingsView));
+const CrisisResources = dynamic(() => import('@/components/CrisisResources').then(mod => mod.CrisisResources));
 
 type MainTab = 'dashboard' | 'mood' | 'journal' | 'insights' | 'menu';
 type MenuTab = 'history' | 'guide' | 'data' | 'settings' | 'crisis';

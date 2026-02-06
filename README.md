@@ -78,6 +78,47 @@ npm start
 ### Viewing Insights
 Navigate to the **Insights** tab to see your progress metrics, including your most common distortions and how much relief (mood improvement) you typically gain from the journaling process.
 
+## 🗄️ Database Management
+
+This project uses [Sqitch](https://sqitch.org/) for database schema management and migrations. This ensures data integrity and provides a clear audit trail of schema changes.
+
+### Prerequisites
+
+You must have Sqitch and the appropriate database drivers installed on your system.
+
+### Common Commands
+
+All Sqitch commands should be run from the `db/` directory:
+```bash
+cd db
+```
+
+- **Deploy changes**: Apply pending migrations to your local database.
+  ```bash
+  sqitch deploy local
+  ```
+- **Revert changes**: Undo the last applied migration.
+  ```bash
+  sqitch revert local
+  ```
+- **Verify changes**: Run verification scripts to ensure the database matches the plan.
+  ```bash
+  sqitch verify local
+  ```
+
+The migration plan is stored in `db/sqitch.plan`, and SQL scripts are located in the `db/deploy/`, `db/revert/`, and `db/verify/` directories. The migration registry is stored in `db/registry`.
+
+### Environment Configuration
+
+The application uses the `DATABASE_PATH` environment variable to locate the SQLite database.
+- **Local**: `data/mood-tracker.db`
+- **Development**: `data/mood-tracker-dev.db`
+
+Ensure you have a `.env.local` file with the correct path:
+```text
+DATABASE_PATH=data/mood-tracker.db
+```
+
 ## 🧪 Testing
 
 Run the test suite using Vitest:

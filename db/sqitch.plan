@@ -1,0 +1,6 @@
+%syntax-version=1.0.0
+%project=mood-tracker
+%uri=https://github.com/hweecat/mood-tracker/
+
+appschema 2026-02-06T07:29:59Z ,,, <hweecat@AsusZenbook14X> # Initialize base schema for users, mood_entries, and cbt_logs.
+seed-data 2026-02-06T07:41:20Z ,,, <hweecat@AsusZenbook14X> # Seed initial demo user.
