@@ -39,7 +39,7 @@
     "axe-core": "^4.11.1",
     "axe-webdriverjs": "^2.3.0",
     "eslint": "^9",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "^15.5.9",
     "jsdom": "^27.4.0",
     "selenium-webdriver": "^4.39.0",
     "tailwindcss": "^4",
