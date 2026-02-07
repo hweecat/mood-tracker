@@ -11,7 +11,6 @@
     "test:e2e": "ts-node -O '{\"module\": \"commonjs\", \"esModuleInterop\": true}' e2e/accessibility.test.ts"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.5.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -31,7 +30,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/axe-webdriverjs": "^2.3.5",
-    "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",

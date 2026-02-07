@@ -4,7 +4,6 @@ import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, ArrowRight, Lock } from 'lucide-react';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -71,15 +70,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between px-3">
-                <label htmlFor="password" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Password</label>
-                <Link 
-                  href="/auth/reset-password" 
-                  className="text-xs font-bold text-brand-600 hover:underline"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
+              <label htmlFor="password" className="text-xs font-black uppercase tracking-widest text-muted-foreground pl-3">Password</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
                 <input

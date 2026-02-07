@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import db from "./db";
-import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,18 +11,14 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
-
         // Hardcoded demo user check for this local app
-        if (credentials.username === "demo") {
-          const user = db.prepare("SELECT id, name, email, password FROM users WHERE id = ?").get('1') as { id: string, name: string, email: string, password?: string };
-          
-          if (user && user.password) {
-            const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-            if (isPasswordValid) {
-              return { id: user.id, name: user.name, email: user.email };
-            }
+        if (credentials?.username === "demo" && credentials?.password === "demo") {
+          const user = db.prepare("SELECT id, name, email FROM users WHERE id = ?").get('1') as { id: string, name: string, email: string };
+          if (user) {
+            return { id: user.id, name: user.name, email: user.email };
           }
+          // Fallback if user doesn't exist for some reason (should be seeded)
+          return { id: "1", name: "Demo User", email: "demo@example.com" };
         }
         return null;
       }
