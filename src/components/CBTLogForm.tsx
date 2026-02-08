@@ -114,7 +114,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       <div className="px-8 pt-6 pb-8 space-y-8">
         <div className="w-full bg-secondary h-4 rounded-full overflow-hidden border-2 border-border shadow-inner p-0.5">
           <div 
-            className="bg-brand-600 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(2,132,199,0.6)]" 
+            className="bg-brand-700 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(2,132,199,0.6)]" 
             style={{ width: `${(step / 5) * 100}%` }}
           />
         </div>
@@ -123,9 +123,10 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">1. The Situation</label>
+                <label htmlFor="situation-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">1. The Situation</label>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What specifically happened that triggered your distress?</p>
                 <textarea
+                  id="situation-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.situation}
                   onChange={e => setFormData({...formData, situation: e.target.value})}
@@ -133,7 +134,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Initial Mood</label>
+                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Initial Mood</p>
                 <div className="pt-2">
                   <MoodSelector 
                     value={formData.moodBefore} 
@@ -147,9 +148,10 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 2 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">2. Automatic Thoughts</label>
+                <label htmlFor="thoughts-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">2. Automatic Thoughts</label>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
                 <textarea
+                  id="thoughts-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.automaticThoughts}
                   onChange={e => setFormData({...formData, automaticThoughts: e.target.value})}
@@ -162,13 +164,13 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">3. Identification</label>
+                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">3. Identification</p>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
                 
                 {activeInfo && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" onClick={() => setActiveInfo(null)}>
                      <div className="bg-card p-6 rounded-3xl max-w-md w-full shadow-2xl space-y-3 relative" onClick={e => e.stopPropagation()}>
-                       <button onClick={() => setActiveInfo(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X size={20}/></button>
+                       <button onClick={() => setActiveInfo(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" aria-label="Close info"><X size={20}/></button>
                        <h3 className="text-xl font-black text-brand-600">{activeInfo}</h3>
                        <p className="text-card-foreground leading-relaxed">
                          {CBT_DISTORTIONS.find(d => d.name === activeInfo)?.definition}
@@ -181,12 +183,13 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                    </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2" role="group" aria-label="Cognitive Distortions">
                   {DISTORTIONS.map(d => (
                     <div key={d} className="flex gap-2 items-stretch">
                       <button
                         type="button"
                         onClick={() => toggleDistortion(d)}
+                        aria-pressed={formData.distortions.includes(d)}
                         className={cn(
                           "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
                           formData.distortions.includes(d)
@@ -214,9 +217,10 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 4 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">4. Rational Challenge</label>
+                <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">4. Rational Challenge</label>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
                 <textarea
+                  id="rational-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.rationalResponse}
                   onChange={e => setFormData({...formData, rationalResponse: e.target.value})}
@@ -224,7 +228,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Mood After Reframing</label>
+                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Mood After Reframing</p>
                 <div className="pt-2">
                   <MoodSelector 
                     value={formData.moodAfter} 
@@ -238,9 +242,10 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 5 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-500 pl-4 block">5. Actionable Plan</label>
+                <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-500 pl-4 block">5. Actionable Plan</label>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
                 <textarea
+                  id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.behavioralLink}
                   onChange={e => setFormData({...formData, behavioralLink: e.target.value, actionPlanStatus: 'pending'})}

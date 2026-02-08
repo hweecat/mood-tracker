@@ -102,7 +102,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen pb-28 bg-background">
+    <div className="min-h-screen pb-28 bg-background">
       <header className="bg-background border-b-2 border-border sticky top-0 z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-black text-brand-600 tracking-tighter uppercase">MindfulTrack</h1>
@@ -165,7 +165,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-slate-900 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-800 dark:border-slate-900">
@@ -319,7 +319,7 @@ export default function Home() {
             )}
           </div>
         )}
-      </div>
+      </main>
 
       {/* Navigation Bar */}
       <nav 
@@ -333,7 +333,7 @@ export default function Home() {
         <NavButton active={activeTab === 'insights'} onClick={() => navigateTo('insights')} icon={BarChart2} label="Insights" />
         <NavButton active={activeTab === 'menu'} onClick={() => navigateTo('menu')} icon={Menu} label="Menu" />
       </nav>
-    </main>
+    </div>
   );
 }
 

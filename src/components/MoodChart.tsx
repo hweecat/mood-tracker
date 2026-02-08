@@ -131,7 +131,7 @@ export function MoodChart({ entries }: MoodChartProps) {
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }}
+                tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#475569' }}
                 dy={10}
                 interval={displayDays.length > 7 ? 'preserveStartEnd' : 0}
                 minTickGap={20}
@@ -140,7 +140,7 @@ export function MoodChart({ entries }: MoodChartProps) {
                 domain={[1, 10]}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }}
+                tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#475569' }}
               />
               <Tooltip
                 contentStyle={{

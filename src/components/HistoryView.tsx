@@ -159,17 +159,17 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CBT Efficiency</p>
+                <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">CBT Efficiency</p>
                 <p className="text-2xl font-black text-white">+{avgImprovement.toFixed(1)} <span className="text-[10px] font-bold text-brand-400 uppercase">relief</span></p>
               </div>
               <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Key Pattern</p>
+                <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">Key Pattern</p>
                 <p className="text-sm font-black text-white truncate mt-1">{topDistortions[0]?.[0] || 'Identifying...'}</p>
               </div>
             </div>
             
             <div className="space-y-3 bg-white/5 rounded-2xl p-5 border border-white/5">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Insight & Next Step</p>
+              <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest">Core Insight & Next Step</p>
               <ul className="space-y-3">
                 <li className="flex gap-3 items-start">
                   <Lightbulb className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />

@@ -51,18 +51,18 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
   return (
     <form onSubmit={handleSubmit} className="card space-y-10 bg-card border-2 border-border shadow-2xl p-8 rounded-[2.5rem]">
       <div className="space-y-5">
-        <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
+        <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
           How are you feeling right now?
-        </label>
+        </p>
         <div className="pt-2">
           <MoodSelector value={rating} onChange={setRating} />
         </div>
       </div>
 
       <div className="space-y-5">
-        <label className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
+        <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
           Select Emotions
-        </label>
+        </p>
         <div className="flex flex-wrap gap-2.5">
           {COMMON_EMOTIONS.map(emotion => (
             <button
@@ -84,7 +84,7 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
 
       <div className="grid sm:grid-cols-2 gap-10">
         <div className="space-y-5">
-          <label className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Trigger</label>
+          <p className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Trigger</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {COMMON_TRIGGERS.map(t => (
               <button 
@@ -104,15 +104,17 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
           </div>
           <input
             type="text"
+            id="trigger-input"
             value={trigger}
             onChange={(e) => setTrigger(e.target.value)}
             placeholder="What caused this feeling?"
             className="w-full p-4 rounded-2xl border-2 border-border bg-secondary text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-bold placeholder:text-muted-foreground shadow-inner transition-all"
+            aria-label="Trigger"
           />
         </div>
 
         <div className="space-y-5">
-          <label className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Behavior</label>
+          <p className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Behavior</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {COMMON_BEHAVIORS.map(b => (
               <button 
@@ -132,19 +134,22 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
           </div>
           <input
             type="text"
+            id="behavior-input"
             value={behavior}
             onChange={(e) => setBehavior(e.target.value)}
             placeholder="What did you do in response?"
             className="w-full p-4 rounded-2xl border-2 border-border bg-secondary text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-bold placeholder:text-muted-foreground shadow-inner transition-all"
+            aria-label="Behavior"
           />
         </div>
       </div>
 
       <div className="space-y-5">
-        <label className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
+        <label htmlFor="notes-textarea" className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
           Personal Notes
         </label>
         <textarea
+          id="notes-textarea"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Capture your thoughts here..."

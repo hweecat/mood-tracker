@@ -43,7 +43,7 @@ export default function GlobalError({
             </button>
           </div>
           
-          <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-widest pt-8">
+          <p className="text-[10px] font-medium text-slate-600 dark:text-slate-500 uppercase tracking-widest pt-8">
             Global Error Handler
           </p>
         </div>

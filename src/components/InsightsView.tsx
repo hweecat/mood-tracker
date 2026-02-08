@@ -125,14 +125,14 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
             <TrendingUp className="w-6 h-6" />
           </div>
           <div className="text-4xl font-black text-slate-950 dark:text-slate-100 tracking-tighter">+{avgImprovement.toFixed(1)}</div>
-          <div className="text-[11px] font-black text-slate-600 dark:text-slate-500 mt-2">Avg. Relief</div>
+          <div className="text-[11px] font-black text-slate-600 dark:text-slate-400 mt-2">Avg. Relief</div>
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl border-b-8 border-blue-500/20">
           <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-2xl w-fit mb-4 border-2 border-blue-200 dark:border-transparent">
             <Calendar className="w-6 h-6" />
           </div>
           <div className="text-4xl font-black text-slate-950 dark:text-slate-100 tracking-tighter">{moodEntries.length + cbtLogs.length}</div>
-          <div className="text-[11px] font-black text-slate-600 dark:text-slate-500 mt-2">Total Entries</div>
+          <div className="text-[11px] font-black text-slate-600 dark:text-slate-400 mt-2">Total Entries</div>
         </div>
       </div>
 
@@ -210,7 +210,7 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
               </div>
             )) : <div className="text-xs text-slate-700 dark:text-slate-500 italic font-black text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">No triggers recorded yet.</div>}
           </div>
-          <p className="text-[10px] font-black text-slate-600 dark:text-slate-600 mt-6 italic text-center bg-slate-50 dark:bg-slate-800/30 py-2 rounded-lg">Mood Impact Scale (1-10)</p>
+          <p className="text-[10px] font-black text-slate-600 dark:text-slate-400 mt-6 italic text-center bg-slate-50 dark:bg-slate-800/30 py-2 rounded-lg">Mood Impact Scale (1-10)</p>
         </section>
 
         <section className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
@@ -251,7 +251,7 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
           ) : null}
           <div className="flex items-center justify-center gap-4 py-2 opacity-60">
             <div className="h-px bg-slate-700 flex-1" />
-            <p className="text-[10px] text-slate-400 font-black italic">Keep journaling to unlock more patterns</p>
+            <p className="text-[10px] text-slate-200 font-black italic">Keep journaling to unlock more patterns</p>
             <div className="h-px bg-slate-700 flex-1" />
           </div>
         </div>
