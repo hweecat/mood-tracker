@@ -108,7 +108,7 @@ export function MoodChart({ entries }: MoodChartProps) {
   }
 
   return (
-    <div className="card w-full bg-card text-card-foreground border border-border shadow-sm rounded-2xl">
+    <section aria-label="Mood Trend Chart" className="card w-full bg-card text-card-foreground border border-border shadow-sm rounded-2xl">
       <div className="p-6 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -168,6 +168,6 @@ export function MoodChart({ entries }: MoodChartProps) {
           </ResponsiveContainer>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

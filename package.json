@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:login": "ts-node -O '{\"module\": \"commonjs\", \"esModuleInterop\": true}' e2e/login.test.ts",
     "test:e2e": "ts-node -O '{\"module\": \"commonjs\", \"esModuleInterop\": true}' e2e/accessibility.test.ts"
   },
   "dependencies": {

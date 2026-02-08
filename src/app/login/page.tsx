@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, ArrowRight, Lock } from 'lucide-react';
 
@@ -10,7 +10,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +41,21 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex p-4 bg-brand-600 rounded-3xl mb-4 h-18 w-18" />
+            <div className="h-8 w-48 bg-muted rounded-lg mx-auto mb-2" />
+            <div className="h-4 w-64 bg-muted rounded-lg mx-auto" />
+          </div>
+          <div className="bg-card p-8 rounded-[2.5rem] border-2 border-border h-[400px] shadow-sm animate-pulse" />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">

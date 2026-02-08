@@ -48,6 +48,7 @@ export function ActionItemsWidget({ cbtLogs, onToggleStatus }: ActionItemsWidget
               onClick={() => onToggleStatus(log)}
             >
               <button 
+                aria-label={isCompleted ? "Mark as pending" : "Mark as completed"}
                 className={cn(
                   "mt-1 flex-shrink-0 transition-colors",
                   isCompleted ? "text-green-500" : "text-muted-foreground group-hover:text-brand-500"

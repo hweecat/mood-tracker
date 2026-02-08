@@ -24,13 +24,14 @@ describe('RBAC Access Control', () => {
   const mockPrepare = db.prepare as Mock;
   const mockGetServerSession = getServerSession as Mock;
   
-  const mockRun = vi.fn();
+  const mockRun = vi.fn().mockReturnValue({ changes: 1 });
   const mockAll = vi.fn();
 
   beforeEach(() => {
     vi.resetAllMocks();
     process.env = { ...originalEnv };
     
+    mockRun.mockReturnValue({ changes: 1 });
     mockPrepare.mockReturnValue({
       run: mockRun,
       all: mockAll,

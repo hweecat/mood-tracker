@@ -27,7 +27,7 @@ async function runAccessibilityTests() {
   console.log('Starting Accessibility Tests...');
   
   const chromeOptions = new Options();
-  chromeOptions.addArguments('--headless'); // Run in headless mode
+  chromeOptions.addArguments('--headless=new'); // Run in headless mode (new engine)
   chromeOptions.addArguments('--no-sandbox');
   chromeOptions.addArguments('--disable-dev-shm-usage');
   chromeOptions.addArguments('--window-size=1920,1080');
@@ -37,31 +37,51 @@ async function runAccessibilityTests() {
     .setChromeOptions(chromeOptions)
     .build();
 
-  const pages = [
-    { name: 'Dashboard', path: '/' },
-    { name: 'Mood Check-in', path: '/mood' }, // Assuming strictly client side nav might need explicit waits, but direct URL load is safer for unique page tests
-    { name: 'Journal', path: '/journal' },
-    // Add more pages as needed
-  ];
-
   const results: AxeResult[] = [];
 
   try {
-    for (const page of pages) {
-      const url = `${APP_URL}${page.path === '/' ? '' : page.path}`;
-      console.log(`Testing: ${page.name} (${url})`);
-      
-      await driver.get(url);
-      
-      // Give it a moment to render (simple wait)
-      await driver.sleep(2000);
+    // 1. Perform Login
+    console.log(`Logging in to ${APP_URL}/login...`);
+    await driver.get(`${APP_URL}/login`);
+    await driver.sleep(2000); // Wait for page load
 
+    const usernameInput = await driver.findElement({ id: 'username' });
+    const passwordInput = await driver.findElement({ id: 'password' });
+    const submitButton = await driver.findElement({ css: 'button[type="submit"]' });
+
+    await usernameInput.sendKeys('demo');
+    await passwordInput.sendKeys('demo');
+    await submitButton.click();
+
+    // Wait for redirect to dashboard
+    await driver.sleep(3000);
+    console.log('Login submitted, starting page analysis...');
+
+    const pages = [
+      { name: 'Dashboard', path: '/', selector: 'nav button:nth-child(1)' },
+      { name: 'Mood Check-in', path: '/mood', selector: 'nav button:nth-child(2)' }, 
+      { name: 'Journal', path: '/journal', selector: 'nav button:nth-child(3)' },
+      { name: 'Insights', path: '/insights', selector: 'nav button:nth-child(4)' },
+    ];
+
+    for (const page of pages) {
+      console.log(`Testing: ${page.name}`);
+      
+      // Click the nav button if we're already on the page (Dashboard is first)
+      if (page.path !== '/') {
+        const navButton = await driver.findElement({ css: page.selector });
+        await navButton.click();
+        await driver.sleep(2000); // Wait for tab transition
+      }
+      
+      const currentUrl = await driver.getCurrentUrl();
+      
       // Analyze with Axe
       const builder = new AxeBuilder(driver);
       const result = await builder.analyze();
 
       results.push({
-        url: url,
+        url: currentUrl,
         violations: result.violations,
         passes: result.passes
       });

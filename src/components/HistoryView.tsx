@@ -149,18 +149,18 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
 
       {/* Journal Summary Section */}
       {!searchQuery && cbtLogs.length > 0 && visibleCount <= PAGE_SIZE && (
-        <div className="bg-slate-950 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-800 dark:border-slate-900">
+        <div className="bg-slate-800 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-brand-500 rounded-xl">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Journal Summary</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">Journal Summary</h3>
           </div>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
                 <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">CBT Efficiency</p>
-                <p className="text-2xl font-black text-white">+{avgImprovement.toFixed(1)} <span className="text-[10px] font-bold text-brand-400 uppercase">relief</span></p>
+                <p className="text-2xl font-black text-white">+{avgImprovement.toFixed(1)} <span className="text-[10px] font-bold text-brand-300 uppercase">relief</span></p>
               </div>
               <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
                 <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">Key Pattern</p>
@@ -318,7 +318,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                       <p className="text-xs font-black text-muted-foreground uppercase text-center border-b-2 border-border pb-3 mb-6 tracking-[0.2em]">Synthesis</p>
                       <div className="space-y-8">
                         <div className="flex gap-5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-slate-400 dark:bg-slate-600 mt-2 flex-shrink-0 shadow-sm" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-500 mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
                             <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-slate-300 decoration-2">Situation</p>
                             <p className="text-base text-foreground leading-relaxed font-black">{entry.situation || 'Not specified'}</p>

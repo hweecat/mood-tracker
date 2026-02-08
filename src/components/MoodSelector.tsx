@@ -36,6 +36,7 @@ export function MoodSelector({ value, onChange }: MoodSelectorProps) {
         <button
           key={rating}
           type="button"
+          aria-label={`Rate mood as ${rating} out of 10`}
           onClick={() => onChange(rating)}
           className={cn(
             'flex flex-col items-center justify-center h-16 rounded-xl border-2 transition-all w-full',

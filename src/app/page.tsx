@@ -105,7 +105,7 @@ export default function Home() {
     <div className="min-h-screen pb-28 bg-background">
       <header className="bg-background border-b-2 border-border sticky top-0 z-10 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-black text-brand-600 tracking-tighter uppercase">MindfulTrack</h1>
+          <h1 className="text-xl font-black text-brand-700 tracking-tighter uppercase">MindfulTrack</h1>
           <div className="flex items-center gap-3 relative">
             {mounted && (
               <button
@@ -165,12 +165,12 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+      <main aria-label="Main Content" className="max-w-2xl mx-auto px-4 py-8 space-y-8">
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-800 dark:border-slate-900">
+            <section aria-label="Welcome Banner" className="bg-slate-800 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
               <h2 className="text-3xl font-black mb-2 tracking-tight text-white">Hello there!</h2>
-              <p className="text-slate-300 font-bold text-sm uppercase tracking-widest">How is your mind feeling today?</p>
+              <p className="text-slate-200 font-bold text-sm uppercase tracking-widest">How is your mind feeling today?</p>
               <div className="mt-8 flex gap-4">
                 <button 
                   onClick={() => navigateTo('mood')}
@@ -185,15 +185,17 @@ export default function Home() {
                   Journal
                 </button>
               </div>
-            </div>
+            </section>
 
-            <ActionItemsWidget cbtLogs={cbtLogs} onToggleStatus={toggleActionStatus} />
+            <section aria-label="Action Items">
+              <ActionItemsWidget cbtLogs={cbtLogs} onToggleStatus={toggleActionStatus} />
+            </section>
 
             <MoodChart entries={moodEntries} />
 
-            <div className="space-y-6">
+            <section aria-label="Recent Activity" className="space-y-6">
               <div className="flex items-center justify-between border-b-2 border-border pb-2">
-                <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em]">Recent Activity</h3>
+                <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.2em]">Recent Activity</h3>
               </div>
               <HistoryView 
                 moodEntries={moodEntries.slice(0, 3)} 
@@ -210,7 +212,7 @@ export default function Home() {
                   View Full History
                 </button>
               )}
-            </div>
+            </section>
           </div>
         )}
 
@@ -323,7 +325,6 @@ export default function Home() {
 
       {/* Navigation Bar */}
       <nav 
-        role="tablist"
         aria-label="Main Navigation"
         className="fixed bottom-0 left-0 right-0 bg-background border-t-2 border-border px-6 py-3 flex justify-between items-center z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"
       >
@@ -340,18 +341,19 @@ export default function Home() {
 function NavButton({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: LucideIcon, label: string }) {
   return (
     <button 
-      role="tab"
-      aria-selected={active}
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 transition-all min-w-[56px] min-h-[56px] rounded-2xl p-2 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
         active 
-          ? "text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 shadow-sm" 
-          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          ? "text-brand-700 dark:text-brand-400 bg-brand-100/50 dark:bg-brand-900/20 shadow-sm" 
+          : "text-slate-600 dark:text-slate-400 hover:text-foreground hover:bg-secondary"
       )}
     >
       <Icon size={24} strokeWidth={active ? 3 : 2} />
-      <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-tighter">
+        {label}
+        {active && <span className="sr-only"> (Active)</span>}
+      </span>
     </button>
   );
 }

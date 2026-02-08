@@ -134,8 +134,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Initial Mood</p>
-                <div className="pt-2">
+                <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Initial Mood</label>
+                <div className="pt-2" role="group" aria-labelledby="mood-before-label">
                   <MoodSelector 
                     value={formData.moodBefore} 
                     onChange={val => setFormData({...formData, moodBefore: val})} 
@@ -164,14 +164,14 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">3. Identification</p>
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">3. Identification</h3>
                 <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
                 
                 {activeInfo && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" onClick={() => setActiveInfo(null)}>
                      <div className="bg-card p-6 rounded-3xl max-w-md w-full shadow-2xl space-y-3 relative" onClick={e => e.stopPropagation()}>
                        <button onClick={() => setActiveInfo(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" aria-label="Close info"><X size={20}/></button>
-                       <h3 className="text-xl font-black text-brand-600">{activeInfo}</h3>
+                       <h3 className="text-xl font-black text-brand-700">{activeInfo}</h3>
                        <p className="text-card-foreground leading-relaxed">
                          {CBT_DISTORTIONS.find(d => d.name === activeInfo)?.definition}
                        </p>
@@ -193,17 +193,18 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                         className={cn(
                           "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
                           formData.distortions.includes(d)
-                            ? "bg-slate-900 text-white border-slate-950 dark:bg-brand-600 dark:border-brand-700 ring-4 ring-brand-500/20"
+                            ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800 ring-4 ring-brand-500/20"
                             : "bg-card text-foreground border-border hover:border-brand-500 hover:bg-secondary"
                         )}
                       >
                         {d}
+                        {formData.distortions.includes(d) && <span className="sr-only"> (Selected)</span>}
                       </button>
                       <button 
                         type="button"
                         onClick={() => setActiveInfo(d)}
-                        className="px-4 rounded-2xl bg-secondary text-muted-foreground hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
-                        aria-label={`Info about ${d}`}
+                        className="px-4 rounded-2xl bg-secondary text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
+                        aria-label={`Show info about ${d}`}
                       >
                         <Info size={18} />
                       </button>
@@ -228,8 +229,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <p className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Mood After Reframing</p>
-                <div className="pt-2">
+                <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Mood After Reframing</label>
+                <div className="pt-2" role="group" aria-labelledby="mood-after-label">
                   <MoodSelector 
                     value={formData.moodAfter} 
                     onChange={val => setFormData({...formData, moodAfter: val})} 
@@ -270,7 +271,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <button
               onClick={nextStep}
               disabled={step === 1 && !formData.situation}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-slate-950 dark:bg-brand-600 text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-brand-700 transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-slate-800 dark:border-brand-800 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-[2] py-5 px-8 rounded-[2rem] bg-slate-800 dark:bg-brand-700 text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-brand-800 transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-slate-700 dark:border-brand-900 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
             >
               Next Step
             </button>

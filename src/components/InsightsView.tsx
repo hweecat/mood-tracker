@@ -233,18 +233,18 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
       </div>
 
       {/* Thought Patterns / Behavioral Insights */}
-      <section className="bg-slate-950 dark:bg-black p-8 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-slate-800 dark:border-slate-900">
+      <section className="bg-slate-800 dark:bg-black p-8 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-brand-500 rounded-xl">
             <ArrowUpRight className="w-6 h-6 text-white" />
           </div>
-          <h3 className="font-black text-xs text-slate-300">Actionable Insights</h3>
+          <h3 className="font-black text-xs text-slate-200">Actionable Insights</h3>
         </div>
         <div className="space-y-6">
           {cbtLogs.length > 0 && distortionData.length > 0 ? (
             <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-6 border-2 border-white/10 shadow-inner">
               <p className="text-base leading-relaxed text-slate-100 font-medium">
-                Your most frequent cognitive distortion is <span className="font-black text-brand-400 underline decoration-brand-400 decoration-4 underline-offset-8 tracking-tight">{distortionData[0]?.name}</span>. 
+                Your most frequent cognitive distortion is <span className="font-black text-brand-300 underline decoration-brand-400 decoration-4 underline-offset-8 tracking-tight">{distortionData[0]?.name}</span>. 
                 When you experience this, your mood improves by average <span className="font-black text-green-400 text-xl">{(cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).reduce((acc, l) => acc + (l.moodAfter || l.moodBefore) - l.moodBefore, 0) / Math.max(1, cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).length)).toFixed(1)}</span> points after reframing.
               </p>
             </div>
