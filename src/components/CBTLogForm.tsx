@@ -123,8 +123,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label htmlFor="situation-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">1. The Situation</label>
-                <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What specifically happened that triggered your distress?</p>
+                <label htmlFor="situation-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">1. The Situation</label>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What specifically happened that triggered your distress?</p>
                 <textarea
                   id="situation-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -134,7 +134,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Initial Mood</label>
+                <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Initial Mood</label>
                 <div className="pt-2" role="group" aria-labelledby="mood-before-label">
                   <MoodSelector 
                     value={formData.moodBefore} 
@@ -148,8 +148,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 2 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label htmlFor="thoughts-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">2. Automatic Thoughts</label>
-                <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
+                <label htmlFor="thoughts-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">2. Automatic Thoughts</label>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
                 <textarea
                   id="thoughts-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -164,8 +164,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <h3 className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">3. Identification</h3>
-                <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">3. Identification</h3>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
                 
                 {activeInfo && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" onClick={() => setActiveInfo(null)}>
@@ -218,8 +218,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 4 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">4. Rational Challenge</label>
-                <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
+                <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">4. Rational Challenge</label>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
                 <textarea
                   id="rational-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -229,7 +229,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
-                <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-muted-foreground pl-4 block">Mood After Reframing</label>
+                <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Mood After Reframing</label>
                 <div className="pt-2" role="group" aria-labelledby="mood-after-label">
                   <MoodSelector 
                     value={formData.moodAfter} 
@@ -243,8 +243,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
           {step === 5 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
-                <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-500 pl-4 block">5. Actionable Plan</label>
-                <p className="text-sm text-muted-foreground font-bold italic leading-relaxed bg-secondary/50 p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
+                <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-600 pl-4 block">5. Actionable Plan</label>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
                 <textarea
                   id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"

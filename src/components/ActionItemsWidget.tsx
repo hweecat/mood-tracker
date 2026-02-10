@@ -26,7 +26,7 @@ export function ActionItemsWidget({ cbtLogs, onToggleStatus }: ActionItemsWidget
         <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2">
           Action Plan
           {pendingCount > 0 && (
-            <span className="bg-brand-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+            <span className="bg-brand-700 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
               {pendingCount} Pending
             </span>
           )}
@@ -42,7 +42,7 @@ export function ActionItemsWidget({ cbtLogs, onToggleStatus }: ActionItemsWidget
               className={cn(
                 "group flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer",
                 isCompleted 
-                  ? "bg-secondary border-transparent opacity-60" 
+                  ? "bg-secondary border-transparent" 
                   : "bg-card border-border hover:border-brand-500 shadow-sm"
               )}
               onClick={() => onToggleStatus(log)}

@@ -85,21 +85,22 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
 
       <div className="grid sm:grid-cols-2 gap-10">
         <div className="space-y-5">
-          <label htmlFor="trigger-input" className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Trigger</label>
-          <div className="flex flex-wrap gap-2 mb-4">
+          <label id="trigger-label" htmlFor="trigger-input" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">Trigger</label>
+          <div className="flex flex-wrap gap-2 mb-4" role="group" aria-labelledby="trigger-label">
             {COMMON_TRIGGERS.map(t => (
               <button 
                 key={t}
                 type="button"
                 onClick={() => setTrigger(t)}
                 className={cn(
-                  "text-[10px] px-3 py-1.5 rounded-xl border-2 font-black uppercase tracking-wider transition-all active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
+                  "text-xs px-3 py-1.5 rounded-xl border-2 font-black uppercase tracking-wider transition-all active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
                   trigger === t 
                     ? "bg-brand-700 text-white border-brand-800 shadow-md" 
-                    : "bg-secondary border-border text-muted-foreground hover:bg-muted"
+                    : "bg-secondary border-border text-foreground hover:bg-muted"
                 )}
               >
                 {t}
+                {trigger === t && <span className="sr-only"> (Selected)</span>}
               </button>
             ))}
           </div>
@@ -110,25 +111,27 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
             onChange={(e) => setTrigger(e.target.value)}
             placeholder="What caused this feeling?"
             className="w-full p-4 rounded-2xl border-2 border-border bg-secondary text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-bold placeholder:text-muted-foreground shadow-inner transition-all"
+            aria-labelledby="trigger-label"
           />
         </div>
 
         <div className="space-y-5">
-          <label htmlFor="behavior-input" className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">Behavior</label>
-          <div className="flex flex-wrap gap-2 mb-4">
+          <label id="behavior-label" htmlFor="behavior-input" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">Behavior</label>
+          <div className="flex flex-wrap gap-2 mb-4" role="group" aria-labelledby="behavior-label">
             {COMMON_BEHAVIORS.map(b => (
               <button 
                 key={b}
                 type="button"
                 onClick={() => setBehavior(b)}
                 className={cn(
-                  "text-[10px] px-3 py-1.5 rounded-xl border-2 font-black uppercase tracking-wider transition-all active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
+                  "text-xs px-3 py-1.5 rounded-xl border-2 font-black uppercase tracking-wider transition-all active:scale-95 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
                   behavior === b 
                     ? "bg-brand-700 text-white border-brand-800 shadow-md" 
-                    : "bg-secondary border-border text-muted-foreground hover:bg-muted"
+                    : "bg-secondary border-border text-foreground hover:bg-muted"
                 )}
               >
                 {b}
+                {behavior === b && <span className="sr-only"> (Selected)</span>}
               </button>
             ))}
           </div>
@@ -139,12 +142,13 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
             onChange={(e) => setBehavior(e.target.value)}
             placeholder="What did you do in response?"
             className="w-full p-4 rounded-2xl border-2 border-border bg-secondary text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-bold placeholder:text-muted-foreground shadow-inner transition-all"
+            aria-labelledby="behavior-label"
           />
         </div>
       </div>
 
       <div className="space-y-5">
-        <label htmlFor="notes-textarea" className="text-xs font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-500 pl-4 block">
+        <label htmlFor="notes-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">
           Personal Notes
         </label>
         <textarea
@@ -158,7 +162,7 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
 
       <button
         type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-[0.3em] py-5 px-8 rounded-[2rem] transition-all shadow-2xl active:scale-[0.98] border-b-8 border-primary/50 text-lg outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+        className="w-full bg-brand-700 hover:bg-brand-800 text-white font-black uppercase tracking-[0.3em] py-5 px-8 rounded-[2rem] transition-all shadow-2xl active:scale-[0.98] border-b-8 border-brand-900 text-lg outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
       >
         Complete Mood Check-in
       </button>

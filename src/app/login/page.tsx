@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, ArrowRight, Lock } from 'lucide-react';
 
@@ -10,12 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,24 +37,9 @@ export default function LoginPage() {
     }
   };
 
-  if (!mounted) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex p-4 bg-brand-600 rounded-3xl mb-4 h-18 w-18" />
-            <div className="h-8 w-48 bg-muted rounded-lg mx-auto mb-2" />
-            <div className="h-4 w-64 bg-muted rounded-lg mx-auto" />
-          </div>
-          <div className="bg-card p-8 rounded-[2.5rem] border-2 border-border h-[400px] shadow-sm animate-pulse" />
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-      <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex p-4 bg-brand-600 rounded-3xl shadow-xl shadow-brand-500/20 mb-4">
             <Brain className="w-10 h-10 text-white" aria-hidden="true" />
@@ -71,7 +51,7 @@ export default function LoginPage() {
         <div className="bg-card p-8 rounded-[2.5rem] shadow-2xl border-2 border-border">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div role="alert" className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-100 dark:border-red-900/50 rounded-2xl text-red-600 dark:text-red-400 text-sm font-bold text-center animate-in shake">
+              <div role="alert" className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-100 dark:border-red-900/50 rounded-2xl text-red-600 dark:text-red-400 text-sm font-bold text-center">
                 {error}
               </div>
             )}
@@ -80,6 +60,7 @@ export default function LoginPage() {
               <label htmlFor="username" className="text-xs font-black uppercase tracking-widest text-muted-foreground pl-3">Username</label>
               <input
                 id="username"
+                name="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -95,6 +76,7 @@ export default function LoginPage() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
                 <input
                   id="password"
+                  name="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

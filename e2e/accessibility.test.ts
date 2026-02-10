@@ -1,4 +1,4 @@
-import { Builder, WebDriver } from 'selenium-webdriver';
+import { Builder, WebDriver, By, until } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
 import { Result } from 'axe-core';
 import * as fs from 'fs';
@@ -43,19 +43,29 @@ async function runAccessibilityTests() {
     // 1. Perform Login
     console.log(`Logging in to ${APP_URL}/login...`);
     await driver.get(`${APP_URL}/login`);
-    await driver.sleep(2000); // Wait for page load
-
-    const usernameInput = await driver.findElement({ id: 'username' });
-    const passwordInput = await driver.findElement({ id: 'password' });
-    const submitButton = await driver.findElement({ css: 'button[type="submit"]' });
+    
+    // Wait for mounted state (since we use useEffect to set mounted=true)
+    await driver.sleep(3000);
+    
+    let usernameInput;
+    try {
+      usernameInput = await driver.wait(until.elementLocated(By.id('username')), 20000);
+    } catch (e) {
+      console.error('Failed to find username input. Page source:');
+      console.log(await driver.getPageSource());
+      throw e;
+    }
+    const passwordInput = await driver.findElement(By.id('password'));
+    const submitButton = await driver.findElement(By.css('button[type="submit"]'));
 
     await usernameInput.sendKeys('demo');
     await passwordInput.sendKeys('demo');
     await submitButton.click();
 
-    // Wait for redirect to dashboard
-    await driver.sleep(3000);
-    console.log('Login submitted, starting page analysis...');
+    // Wait for redirect to dashboard and the nav to appear
+    console.log('Login submitted, waiting for dashboard...');
+    await driver.wait(until.elementLocated(By.css('nav')), 10000);
+    console.log('Dashboard loaded, starting page analysis...');
 
     const pages = [
       { name: 'Dashboard', path: '/', selector: 'nav button:nth-child(1)' },
@@ -69,9 +79,14 @@ async function runAccessibilityTests() {
       
       // Click the nav button if we're already on the page (Dashboard is first)
       if (page.path !== '/') {
-        const navButton = await driver.findElement({ css: page.selector });
+        const navButton = await driver.wait(until.elementLocated(By.css(page.selector)), 10000);
         await navButton.click();
-        await driver.sleep(2000); // Wait for tab transition
+        // Wait for the active tab state or a specific element on the tab to appear
+        // Increase sleep to allow all animations (fade-in, slide-in) to finish completely
+        await driver.sleep(5000); 
+      } else {
+        // Initial load wait
+        await driver.sleep(5000);
       }
       
       const currentUrl = await driver.getCurrentUrl();
@@ -126,7 +141,7 @@ function generateReports(results: AxeResult[]) {
       mdContent += `| Impact | ID | Description | Help |\n`;
       mdContent += `|---|---|---|---|
 `;
-      res.violations.forEach(v => {
+      res.violations.forEach((v: any) => {
         mdContent += `| **${v.impact}** | \`${v.id}\` | ${v.description} | [Link](${v.helpUrl}) |\n`;
       });
       mdContent += `\n`;

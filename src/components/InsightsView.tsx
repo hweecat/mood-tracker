@@ -110,37 +110,37 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
         <div className="bg-slate-100 dark:bg-slate-800 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 border-2 border-slate-200 dark:border-slate-700">
           <BarChart3 className="text-slate-400 dark:text-slate-600 w-10 h-10" />
         </div>
-        <h3 className="text-xl font-black text-slate-950 dark:text-slate-200 tracking-tight">No data to analyze yet</h3>
-        <p className="text-slate-800 dark:text-slate-500 max-w-xs mx-auto mt-3 font-bold">Start journaling and checking in to see your personalized mental health insights here.</p>
+        <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight">No data to analyze yet</h3>
+        <p className="text-slate-800 dark:text-slate-300 max-w-xs mx-auto mt-3 font-bold">Start journaling and checking in to see your personalized mental health insights here.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 pb-12">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl border-b-8 border-green-500/20">
-          <div className="p-2.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-2xl w-fit mb-4 border-2 border-green-200 dark:border-transparent">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-[2rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl border-b-8 border-green-500/20">
+          <div className="p-2.5 bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded-2xl w-fit mb-4 border-2 border-green-200 dark:border-transparent">
             <TrendingUp className="w-6 h-6" />
           </div>
-          <div className="text-4xl font-black text-slate-950 dark:text-slate-100 tracking-tighter">+{avgImprovement.toFixed(1)}</div>
-          <div className="text-[11px] font-black text-slate-600 dark:text-slate-400 mt-2">Avg. Relief</div>
+          <div className="text-4xl font-black text-[#020617] dark:text-white tracking-tighter">+{avgImprovement.toFixed(1)}</div>
+          <div className="text-xs font-black text-[#334155] dark:text-[#cbd5e1] mt-2 uppercase tracking-widest">Avg. Relief</div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl border-b-8 border-blue-500/20">
-          <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-2xl w-fit mb-4 border-2 border-blue-200 dark:border-transparent">
+        <div className="bg-white dark:bg-[#0f172a] p-6 rounded-[2rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl border-b-8 border-blue-500/20">
+          <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded-2xl w-fit mb-4 border-2 border-blue-200 dark:border-transparent">
             <Calendar className="w-6 h-6" />
           </div>
-          <div className="text-4xl font-black text-slate-950 dark:text-slate-100 tracking-tighter">{moodEntries.length + cbtLogs.length}</div>
-          <div className="text-[11px] font-black text-slate-600 dark:text-slate-400 mt-2">Total Entries</div>
+          <div className="text-4xl font-black text-[#020617] dark:text-white tracking-tighter">{moodEntries.length + cbtLogs.length}</div>
+          <div className="text-xs font-black text-[#334155] dark:text-[#cbd5e1] mt-2 uppercase tracking-widest">Total Entries</div>
         </div>
       </div>
 
       {/* Cognitive Distortions Chart */}
-      <section className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+      <section className="bg-white dark:bg-[#0f172a] p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="flex items-center gap-3 mb-8 border-b-4 border-slate-50 dark:border-slate-800 pb-5">
           <AlertTriangle className="w-6 h-6 text-purple-600 dark:text-purple-500" />
-          <h3 className="font-black text-slate-950 dark:text-slate-100 text-sm">Cognitive Distortions</h3>
+          <h3 className="font-black text-[#020617] dark:text-[#f8fafc] text-sm">Cognitive Distortions</h3>
         </div>
         {distortionData.length > 0 ? (
           <div className="h-[280px] w-full mt-4">
@@ -180,78 +180,77 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-700 dark:text-slate-500 text-sm italic font-black bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">Complete CBT logs to identify distortions.</div>
+          <div className="text-center py-12 text-[#334155] dark:text-[#94a3b8] text-sm italic font-black bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">Complete CBT logs to identify distortions.</div>
         )}
       </section>
 
       {/* Emotion Triggers & Behavioral Links */}
       <div className="grid sm:grid-cols-2 gap-8">
-        <section className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+        <section className="bg-white dark:bg-[#0f172a] p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
           <div className="flex items-center gap-3 mb-6 border-b-4 border-slate-50 dark:border-slate-800 pb-4">
             <Zap className="w-6 h-6 text-amber-600 dark:text-amber-500" />
-            <h3 className="font-black text-slate-950 dark:text-slate-100 text-xs">Frequent Triggers</h3>
+            <h3 className="font-black text-[#020617] dark:text-[#f8fafc] text-xs">Frequent Triggers</h3>
           </div>
           <div className="space-y-5">
             {triggerData.length > 0 ? triggerData.map((t) => (
               <div key={t.name} className="space-y-2">
-                <div className="flex justify-between text-[11px] font-black">
-                  <span className="text-slate-900 dark:text-slate-300 truncate max-w-[120px]">{t.name}</span>
-                  <span className="text-slate-700 dark:text-slate-500 font-black">{t.count}x</span>
+                <div className="flex justify-between text-xs font-black">
+                  <span className="text-[#020617] dark:text-white truncate max-w-[120px]">{t.name}</span>
+                  <span className="text-[#334155] dark:text-[#cbd5e1] font-black">{t.count}x</span>
                 </div>
                 <div className="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden flex border-2 border-slate-300 dark:border-transparent shadow-inner">
                   <div 
                     className={cn(
                       "h-full shadow-[inset_0_0_8px_rgba(0,0,0,0.1)]",
-                      t.avgMood <= 4 ? "bg-red-600" : t.avgMood <= 7 ? "bg-amber-500" : "bg-green-600"
+                      t.avgMood <= 4 ? "bg-red-700" : t.avgMood <= 7 ? "bg-amber-600" : "bg-green-700"
                     )}
                     style={{ width: `${(t.avgMood / 10) * 100}%` }}
                   />
                 </div>
               </div>
-            )) : <div className="text-xs text-slate-700 dark:text-slate-500 italic font-black text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">No triggers recorded yet.</div>}
+            )) : <div className="text-xs text-[#334155] dark:text-[#cbd5e1] italic font-black text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">No triggers recorded yet.</div>}
           </div>
-          <p className="text-[10px] font-black text-slate-600 dark:text-slate-400 mt-6 italic text-center bg-slate-50 dark:bg-slate-800/30 py-2 rounded-lg">Mood Impact Scale (1-10)</p>
+          <p className="text-xs font-black text-[#334155] dark:text-[#cbd5e1] mt-6 italic text-center bg-slate-50 dark:bg-slate-800/30 py-2 rounded-lg">Mood Impact Scale (1-10)</p>
         </section>
 
-        <section className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+        <section className="bg-white dark:bg-[#0f172a] p-8 rounded-[2.5rem] border-2 border-slate-200 dark:border-slate-800 shadow-xl">
           <div className="flex items-center gap-3 mb-6 border-b-4 border-slate-50 dark:border-slate-800 pb-4">
-            <Activity className="w-6 h-6 text-brand-600 dark:text-brand-500" />
-            <h3 className="font-black text-slate-950 dark:text-slate-100 text-xs">Common Emotions</h3>
+            <Activity className="w-6 h-6 text-brand-700 dark:text-brand-500" />
+            <h3 className="font-black text-[#020617] dark:text-[#f8fafc] text-xs">Common Emotions</h3>
           </div>
           <div className="flex flex-wrap gap-2.5">
             {emotionData.length > 0 ? emotionData.map((e) => (
               <div 
                 key={e.name}
-                className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 flex items-center gap-3 shadow-md active:scale-95 transition-all"
+                className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 flex items-center gap-3 shadow-md"
               >
-                <span className="text-xs font-black text-slate-950 dark:text-slate-200 tracking-tight">{e.name}</span>
+                <span className="text-xs font-black text-[#020617] dark:text-white tracking-tight">{e.name}</span>
                 <span className="text-xs font-black text-white bg-slate-900 dark:text-brand-400 dark:bg-black px-2 py-1 rounded-lg border border-slate-700 dark:border-transparent">{e.value}</span>
               </div>
-            )) : <div className="text-xs text-slate-700 dark:text-slate-500 italic font-black text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl w-full">No emotions recorded yet.</div>}
+            )) : <div className="text-xs text-[#334155] dark:text-[#cbd5e1] italic font-black text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl w-full">No emotions recorded yet.</div>}
           </div>
         </section>
       </div>
 
-      {/* Thought Patterns / Behavioral Insights */}
-      <section className="bg-slate-800 dark:bg-black p-8 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
+      <section className="bg-black p-8 rounded-[2.5rem] text-white shadow-2xl border-b-8 border-slate-900">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-brand-500 rounded-xl">
+          <div className="p-2 bg-brand-600 rounded-xl shadow-lg">
             <ArrowUpRight className="w-6 h-6 text-white" />
           </div>
-          <h3 className="font-black text-xs text-slate-200">Actionable Insights</h3>
+          <h3 className="font-black text-xs text-white uppercase tracking-widest">Actionable Insights</h3>
         </div>
         <div className="space-y-6">
           {cbtLogs.length > 0 && distortionData.length > 0 ? (
-            <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-6 border-2 border-white/10 shadow-inner">
-              <p className="text-base leading-relaxed text-slate-100 font-medium">
-                Your most frequent cognitive distortion is <span className="font-black text-brand-300 underline decoration-brand-400 decoration-4 underline-offset-8 tracking-tight">{distortionData[0]?.name}</span>. 
-                When you experience this, your mood improves by average <span className="font-black text-green-400 text-xl">{(cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).reduce((acc, l) => acc + (l.moodAfter || l.moodBefore) - l.moodBefore, 0) / Math.max(1, cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).length)).toFixed(1)}</span> points after reframing.
+            <div className="bg-[#1a1a1a] backdrop-blur-md rounded-[2rem] p-6 border-2 border-white/20 shadow-inner">
+              <p className="text-base leading-relaxed text-white font-bold">
+                Your most frequent cognitive distortion is <span className="font-black text-[#bae6fd] underline decoration-brand-400 decoration-4 underline-offset-8 tracking-tight">{distortionData[0]?.name}</span>. 
+                When you experience this, your mood improves by average <span className="font-black text-[#86efac] text-xl">{(cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).reduce((acc, l) => acc + (l.moodAfter || l.moodBefore) - l.moodBefore, 0) / Math.max(1, cbtLogs.filter(l => l.distortions.includes(distortionData[0]?.name as CognitiveDistortion)).length)).toFixed(1)}</span> points after reframing.
               </p>
             </div>
           ) : null}
-          <div className="flex items-center justify-center gap-4 py-2 opacity-60">
+          <div className="flex items-center justify-center gap-4 py-2 opacity-100">
             <div className="h-px bg-slate-700 flex-1" />
-            <p className="text-[10px] text-slate-200 font-black italic">Keep journaling to unlock more patterns</p>
+            <p className="text-xs text-[#e2e8f0] font-black italic">Keep journaling to unlock more patterns</p>
             <div className="h-px bg-slate-700 flex-1" />
           </div>
         </div>

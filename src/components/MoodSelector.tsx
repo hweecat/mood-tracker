@@ -19,15 +19,15 @@ export function MoodSelector({ value, onChange }: MoodSelectorProps) {
   };
 
   const getColor = (rating: number) => {
-    if (rating <= 3) return 'hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30';
-    if (rating <= 7) return 'hover:bg-yellow-100 dark:hover:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/30';
-    return 'hover:bg-green-100 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-900/30';
+    if (rating <= 3) return 'hover:bg-red-50 dark:hover:bg-red-900/20 text-[#991b1b] dark:text-[#f87171] border-red-200 dark:border-red-900/30';
+    if (rating <= 7) return 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-[#854d0e] dark:text-[#facc15] border-yellow-200 dark:border-yellow-900/30';
+    return 'hover:bg-green-50 dark:hover:bg-green-900/20 text-[#166534] dark:text-[#4ade80] border-green-200 dark:border-green-900/30';
   };
 
   const getSelectedColor = (rating: number) => {
-    if (rating <= 3) return 'bg-red-500 text-white border-red-500';
-    if (rating <= 7) return 'bg-yellow-500 text-white border-yellow-500';
-    return 'bg-green-500 text-white border-green-500';
+    if (rating <= 3) return 'bg-[#b91c1c] text-white border-[#991b1b]';
+    if (rating <= 7) return 'bg-[#facc15] text-[#020617] border-[#ca8a04]';
+    return 'bg-[#15803d] text-white border-[#166534]';
   };
 
   return (

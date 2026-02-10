@@ -36,24 +36,34 @@ export function MoodChart({ entries }: MoodChartProps) {
     setMounted(true);
   }, []);
 
-  // Determine actual start date (handle "All Time" logic)
-  const actualStartDate = useMemo(() => {
-    // Check if it's the "All Time" placeholder (Jan 1, 2000)
-    const isAllTimePlaceholder = dateRange.startDate.getFullYear() === 2000 && 
-                                 dateRange.startDate.getMonth() === 0 && 
-                                 dateRange.startDate.getDate() === 1;
+  // Determine actual dates (handle "All Time" logic)
+  const { actualStartDate, actualEndDate, isAllTime } = useMemo(() => {
+    const isAllTimeOption = dateRange.startDate.getFullYear() === 2000 && 
+                            dateRange.startDate.getMonth() === 0 && 
+                            dateRange.startDate.getDate() === 1;
 
-    if (isAllTimePlaceholder && entries.length > 0) {
-      const earliestTimestamp = Math.min(...entries.map(e => e.timestamp));
-      return startOfDay(new Date(earliestTimestamp));
+    if (isAllTimeOption && entries.length > 0) {
+      const timestamps = entries.map(e => e.timestamp);
+      const earliestTimestamp = Math.min(...timestamps);
+      const latestTimestamp = Math.max(...timestamps);
+      return {
+        actualStartDate: startOfDay(new Date(earliestTimestamp)),
+        actualEndDate: endOfDay(new Date(latestTimestamp)),
+        isAllTime: true
+      };
     }
-    return dateRange.startDate;
-  }, [dateRange.startDate, entries]);
+    
+    return {
+      actualStartDate: dateRange.startDate,
+      actualEndDate: dateRange.endDate,
+      isAllTime: isAllTimeOption
+    };
+  }, [dateRange.startDate, dateRange.endDate, entries]);
 
   // Get all days in the selected range
   const daysInRange = eachDayOfInterval({
     start: actualStartDate,
-    end: dateRange.endDate
+    end: actualEndDate
   });
 
   // Limit to reasonable number of points for performance
@@ -83,6 +93,11 @@ export function MoodChart({ entries }: MoodChartProps) {
 
   // Get range label for display
   const getRangeLabel = () => {
+    if (isAllTime) {
+      if (entries.length === 0) return 'All Time (No entries)';
+      return `${format(actualStartDate, 'MMM d, yyyy')} - ${format(actualEndDate, 'MMM d, yyyy')}`;
+    }
+
     const { startDate, endDate } = dateRange;
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 

@@ -149,40 +149,40 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
 
       {/* Journal Summary Section */}
       {!searchQuery && cbtLogs.length > 0 && visibleCount <= PAGE_SIZE && (
-        <div className="bg-slate-800 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
+        <div className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-brand-500 rounded-xl">
+            <div className="p-2 bg-brand-600 rounded-xl shadow-lg">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">Journal Summary</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white">Journal Summary</h3>
           </div>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
-                <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">CBT Efficiency</p>
-                <p className="text-2xl font-black text-white">+{avgImprovement.toFixed(1)} <span className="text-[10px] font-bold text-brand-300 uppercase">relief</span></p>
+              <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/20 shadow-inner">
+                <p className="text-xs font-black text-[#e2e8f0] uppercase tracking-widest mb-1">CBT Efficiency</p>
+                <p className="text-2xl font-black text-white">+{avgImprovement.toFixed(1)} <span className="text-xs font-bold text-[#bae6fd] uppercase">relief</span></p>
               </div>
-              <div className="bg-white/10 rounded-2xl p-4 border border-white/10 shadow-inner">
-                <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest mb-1">Key Pattern</p>
+              <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/20 shadow-inner">
+                <p className="text-xs font-black text-[#e2e8f0] uppercase tracking-widest mb-1">Key Pattern</p>
                 <p className="text-sm font-black text-white truncate mt-1">{topDistortions[0]?.[0] || 'Identifying...'}</p>
               </div>
             </div>
             
-            <div className="space-y-3 bg-white/5 rounded-2xl p-5 border border-white/5">
-              <p className="text-[10px] font-black text-slate-200 uppercase tracking-widest">Core Insight & Next Step</p>
+            <div className="space-y-3 bg-[#0d0d0d] rounded-2xl p-5 border border-white/10">
+              <p className="text-xs font-black text-[#e2e8f0] uppercase tracking-widest">Core Insight & Next Step</p>
               <ul className="space-y-3">
                 <li className="flex gap-3 items-start">
-                  <Lightbulb className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-slate-100 leading-relaxed font-medium">
-                    <span className="text-white font-black text-[10px] bg-white/10 px-1.5 py-0.5 rounded mr-2 uppercase tracking-tighter">Insight</span> 
+                  <Lightbulb className="w-5 h-5 text-amber-300 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-white leading-relaxed font-bold">
+                    <span className="text-white font-black text-xs bg-[#333333] px-2 py-0.5 rounded mr-2 uppercase tracking-tighter">Insight</span> 
                     {getGeneralInsight()}
                   </p>
                 </li>
                 {cbtLogs[0]?.behavioralLink && (
                   <li className="flex gap-3 items-start">
-                    <Target className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-slate-100 leading-relaxed font-medium">
-                      <span className="text-white font-black text-[10px] bg-white/10 px-1.5 py-0.5 rounded mr-2 uppercase tracking-tighter">Action</span> 
+                    <Target className="w-5 h-5 text-green-300 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-white leading-relaxed font-bold">
+                      <span className="text-white font-black text-xs bg-[#333333] px-2 py-0.5 rounded mr-2 uppercase tracking-tighter">Action</span> 
                       {cbtLogs[0].behavioralLink}
                     </p>
                   </li>
@@ -286,18 +286,18 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {entry.trigger && (
                           <div className="flex items-center gap-3 p-4 bg-secondary rounded-[1.5rem] border-2 border-border shadow-sm">
-                            <Zap className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+                            <Zap className="w-5 h-5 text-amber-700 dark:text-amber-500 flex-shrink-0" />
                             <div>
-                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Trigger</p>
+                              <p className="text-xs font-black uppercase tracking-widest text-[#334155] dark:text-[#cbd5e1]">Trigger</p>
                               <p className="text-sm font-black text-foreground leading-tight">{entry.trigger}</p>
                             </div>
                           </div>
                         )}
                         {entry.behavior && (
                           <div className="flex items-center gap-3 p-4 bg-secondary rounded-[1.5rem] border-2 border-border shadow-sm">
-                            <Activity className="w-5 h-5 text-brand-600 dark:text-brand-500 flex-shrink-0" />
+                            <Activity className="w-5 h-5 text-brand-700 dark:text-brand-500 flex-shrink-0" />
                             <div>
-                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Behavior</p>
+                              <p className="text-xs font-black uppercase tracking-widest text-[#334155] dark:text-[#cbd5e1]">Behavior</p>
                               <p className="text-sm font-black text-foreground leading-tight">{entry.behavior}</p>
                             </div>
                           </div>
@@ -318,9 +318,9 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                       <p className="text-xs font-black text-muted-foreground uppercase text-center border-b-2 border-border pb-3 mb-6 tracking-[0.2em]">Synthesis</p>
                       <div className="space-y-8">
                         <div className="flex gap-5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-500 mt-2 flex-shrink-0 shadow-sm" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-[#64748b] mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
-                            <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-slate-300 decoration-2">Situation</p>
+                            <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-[#e2e8f0] decoration-2">Situation</p>
                             <p className="text-base text-foreground leading-relaxed font-black">{entry.situation || 'Not specified'}</p>
                           </div>
                         </div>
@@ -331,7 +331,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                             <p className="text-base text-foreground leading-relaxed font-black">
                               {entry.automaticThoughts || 'No automatic thoughts recorded'} 
                               {entry.distortions.length > 0 && (
-                                <span className="block mt-2 text-purple-800 dark:text-purple-400 font-black bg-purple-100 dark:bg-purple-900/40 px-2 py-1 rounded-xl border-2 border-purple-200 dark:border-transparent text-sm w-fit">
+                                <span className="block mt-2 text-purple-950 dark:text-purple-300 font-black bg-purple-100 dark:bg-purple-900/40 px-2 py-1 rounded-xl border-2 border-purple-200 dark:border-transparent text-sm w-fit">
                                   {entry.distortions.join(', ')}
                                 </span>
                               )}

@@ -167,20 +167,20 @@ export default function Home() {
 
       <main aria-label="Main Content" className="max-w-2xl mx-auto px-4 py-8 space-y-8">
         {activeTab === 'dashboard' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <section aria-label="Welcome Banner" className="bg-slate-800 dark:bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-700 dark:border-slate-900">
-              <h2 className="text-3xl font-black mb-2 tracking-tight text-white">Hello there!</h2>
-              <p className="text-slate-200 font-bold text-sm uppercase tracking-widest">How is your mind feeling today?</p>
+          <div className="space-y-8">
+            <section aria-label="Welcome Banner" className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900">
+              <h2 className="text-3xl font-black mb-2 tracking-tight">Hello there!</h2>
+              <p className="font-bold text-sm uppercase tracking-widest text-[#e2e8f0]">How is your mind feeling today?</p>
               <div className="mt-8 flex gap-4">
                 <button 
                   onClick={() => navigateTo('mood')}
-                  className="bg-white text-slate-900 px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all focus-visible:ring-4 focus-visible:ring-white/50 outline-none"
+                  className="bg-white text-black px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all focus-visible:ring-4 focus-visible:ring-white/50 outline-none"
                 >
                   Check-in
                 </button>
                 <button 
                   onClick={() => navigateTo('journal')}
-                  className="bg-brand-600 text-white px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-brand-700 active:scale-95 transition-all border-b-4 border-brand-800 focus-visible:ring-4 focus-visible:ring-brand-400 outline-none"
+                  className="bg-brand-700 text-white px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-brand-800 active:scale-95 transition-all border-b-4 border-brand-900 focus-visible:ring-4 focus-visible:ring-brand-400 outline-none"
                 >
                   Journal
                 </button>
@@ -195,7 +195,7 @@ export default function Home() {
 
             <section aria-label="Recent Activity" className="space-y-6">
               <div className="flex items-center justify-between border-b-2 border-border pb-2">
-                <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.2em]">Recent Activity</h3>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#334155] dark:text-[#cbd5e1]">Recent Activity</h3>
               </div>
               <HistoryView 
                 moodEntries={moodEntries.slice(0, 3)} 
@@ -217,14 +217,14 @@ export default function Home() {
         )}
 
         {activeTab === 'mood' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="space-y-6">
             <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Mood Check-in</h2>
             <MoodEntryForm onSubmit={(entry) => { addMoodEntry(entry); navigateTo('dashboard'); }} />
           </div>
         )}
 
         {activeTab === 'journal' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="space-y-6">
             <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">
               {editingCBTLog ? 'Edit CBT Journal Entry' : 'CBT Journal Entry'}
             </h2>
@@ -245,14 +245,14 @@ export default function Home() {
         )}
 
         {activeTab === 'insights' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="space-y-6">
             <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Insights</h2>
             <InsightsView moodEntries={moodEntries} cbtLogs={cbtLogs} />
           </div>
         )}
 
         {activeTab === 'menu' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
+          <div className="space-y-6">
             {!menuTab ? (
               <>
                 <h2 className="text-3xl font-black text-foreground tracking-tighter uppercase">Menu</h2>
@@ -273,7 +273,7 @@ export default function Home() {
                 </div>
               </>
             ) : (
-              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
+              <div className="">
                 <button 
                   onClick={() => setMenuTab(null)}
                   className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -342,17 +342,18 @@ function NavButton({ active, onClick, icon: Icon, label }: { active: boolean, on
   return (
     <button 
       onClick={onClick}
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        "flex flex-col items-center gap-1 transition-all min-w-[56px] min-h-[56px] rounded-2xl p-2 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
+        "flex flex-col items-center gap-1 transition-none min-w-[64px] min-h-[64px] rounded-2xl p-2 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
         active 
-          ? "text-brand-700 dark:text-brand-400 bg-brand-100/50 dark:bg-brand-900/20 shadow-sm" 
-          : "text-slate-600 dark:text-slate-400 hover:text-foreground hover:bg-secondary"
+          ? "text-black dark:text-white bg-brand-200 dark:bg-brand-900 shadow-sm" 
+          : "text-foreground dark:text-foreground hover:bg-secondary"
       )}
     >
-      <Icon size={24} strokeWidth={active ? 3 : 2} />
-      <span className="text-[10px] font-black uppercase tracking-tighter">
+      <Icon size={24} strokeWidth={active ? 3 : 2} aria-hidden="true" />
+      <span className="text-xs font-black uppercase tracking-normal">
         {label}
-        {active && <span className="sr-only"> (Active)</span>}
       </span>
     </button>
   );
