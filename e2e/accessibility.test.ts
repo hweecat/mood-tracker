@@ -31,6 +31,9 @@ async function runAccessibilityTests() {
   chromeOptions.addArguments('--no-sandbox');
   chromeOptions.addArguments('--disable-dev-shm-usage');
   chromeOptions.addArguments('--window-size=1920,1080');
+  chromeOptions.addArguments('--no-sandbox');
+  chromeOptions.addArguments('--disable-dev-shm-usage');
+  chromeOptions.addArguments('--window-size=1920,1080');
 
   const driver: WebDriver = await new Builder()
     .forBrowser('chrome')
@@ -61,6 +64,15 @@ async function runAccessibilityTests() {
     await usernameInput.sendKeys('demo');
     await passwordInput.sendKeys('demo');
     await submitButton.click();
+
+    // Check if there's an immediate error message
+    await driver.sleep(1000);
+    const errorElements = await driver.findElements(By.css('[role="alert"]'));
+    if (errorElements.length > 0) {
+      const errorText = await errorElements[0].getText();
+      console.error(`Login failed with error: ${errorText}`);
+      throw new Error(`Login failed: ${errorText}`);
+    }
 
     // Wait for redirect to dashboard and the nav to appear
     console.log('Login submitted, waiting for dashboard...');

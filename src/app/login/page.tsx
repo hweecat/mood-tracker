@@ -21,15 +21,13 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         username,
         password,
-        redirect: false,
+        callbackUrl: '/',
+        redirect: true,
       });
 
       if (result?.error) {
         setError('Invalid credentials');
         setLoading(false);
-      } else {
-        router.push('/');
-        router.refresh();
       }
     } catch {
       setError('An error occurred');
