@@ -31,9 +31,6 @@ async function runAccessibilityTests() {
   chromeOptions.addArguments('--no-sandbox');
   chromeOptions.addArguments('--disable-dev-shm-usage');
   chromeOptions.addArguments('--window-size=1920,1080');
-  chromeOptions.addArguments('--no-sandbox');
-  chromeOptions.addArguments('--disable-dev-shm-usage');
-  chromeOptions.addArguments('--window-size=1920,1080');
 
   const driver: WebDriver = await new Builder()
     .forBrowser('chrome')
@@ -76,7 +73,15 @@ async function runAccessibilityTests() {
 
     // Wait for redirect to dashboard and the nav to appear
     console.log('Login submitted, waiting for dashboard...');
-    await driver.wait(until.elementLocated(By.css('nav')), 30000);
+    try {
+      await driver.wait(until.elementLocated(By.css('nav')), 30000);
+    } catch (e) {
+      console.error('Failed to locate dashboard navigation after login.');
+      console.error('Current URL:', await driver.getCurrentUrl());
+      const pageSource = await driver.getPageSource();
+      console.error('Page Source excerpt:', pageSource.substring(0, 5000));
+      throw e;
+    }
     console.log('Dashboard loaded, starting page analysis...');
 
     const pages = [

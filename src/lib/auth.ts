@@ -13,9 +13,13 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         // Hardcoded demo user check for this local app
         if (credentials?.username === "demo" && credentials?.password === "demo") {
-          const user = db.prepare("SELECT id, name, email FROM users WHERE id = ?").get('1') as { id: string, name: string, email: string };
-          if (user) {
-            return { id: user.id, name: user.name, email: user.email };
+          try {
+            const user = db.prepare("SELECT id, name, email FROM users WHERE id = ?").get('1') as { id: string, name: string, email: string };
+            if (user) {
+              return { id: user.id, name: user.name, email: user.email };
+            }
+          } catch (e) {
+            console.error("Auth DB Error (authorize):", e);
           }
           // Fallback if user doesn't exist for some reason (should be seeded)
           return { id: "1", name: "Demo User", email: "demo@example.com" };
@@ -35,10 +39,14 @@ export const authOptions: NextAuthOptions = {
       
       // Fetch latest user data from DB to keep session updated
       if (token.sub) {
-        const dbUser = db.prepare("SELECT name, email FROM users WHERE id = ?").get(token.sub) as { name: string, email: string };
-        if (dbUser) {
-          token.name = dbUser.name;
-          token.email = dbUser.email;
+        try {
+          const dbUser = db.prepare("SELECT name, email FROM users WHERE id = ?").get(token.sub) as { name: string, email: string };
+          if (dbUser) {
+            token.name = dbUser.name;
+            token.email = dbUser.email;
+          }
+        } catch (e) {
+          console.error("Auth DB Error (jwt):", e);
         }
       }
 
