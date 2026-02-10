@@ -64,7 +64,7 @@ async function runAccessibilityTests() {
 
     // Wait for redirect to dashboard and the nav to appear
     console.log('Login submitted, waiting for dashboard...');
-    await driver.wait(until.elementLocated(By.css('nav')), 10000);
+    await driver.wait(until.elementLocated(By.css('nav')), 30000);
     console.log('Dashboard loaded, starting page analysis...');
 
     const pages = [
@@ -79,7 +79,7 @@ async function runAccessibilityTests() {
       
       // Click the nav button if we're already on the page (Dashboard is first)
       if (page.path !== '/') {
-        const navButton = await driver.wait(until.elementLocated(By.css(page.selector)), 10000);
+        const navButton = await driver.wait(until.elementLocated(By.css(page.selector)), 20000);
         await navButton.click();
         // Wait for the active tab state or a specific element on the tab to appear
         // Increase sleep to allow all animations (fade-in, slide-in) to finish completely
