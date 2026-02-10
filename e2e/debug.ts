@@ -1,4 +1,4 @@
-import { Builder, WebDriver, By, until } from 'selenium-webdriver';
+import { Builder, WebDriver, By } from 'selenium-webdriver';
 import { Options } from 'selenium-webdriver/chrome';
 
 async function debug() {

@@ -141,7 +141,7 @@ function generateReports(results: AxeResult[]) {
       mdContent += `| Impact | ID | Description | Help |\n`;
       mdContent += `|---|---|---|---|
 `;
-      res.violations.forEach((v: any) => {
+      res.violations.forEach((v: Result) => {
         mdContent += `| **${v.impact}** | \`${v.id}\` | ${v.description} | [Link](${v.helpUrl}) |\n`;
       });
       mdContent += `\n`;
