@@ -184,32 +184,36 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2" role="group" aria-label="Cognitive Distortions">
-                  {DISTORTIONS.map(d => (
-                    <div key={d} className="flex gap-2 items-stretch">
-                      <button
-                        type="button"
-                        onClick={() => toggleDistortion(d)}
-                        aria-pressed={formData.distortions.includes(d)}
-                        className={cn(
-                          "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
-                          formData.distortions.includes(d)
-                            ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800 ring-4 ring-brand-500/20"
-                            : "bg-[#ffffff] dark:bg-[#0d0d0d] text-foreground border-border hover:border-brand-500 hover:bg-secondary"
-                        )}
-                      >
-                        {d}
-                        {formData.distortions.includes(d) && <span className="sr-only"> (Selected)</span>}
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setActiveInfo(d)}
-                        className="px-4 rounded-2xl bg-[#f1f5f9] dark:bg-[#1e293b] text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
-                        aria-label={`Show info about ${d}`}
-                      >
-                        <Info size={18} />
-                      </button>
-                    </div>
-                  ))}
+                  {DISTORTIONS.map(d => {
+                    const isLong = d.length > 20; // Threshold for correction
+                    return (
+                      <div key={d} className={cn("flex gap-2 items-stretch", isLong && "sm:col-span-2")}>
+                        <button
+                          type="button"
+                          onClick={() => toggleDistortion(d)}
+                          aria-pressed={formData.distortions.includes(d)}
+                          style={{ hyphens: 'auto' }}
+                          className={cn(
+                            "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500 break-words overflow-hidden",
+                            formData.distortions.includes(d)
+                              ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800 ring-4 ring-brand-500/20"
+                              : "bg-[#ffffff] dark:bg-[#0d0d0d] text-foreground border-border hover:border-brand-500 hover:bg-secondary"
+                          )}
+                        >
+                          {d}
+                          {formData.distortions.includes(d) && <span className="sr-only"> (Selected)</span>}
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setActiveInfo(d)}
+                          className="px-4 rounded-2xl bg-[#f1f5f9] dark:bg-[#1e293b] text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
+                          aria-label={`Show info about ${d}`}
+                        >
+                          <Info size={18} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

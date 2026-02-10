@@ -331,8 +331,12 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                             <p className="text-base text-foreground leading-relaxed font-black">
                               {entry.automaticThoughts || 'No automatic thoughts recorded'} 
                               {entry.distortions.length > 0 && (
-                                <span className="block mt-2 text-purple-950 dark:text-purple-300 font-black bg-purple-100 dark:bg-purple-900/40 px-2 py-1 rounded-xl border-2 border-purple-200 dark:border-transparent text-sm w-fit">
-                                  {entry.distortions.join(', ')}
+                                <span className="flex flex-wrap gap-2 mt-3">
+                                  {entry.distortions.map(d => (
+                                    <span key={d} className="text-purple-950 dark:text-purple-300 font-black bg-purple-100 dark:bg-purple-900/40 px-3 py-1 rounded-xl border-2 border-purple-200 dark:border-transparent text-xs break-words max-w-[200px]">
+                                      {d}
+                                    </span>
+                                  ))}
                                 </span>
                               )}
                             </p>

@@ -156,8 +156,28 @@ export function InsightsView({ moodEntries, cbtLogs }: InsightsViewProps) {
                 <YAxis 
                   dataKey="name" 
                   type="category" 
-                  tick={{ fontSize: 10, fill: resolvedTheme === 'dark' ? '#94a3b8' : '#334155', fontWeight: '900' }} 
-                  width={140}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    const name = payload.value;
+                    const isLong = name.length > 18;
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text
+                          x={-10}
+                          y={0}
+                          dy={4}
+                          textAnchor="end"
+                          fill={resolvedTheme === 'dark' ? '#94a3b8' : '#334155'}
+                          fontSize={isLong ? 9 : 10}
+                          fontWeight="900"
+                          className="font-black"
+                        >
+                          {isLong ? `${name.substring(0, 15)}...` : name}
+                        </text>
+                      </g>
+                    );
+                  }}
+                  width={160}
                   axisLine={false}
                   tickLine={false}
                 />
