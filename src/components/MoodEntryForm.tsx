@@ -156,7 +156,7 @@ export function MoodEntryForm({ onSubmit }: MoodEntryFormProps) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Capture your thoughts here..."
-          className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-secondary/50 text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-none placeholder:text-muted-foreground font-bold italic shadow-inner leading-relaxed"
+          className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-[#f8fafc] dark:bg-[#1e293b] text-[#0f172a] dark:text-[#f8fafc] outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-none placeholder:text-muted-foreground font-bold italic shadow-inner leading-relaxed"
         />
       </div>
 

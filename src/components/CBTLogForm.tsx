@@ -91,7 +91,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
   return (
     <div className="card space-y-0 bg-card border-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
       {/* Header Section with Distinct Background */}
-      <div className="flex justify-between items-center p-8 bg-muted/50 border-b-2 border-border">
+      <div className="flex justify-between items-center p-8 bg-[#f8fafc] dark:bg-[#1e293b] border-b-2 border-border">
         <h2 className="text-2xl font-black text-foreground tracking-tighter">
           {initialData ? 'Edit CBT Journal Entry' : 'CBT Journal Entry'}
         </h2>
@@ -124,7 +124,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="situation-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">1. The Situation</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What specifically happened that triggered your distress?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What specifically happened that triggered your distress?</p>
                 <textarea
                   id="situation-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -149,7 +149,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="thoughts-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">2. Automatic Thoughts</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
                 <textarea
                   id="thoughts-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -165,7 +165,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <h3 className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">3. Identification</h3>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
                 
                 {activeInfo && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" onClick={() => setActiveInfo(null)}>
@@ -175,7 +175,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                        <p className="text-card-foreground leading-relaxed">
                          {CBT_DISTORTIONS.find(d => d.name === activeInfo)?.definition}
                        </p>
-                       <div className="bg-secondary p-3 rounded-xl">
+                       <div className="bg-[#f1f5f9] dark:bg-[#1e293b] p-3 rounded-xl">
                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Example</span>
                          <p className="text-sm italic text-foreground mt-1">&quot;{CBT_DISTORTIONS.find(d => d.name === activeInfo)?.example}&quot;</p>
                        </div>
@@ -194,7 +194,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                           "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
                           formData.distortions.includes(d)
                             ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800 ring-4 ring-brand-500/20"
-                            : "bg-card text-foreground border-border hover:border-brand-500 hover:bg-secondary"
+                            : "bg-[#ffffff] dark:bg-[#0d0d0d] text-foreground border-border hover:border-brand-500 hover:bg-secondary"
                         )}
                       >
                         {d}
@@ -203,7 +203,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                       <button 
                         type="button"
                         onClick={() => setActiveInfo(d)}
-                        className="px-4 rounded-2xl bg-secondary text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
+                        className="px-4 rounded-2xl bg-[#f1f5f9] dark:bg-[#1e293b] text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
                         aria-label={`Show info about ${d}`}
                       >
                         <Info size={18} />
@@ -219,7 +219,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">4. Rational Challenge</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
                 <textarea
                   id="rational-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -244,7 +244,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-600 pl-4 block">5. Actionable Plan</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-secondary p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
                 <textarea
                   id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -262,7 +262,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <button
               type="button"
               onClick={step > 1 ? prevStep : onCancel}
-              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground hover:bg-secondary transition-all active:scale-95 shadow-md shadow-slate-100 dark:shadow-none outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground bg-[#f1f5f9] dark:bg-[#1e293b] hover:bg-secondary transition-all active:scale-95 shadow-md shadow-slate-100 dark:shadow-none outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
             >
               {step > 1 ? 'Back' : 'Cancel'}
             </button>
@@ -271,7 +271,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <button
               onClick={nextStep}
               disabled={step === 1 && !formData.situation}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-slate-800 dark:bg-brand-700 text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-brand-800 transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-slate-700 dark:border-brand-900 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-[2] py-5 px-8 rounded-[2rem] bg-[#1e293b] dark:bg-[#0369a1] text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-[#075985] transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-[#0f172a] dark:border-[#0c4a6e] outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
             >
               Next Step
             </button>
