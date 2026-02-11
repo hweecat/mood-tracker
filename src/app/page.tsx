@@ -7,6 +7,8 @@ import { useTheme } from '@/components/ThemeProvider';
 import { MoodEntryForm } from '@/components/MoodEntryForm';
 import { CBTLogForm } from '@/components/CBTLogForm';
 import { ActionItemsWidget } from '@/components/ActionItemsWidget';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -168,24 +170,23 @@ export default function Home() {
       <main aria-label="Main Content" className="max-w-2xl mx-auto px-4 py-8 space-y-8">
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            <section aria-label="Welcome Banner" className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900">
+            <Card aria-label="Welcome Banner" className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900 border-none">
               <h2 className="text-3xl font-black mb-2 tracking-tight">Hello there!</h2>
               <p className="font-bold text-sm uppercase tracking-widest text-[#e2e8f0]">How is your mind feeling today?</p>
               <div className="mt-8 flex gap-4">
-                <button 
+                <Button 
                   onClick={() => navigateTo('mood')}
-                  className="bg-white text-black px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all focus-visible:ring-4 focus-visible:ring-white/50 outline-none"
+                  variant="neo"
                 >
                   Check-in
-                </button>
-                <button 
+                </Button>
+                <Button 
                   onClick={() => navigateTo('journal')}
-                  className="bg-brand-700 text-white px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-brand-800 active:scale-95 transition-all border-b-4 border-brand-900 focus-visible:ring-4 focus-visible:ring-brand-400 outline-none"
                 >
                   Journal
-                </button>
+                </Button>
               </div>
-            </section>
+            </Card>
 
             <section aria-label="Action Items">
               <ActionItemsWidget cbtLogs={cbtLogs} onToggleStatus={toggleActionStatus} />
@@ -205,12 +206,13 @@ export default function Home() {
                 onDeleteCBT={deleteCBTLog}
               />
               {(moodEntries.length > 3 || cbtLogs.length > 3) && (
-                <button 
+                <Button 
+                  variant="secondary"
                   onClick={() => { setActiveTab('menu'); setMenuTab('history'); }}
-                  className="w-full py-4 text-xs font-black uppercase tracking-[0.2em] text-foreground hover:bg-secondary rounded-2xl transition-all border-2 border-border focus-visible:ring-4 focus-visible:ring-brand-500 outline-none"
+                  className="w-full"
                 >
                   View Full History
-                </button>
+                </Button>
               )}
             </section>
           </div>

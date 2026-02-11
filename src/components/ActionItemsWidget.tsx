@@ -3,6 +3,7 @@
 import { CBTLog } from '@/types';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/Badge';
 
 interface ActionItemsWidgetProps {
   cbtLogs: CBTLog[];
@@ -26,9 +27,9 @@ export function ActionItemsWidget({ cbtLogs, onToggleStatus }: ActionItemsWidget
         <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2">
           Action Plan
           {pendingCount > 0 && (
-            <span className="bg-brand-700 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+            <Badge variant="default" className="text-[10px] px-2 py-0.5 rounded-full shadow-sm">
               {pendingCount} Pending
-            </span>
+            </Badge>
           )}
         </h3>
       </div>

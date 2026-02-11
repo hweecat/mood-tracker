@@ -1,10 +1,11 @@
-'use client';
-
 import { MoodEntry, CBTLog } from '@/types';
 import { format } from 'date-fns';
 import { Smile, Brain, Edit2, Lightbulb, Target, TrendingUp, Zap, Activity, ChevronDown, Search, Trash2, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
 
 interface HistoryViewProps {
   moodEntries: MoodEntry[];
@@ -30,6 +31,7 @@ const DISTORTION_INSIGHTS: Record<string, string> = {
 const PAGE_SIZE = 10;
 
 export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onDeleteCBT }: HistoryViewProps) {
+// ... (rest of state and logic)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -114,12 +116,12 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-          <input
+          <Input
             type="search"
             placeholder="Search entries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-border focus:border-brand-500 outline-none transition-all shadow-sm text-foreground placeholder:text-muted-foreground font-medium"
+            className="pl-12"
             aria-label="Search history"
           />
           {searchQuery && (
@@ -149,7 +151,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
 
       {/* Journal Summary Section */}
       {!searchQuery && cbtLogs.length > 0 && visibleCount <= PAGE_SIZE && (
-        <div className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900">
+        <Card className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900 border-none">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-brand-600 rounded-xl shadow-lg">
               <TrendingUp className="w-5 h-5 text-white" />
@@ -190,7 +192,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
               </ul>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* History List */}
@@ -204,7 +206,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
           </div>
         ) : (
           displayedEntries.map((entry) => (
-            <div key={`${entry.type}-${entry.id}`} className="card p-0 hover:shadow-xl transition-all border-2 border-border group relative bg-card rounded-[2.5rem] overflow-hidden shadow-sm">
+            <Card key={`${entry.type}-${entry.id}`} className="p-0 hover:shadow-xl transition-all group relative overflow-hidden shadow-sm">
               
               {/* Header Section */}
               <div className="flex justify-between items-start p-6 bg-muted/50 border-b-2 border-border">
@@ -228,44 +230,50 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "px-4 py-2 rounded-full text-base font-black border-2 shadow-sm",
-                    entry.type === 'mood' 
-                      ? (entry.rating >= 7 ? "bg-green-100 text-green-900 border-green-300" : entry.rating <= 3 ? "bg-red-100 text-red-900 border-red-300" : "bg-yellow-100 text-yellow-900 border-yellow-300")
-                      : "bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-transparent"
-                  )}>
+                  <Badge 
+                    variant={
+                      entry.type === 'mood' 
+                        ? (entry.rating >= 7 ? "success" : entry.rating <= 3 ? "destructive" : "warning")
+                        : "purple"
+                    }
+                    className="text-base px-4 py-2 rounded-full"
+                  >
                     {entry.type === 'mood' 
                       ? entry.rating 
                       : (entry.moodAfter ? `${entry.moodBefore} → ${entry.moodAfter}` : entry.moodBefore)}
-                  </div>
+                  </Badge>
                   
                   {/* Actions */}
                   <div className="flex items-center gap-1">
                     {entry.type === 'cbt' && onEditCBT && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           const { type: _type, ...logData } = entry;
                           onEditCBT(logData as CBTLog);
                         }}
-                        className="p-2 text-muted-foreground hover:text-brand-700 hover:bg-muted rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100"
                         aria-label="Edit entry"
                       >
                         <Edit2 className="w-5 h-5" />
-                      </button>
+                      </Button>
                     )}
                     {(onDeleteMood || onDeleteCBT) && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(entry.id, entry.type);
                         }}
-                        className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none focus-visible:ring-4 focus-visible:ring-red-500"
+                        className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 focus:opacity-100"
                         aria-label="Delete entry"
                       >
                         <Trash2 className="w-5 h-5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -277,9 +285,9 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                   <div className="space-y-6">
                     <div className="flex flex-wrap gap-2">
                       {entry.emotions.map(e => (
-                        <span key={e} className="text-xs bg-muted text-foreground px-3 py-1.5 rounded-xl font-bold border-2 border-border shadow-sm">
+                        <Badge key={e} variant="secondary" className="px-3 py-1.5">
                           {e}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                     {(entry.trigger || entry.behavior) && (
@@ -328,18 +336,18 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                           <div className="w-2.5 h-2.5 rounded-full bg-purple-500 dark:bg-purple-400 mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
                             <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-purple-300 decoration-2">Insight</p>
-                            <p className="text-base text-foreground leading-relaxed font-black">
+                            <div className="text-base text-foreground leading-relaxed font-black">
                               {entry.automaticThoughts || 'No automatic thoughts recorded'} 
                               {entry.distortions.length > 0 && (
                                 <span className="flex flex-wrap gap-2 mt-3">
                                   {entry.distortions.map(d => (
-                                    <span key={d} className="text-purple-950 dark:text-purple-300 font-black bg-purple-100 dark:bg-purple-900/40 px-3 py-1 rounded-xl border-2 border-purple-200 dark:border-transparent text-xs break-words max-w-[200px]">
+                                    <Badge key={d} variant="purple" className="break-words max-w-[200px]">
                                       {d}
-                                    </span>
+                                    </Badge>
                                   ))}
                                 </span>
                               )}
-                            </p>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-5">
@@ -367,18 +375,20 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           ))
         )}
 
         {hasMore && (
-          <button
+          <Button
+            variant="outline"
+            size="lg"
             onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-            className="w-full py-6 flex items-center justify-center gap-3 bg-card border-2 border-border rounded-[2.5rem] text-foreground font-black uppercase tracking-widest hover:bg-secondary transition-all active:scale-[0.98] shadow-lg outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+            className="w-full h-auto py-6 flex items-center justify-center gap-3 bg-card border-2 border-border rounded-[2.5rem]"
           >
             <ChevronDown size={24} />
             Load More History
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -44,6 +44,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --shadow-neo: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-neo-xl: 12px 12px 0px 0px rgba(0, 0, 0, 1);
+  
+  --border-width-neo: 3px;
+  --border-width-neo-lg: 6px;
 }
 
 :root {
@@ -108,6 +115,16 @@
   --ring: #cbd5e1;
 
   color-scheme: dark;
+}
+
+@layer components {
+  .neo-surface {
+    @apply bg-card border-2 border-border shadow-neo rounded-[2.5rem] transition-all;
+  }
+  
+  .neo-interactive {
+    @apply active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all;
+  }
 }
 
 body {
