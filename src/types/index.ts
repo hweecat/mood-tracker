@@ -24,6 +24,11 @@ export interface MoodEntry {
   note?: string;
   trigger?: string;
   behavior?: string;
+  aiAnalysis?: {
+    sentiment_score: number;
+    subjectivity: number;
+    keywords: string[];
+  } | null;
 }
 
 export interface CBTLog {

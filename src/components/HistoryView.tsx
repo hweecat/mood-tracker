@@ -1,6 +1,6 @@
 import { MoodEntry, CBTLog } from '@/types';
 import { format } from 'date-fns';
-import { Smile, Brain, Edit2, Lightbulb, Target, TrendingUp, Zap, Activity, ChevronDown, Search, Trash2, X } from 'lucide-react';
+import { Smile, Brain, Edit2, Lightbulb, Target, TrendingUp, Zap, Activity, ChevronDown, Search, Trash2, X, Frown, Minus } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -205,30 +205,64 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
             </p>
           </div>
         ) : (
-          displayedEntries.map((entry) => (
-            <Card key={`${entry.type}-${entry.id}`} className="p-0 hover:shadow-xl transition-all group relative overflow-hidden shadow-sm">
-              
-              {/* Header Section */}
-              <div className="flex justify-between items-start p-6 bg-muted/50 border-b-2 border-border">
-                <div className="flex items-center gap-4">
-                  {entry.type === 'mood' ? (
-                    <div className="p-3 bg-white dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-2xl border-2 border-blue-100 dark:border-transparent shadow-sm">
-                      <Smile className="w-6 h-6" />
+          displayedEntries.map((entry) => {
+            const moodEntry = entry.type === 'mood' ? entry as MoodEntry : null;
+            const aiAnalysis = moodEntry?.aiAnalysis;
+            
+            let sentimentColor = 'border-l-transparent';
+            let SentimentIcon = null;
+
+            if (aiAnalysis) {
+              if (aiAnalysis.sentiment_score > 0.3) {
+                sentimentColor = 'border-l-lime-400';
+                SentimentIcon = Smile;
+              } else if (aiAnalysis.sentiment_score < -0.3) {
+                sentimentColor = 'border-l-rose-500';
+                SentimentIcon = Frown;
+              } else {
+                sentimentColor = 'border-l-cyan-300';
+                SentimentIcon = Minus;
+              }
+            }
+
+            return (
+              <Card 
+                key={`${entry.type}-${entry.id}`} 
+                className={`p-0 hover:shadow-xl transition-all group relative overflow-hidden shadow-sm border-l-4 ${sentimentColor}`}
+              >
+                
+                {/* Header Section */}
+                <div className="flex justify-between items-start p-6 bg-muted/50 border-b-2 border-border">
+                  <div className="flex items-center gap-4">
+                    {entry.type === 'mood' ? (
+                      <div className="p-3 bg-white dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-2xl border-2 border-blue-100 dark:border-transparent shadow-sm">
+                        <Smile className="w-6 h-6" />
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-white dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-2xl border-2 border-purple-100 dark:border-transparent shadow-sm">
+                        <Brain className="w-6 h-6" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-black text-foreground text-xl tracking-tight leading-none mb-1">
+                        {entry.type === 'mood' ? 'Mood Check-in' : 'CBT Journal Entry'}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground font-black tracking-widest bg-muted px-2 py-0.5 rounded inline-block uppercase">
+                          {format(entry.timestamp, 'MMM d, h:mm a')}
+                        </p>
+                        {SentimentIcon && (
+                          <SentimentIcon 
+                            className={`w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity ${
+                              aiAnalysis?.sentiment_score! > 0.3 ? 'text-lime-600' : 
+                              aiAnalysis?.sentiment_score! < -0.3 ? 'text-rose-600' : 'text-cyan-600'
+                            }`} 
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="p-3 bg-white dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-2xl border-2 border-purple-100 dark:border-transparent shadow-sm">
-                      <Brain className="w-6 h-6" />
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-black text-foreground text-xl tracking-tight leading-none mb-1">
-                      {entry.type === 'mood' ? 'Mood Check-in' : 'CBT Journal Entry'}
-                    </h4>
-                    <p className="text-xs text-muted-foreground font-black tracking-widest bg-muted px-2 py-0.5 rounded inline-block uppercase">
-                      {format(entry.timestamp, 'MMM d, h:mm a')}
-                    </p>
                   </div>
-                </div>
                 <div className="flex items-center gap-2">
                   <Badge 
                     variant={
@@ -376,8 +410,9 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                 )}
               </div>
             </Card>
-          ))
-        )}
+          );
+        })
+      )}
 
         {hasMore && (
           <Button

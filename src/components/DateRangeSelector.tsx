@@ -88,7 +88,7 @@ export function DateRangeSelector({ value, onChange, className }: DateRangeSelec
       case 'alltime':
         // Use a very old date for "all time"
         newRange = {
-          startDate: new Date(2000, 0, 1),
+          startDate: new Date(2020, 0, 1),
           endDate: endOfDay(now)
         };
         break;

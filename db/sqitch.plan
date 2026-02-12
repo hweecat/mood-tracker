@@ -4,3 +4,4 @@
 
 appschema 2026-02-06T07:29:59Z ,,, <hweecat@AsusZenbook14X> # Initialize base schema for users, mood_entries, and cbt_logs.
 seed-data 2026-02-06T07:41:20Z ,,, <hweecat@AsusZenbook14X> # Seed initial demo user.
+add_ai_analysis 2026-02-12T06:30:26Z sqitch_user <hello@example.com> # Add ai_analysis column to mood_entries table.

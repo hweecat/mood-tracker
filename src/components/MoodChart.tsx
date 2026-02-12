@@ -38,7 +38,7 @@ export function MoodChart({ entries }: MoodChartProps) {
 
   // Determine actual dates (handle "All Time" logic)
   const { actualStartDate, actualEndDate, isAllTime } = useMemo(() => {
-    const isAllTimeOption = dateRange.startDate.getFullYear() === 2000 && 
+    const isAllTimeOption = dateRange.startDate.getFullYear() === 2020 && 
                             dateRange.startDate.getMonth() === 0 && 
                             dateRange.startDate.getDate() === 1;
 

@@ -1,6 +1,7 @@
 import db from '@/lib/db';
 import { z } from 'zod';
 import { getAuthContext, apiError, apiSuccess } from '@/lib/api-utils';
+import { analyzeMoodNote } from '@/lib/ai-client';
 
 const MoodEntrySchema = z.object({
   id: z.string(),
@@ -21,6 +22,7 @@ interface MoodEntryRow {
   behavior: string | null;
   timestamp: number;
   user_id: string;
+  ai_analysis: string | null;
 }
 
 export async function GET() {
@@ -40,7 +42,8 @@ export async function GET() {
     const moodEntries = rows.map(row => ({
       ...row,
       emotions: JSON.parse(row.emotions),
-      userId: row.user_id
+      userId: row.user_id,
+      aiAnalysis: row.ai_analysis ? JSON.parse(row.ai_analysis) : null
     }));
 
     return apiSuccess(moodEntries);
@@ -61,14 +64,30 @@ export async function POST(request: Request) {
     const validatedData = MoodEntrySchema.parse(body);
     const { id, rating, emotions, note, trigger, behavior, timestamp } = validatedData;
 
-    const stmt = db.prepare('INSERT INTO mood_entries (id, rating, emotions, note, trigger, behavior, timestamp, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    stmt.run(id, rating, JSON.stringify(emotions), note || null, trigger || null, behavior || null, timestamp, auth.userId);
+    let aiAnalysis = null;
+    if (note) {
+      aiAnalysis = await analyzeMoodNote(note);
+    }
 
-    return apiSuccess({ success: true });
+    const stmt = db.prepare('INSERT INTO mood_entries (id, rating, emotions, note, trigger, behavior, timestamp, user_id, ai_analysis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(
+      id, 
+      rating, 
+      JSON.stringify(emotions), 
+      note || null, 
+      trigger || null, 
+      behavior || null, 
+      timestamp, 
+      auth.userId,
+      aiAnalysis ? JSON.stringify(aiAnalysis) : null
+    );
+
+    return apiSuccess({ success: true, aiAnalysis });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return apiError('Invalid input', 400, error.issues);
     }
+    console.error('POST /api/mood Error:', error);
     return apiError('Internal Server Error');
   }
 }
