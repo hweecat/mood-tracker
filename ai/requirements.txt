@@ -1,6 +1,0 @@
-fastapi==0.115.8
-uvicorn==0.34.0
-pydantic==2.10.6
-textblob==0.18.0.post0
-nltk==3.9.1
-python-dotenv==1.0.1

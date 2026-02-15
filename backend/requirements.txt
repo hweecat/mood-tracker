@@ -1,0 +1,10 @@
+fastapi==0.115.8
+uvicorn==0.34.0
+pydantic==2.10.6
+sqlmodel==0.0.22
+aiosqlite==0.21.0
+textblob==0.18.0.post0
+nltk==3.9.1
+python-dotenv==1.0.1
+httpx==0.28.1
+python-json-logger==3.3.0

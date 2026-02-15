@@ -1,54 +1,47 @@
-# MindfulTrack Architecture Plan: Hybrid AI Integration
+# MindfulTrack Architecture: Decoupled AI Stack
 
-This document defines the scalable architecture for MindfulTrack, utilizing a hybrid Next.js and FastAPI stack to enable robust AI/ML capabilities.
+This document defines the production-ready architecture for MindfulTrack, utilizing a decoupled Next.js (Frontend) and FastAPI (Backend) stack.
 
-## 1. Core Components
+## 1. Technical Stack
 
-*   **Next.js (Web Tier):** The primary application framework handling the React UI, SSR, Authentication (NextAuth.js), and core business logic.
-*   **FastAPI (AI/ML Tier):** A Python-based microservice dedicated to AI processing. It provides high-performance endpoints for NLP, sentiment analysis, and LLM orchestration.
-*   **SQLite (Data Tier):** The central relational database. Next.js manages the primary schema, while FastAPI may access it for data-heavy analysis or write AI-specific metadata.
-*   **AI Service Adapters:** Modular interfaces within FastAPI for interacting with external LLMs (e.g., Google Gemini, OpenAI) and local ML models (e.g., HuggingFace Transformers).
+*   **Frontend Tier:** Next.js 15 (App Router), TypeScript, Tailwind CSS 4, NextAuth.js.
+*   **Backend Tier:** Python 3.11+, FastAPI, Pydantic, SQLModel, Uvicorn.
+*   **Data Tier:** SQLite (managed by Backend), Docker Volumes for persistence.
+*   **AI/ML Tier:** TextBlob (Phase 1), Google Gemini (Phase 2).
+*   **Observability:** Structured JSON Logging, Correlation IDs (ContextVars).
 
-### Measurable Outcomes
-*   **Availability:** Successful initialization of both service tiers with a cross-service health check latency of < 100ms.
-*   **Developer Velocity:** Integration of a new AI model into the FastAPI tier takes less than 4 hours of development time.
+## 2. Core Components
 
-## 2. Data Flow
+*   **Frontend:** Standalone React application handling the UI. Communicates with the backend exclusively via RESTful API calls.
+*   **Backend:** Modular Python microservice handling business logic, database persistence, and AI/ML processing.
+*   **API Gateway:** Docker Bridge network providing a private communication channel between services.
 
-1.  **Ingestion:** The user submits a mood entry or CBT log via the Next.js frontend.
-2.  **Trigger:** The Next.js API route receives the data and identifies fields requiring AI enrichment (e.g., "Note" or "Automatic Thoughts").
-3.  **Processing:** Next.js makes a secure internal HTTP request to the FastAPI service.
-4.  **Inference:** FastAPI performs NLP tasks (sentiment scoring, keyword extraction, distortion detection) and returns a structured JSON response.
-5.  **Persistence:** Next.js merges the AI metadata with the user's entry and commits it to the SQLite database.
-6.  **Presentation:** The frontend displays immediate feedback or stores the insight for the "Insights" dashboard.
+## 3. Security Posture
 
-### Measurable Outcomes
-*   **Performance:** End-to-end data enrichment (from submission to database persistence) completes in < 2.5 seconds for 95% of requests.
-*   **Reliability:** 0% data mismatch between the user's input and the AI-generated metadata during high-concurrency testing.
+*   **Service Decoupling:** Frontend has no direct database access, preventing SQL injection and protecting proprietary prompts.
+*   **Internal Networking:** Backend is shielded within a private Docker network, unreachable from the public internet except through the intended frontend routes.
+*   **Input Validation:** Mandatory schema enforcement via Pydantic (Backend) and Zod (Frontend).
+*   **Correlation Tracking:** Every request is assigned a unique `X-Correlation-ID` for auditing and incident response.
 
-## 3. API Endpoints
+### Measurable Outcomes (Security)
+*   **Vulnerability Surface:** 0 direct public exposure points for the database or internal AI logic.
+*   **Auditability:** 100% of API transactions logged with machine-readable metadata and unique IDs.
 
-### Next.js API (Port 3000)
-*   `POST /api/mood`: Accepts mood entries; coordinates with FastAPI for sentiment analysis.
-*   `POST /api/cbt`: Accepts CBT logs; coordinates with FastAPI for cognitive distortion identification.
-*   `GET /api/insights`: Aggregates entries and AI metadata to provide user-facing trends.
+## 4. Privacy Considerations
 
-### FastAPI AI Service (Port 8000)
-*   `POST /v1/analyze/sentiment`: Evaluates text for emotional valence and intensity.
-*   `POST /v1/analyze/cbt-logic`: Identifies cognitive distortions and suggests rational reframing.
-*   `POST /v1/generate/summary`: Processes weekly data to create a natural language summary of user well-being.
+*   **Data Minimization:** Only specific text fields required for analysis are sent to the AI service layer.
+*   **PII Masking:** (Planned) Middleware to redact user-identifiable information before processing by external LLMs.
+*   **Local Persistence:** Users maintain control of their data via the SQLite file stored in their deployment environment.
 
-### Measurable Outcomes
-*   **Interface Stability:** 100% adherence to OpenAPI/Swagger specifications, verified by automated contract tests.
-*   **Scalability:** FastAPI endpoints maintain < 500ms response time under a simulated load of 20 concurrent inference requests.
+### Measurable Outcomes (Privacy)
+*   **Data Leakage:** 0 user-identifiable metadata (IDs, emails) sent to external AI providers during enrichment.
 
-## 4. Scalability Strategy
+## 5. Scalability Strategy
 
-*   **Horizontal Scaling:** Both services are containerized (Docker). As AI demand grows, multiple FastAPI workers can be deployed independently of the frontend.
-*   **Asynchronous Tasks:** For heavy AI tasks (e.g., generating monthly reports), the architecture supports a transition to a task queue (e.g., Redis + BullMQ for JS or Celery for Python).
-*   **Vector Search Ready:** A clear migration path exists to add `sqlite-vss` or a dedicated vector store (e.g., pgvector) for Retrieval-Augmented Generation (RAG) on user logs.
-*   **Database Evolution:** The architecture allows for a seamless transition from SQLite to PostgreSQL as the user base expands beyond single-instance capabilities.
+*   **Stateless Services:** The FastAPI backend is stateless, allowing for horizontal scaling via replicas.
+*   **Repository Pattern:** Abstracts the data layer, enabling a seamless transition from SQLite to PostgreSQL as the user base grows.
+*   **Async Processing:** AI analysis is performed asynchronously to ensure UI responsiveness.
 
-### Measurable Outcomes
-*   **Resource Efficiency:** CPU/Memory usage scales linearly with request volume, with no memory leaks detected over 48-hour stress tests.
-*   **Upgradeability:** The system can transition to a vector database with < 1 hour of scheduled maintenance and 0% loss of historical logs.
+### Measurable Outcomes (Scalability)
+*   **Throughput:** System handles 50+ concurrent inference requests with < 2.5s end-to-end latency.
+*   **Maintenance:** Database migration or service upgrade completes with < 1 hour of scheduled downtime.
