@@ -82,7 +82,7 @@ jobs:
       working-directory: backend
       run: |
         mkdir -p data
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
         echo "BACKEND_PID=$!" >> $GITHUB_ENV
 
     - name: Install Frontend Dependencies
@@ -102,12 +102,13 @@ jobs:
     - name: Run Accessibility Tests
       working-directory: frontend
       run: |
-        npm run start &
+        # Use the standalone server instead of next start
+        PORT=3000 node .next/standalone/server.js &
         FRONTEND_PID=$!
         
         # Wait for backend
         echo "Waiting for backend to start..."
-        npx wait-on http://localhost:8000/health --timeout 60000
+        npx wait-on http://localhost:8000/health --timeout 60000 || (cat ../backend/backend.log && exit 1)
 
         # Wait for frontend
         echo "Waiting for frontend to start..."
