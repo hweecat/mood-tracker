@@ -2,14 +2,17 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useTrackerData } from '../src/hooks/useTrackerData';
 import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 
+const API_V1_URL = 'http://localhost:8000/api/v1';
+
 describe('useTrackerData', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Global fetch mock is set up in vitest.setup.ts
   });
 
   it('fetches data on mount', async () => {
-    const mockMoods = [{ id: '1', rating: 5, emotions: ['Happy'], note: 'Good', timestamp: 123 }];
-    const mockCBT = [{ id: '1', situation: 'Test', automaticThoughts: 'Auto', distortions: [], rationalResponse: 'Resp', moodBefore: 5, timestamp: 123 }];
+    const mockMoods = [{ id: '1', rating: 5, emotions: ['Happy'], note: 'Good', timestamp: 123, userId: '1' }];
+    const mockCBT = [{ id: '1', situation: 'Test', automaticThoughts: 'Auto', distortions: [], rationalResponse: 'Resp', moodBefore: 5, timestamp: 123, userId: '1' }];
 
     (global.fetch as Mock)
       .mockResolvedValueOnce({
@@ -32,6 +35,9 @@ describe('useTrackerData', () => {
 
     expect(result.current.moodEntries).toEqual(mockMoods);
     expect(result.current.cbtLogs).toEqual(mockCBT);
+    
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/moods/`);
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/`);
   });
 
   it('adds a mood entry', async () => {
@@ -44,19 +50,20 @@ describe('useTrackerData', () => {
     
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    const newEntry = { rating: 8 as const, emotions: ['Excited'], note: 'Great' };
+    const savedEntry = { ...newEntry, id: 'uuid', timestamp: 123456, userId: '1' };
+
     // Mock POST request
     (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true }),
+      json: async () => savedEntry,
     });
-
-    const newEntry = { rating: 8 as const, emotions: ['Excited'], note: 'Great' };
 
     await act(async () => {
       await result.current.addMoodEntry(newEntry);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/mood', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/moods/`, expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"rating":8'),
     }));
@@ -75,12 +82,6 @@ describe('useTrackerData', () => {
     
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // Mock POST request
-    (global.fetch as Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true }),
-    });
-
     const newLog = { 
         situation: 'Sit', 
         automaticThoughts: 'Auto', 
@@ -88,12 +89,19 @@ describe('useTrackerData', () => {
         rationalResponse: 'Resp', 
         moodBefore: 5 as const
     };
+    const savedLog = { ...newLog, id: 'uuid', timestamp: 123456, userId: '1' };
+
+    // Mock POST request
+    (global.fetch as Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => savedLog,
+    });
 
     await act(async () => {
       await result.current.addCBTLog(newLog);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/cbt', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/`, expect.objectContaining({
       method: 'POST',
       body: expect.stringContaining('"situation":"Sit"'),
     }));
@@ -111,7 +119,8 @@ describe('useTrackerData', () => {
         distortions: [], 
         rationalResponse: 'Old Resp', 
         moodBefore: 5, 
-        timestamp: 123 
+        timestamp: 123,
+        userId: '1'
     };
 
     (global.fetch as Mock)
@@ -125,7 +134,7 @@ describe('useTrackerData', () => {
     // Mock PUT request
     (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true }),
+      json: async () => ({ ...initialLog, situation: 'New Sit' }),
     });
 
     const updatedLog = { ...initialLog, situation: 'New Sit' };
@@ -134,7 +143,7 @@ describe('useTrackerData', () => {
       await result.current.updateCBTLog(updatedLog);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/cbt', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/1`, expect.objectContaining({
       method: 'PUT',
       body: expect.stringContaining('"situation":"New Sit"'),
     }));
