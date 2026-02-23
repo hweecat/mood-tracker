@@ -1,7 +1,6 @@
 import json
 import csv
 import io
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response
 from app.db.session import get_db
 from app.repositories.mood import get_mood_entries
@@ -47,12 +46,12 @@ def export_data(format: str = "json", db = Depends(get_db)):
         writer.writerow([])
         writer.writerow(["--- CBT LOGS ---"])
         writer.writerow(["ID", "Timestamp", "Situation", "Automatic Thoughts", "Distortions", "Rational Response", "Mood Before", "Mood After", "Behavioral Link"])
-        for l in cbt_logs:
+        for log in cbt_logs:
             writer.writerow([
-                l["id"], l["timestamp"], l["situation"], 
-                l["automatic_thoughts"], ", ".join(l["distortions"]), 
-                l["rational_response"], l["mood_before"], 
-                l.get("mood_after", ""), l.get("behavioral_link", "")
+                log["id"], log["timestamp"], log["situation"], 
+                log["automatic_thoughts"], ", ".join(log["distortions"]), 
+                log["rational_response"], log["mood_before"], 
+                log.get("mood_after", ""), log.get("behavioral_link", "")
             ])
             
         return Response(
@@ -69,17 +68,20 @@ def export_data(format: str = "json", db = Depends(get_db)):
         for m in moods:
             output.write(f"### {m['timestamp']} - Rating: {m['rating']}\n")
             output.write(f"**Emotions:** {', '.join(m['emotions'])}\n\n")
-            if m.get("note"): output.write(f"> {m.get('note')}\n\n")
-            if m.get("trigger"): output.write(f"*Trigger:* {m.get('trigger')}\n")
-            if m.get("behavior"): output.write(f"*Behavior:* {m.get('behavior')}\n")
+            if m.get("note"):
+                output.write(f"> {m.get('note')}\n\n")
+            if m.get("trigger"):
+                output.write(f"*Trigger:* {m.get('trigger')}\n")
+            if m.get("behavior"):
+                output.write(f"*Behavior:* {m.get('behavior')}\n")
             output.write("\n---\n\n")
             
         output.write("## CBT Logs\n\n")
-        for l in cbt_logs:
-            output.write(f"### Situation: {l['situation']}\n")
-            output.write(f"**Thoughts:** {l['automatic_thoughts']}\n")
-            output.write(f"**Distortions:** {', '.join(l['distortions'])}\n")
-            output.write(f"**Reframed:** {l['rational_response']}\n")
+        for log in cbt_logs:
+            output.write(f"### Situation: {log['situation']}\n")
+            output.write(f"**Thoughts:** {log['automatic_thoughts']}\n")
+            output.write(f"**Distortions:** {', '.join(log['distortions'])}\n")
+            output.write(f"**Reframed:** {log['rational_response']}\n")
             output.write("\n---\n\n")
             
         return Response(
@@ -110,10 +112,10 @@ def import_data(req: ImportRequest, db = Depends(get_db)):
                 )
         
         if "cbtLogs" in data:
-            for l in data["cbtLogs"]:
+            for log in data["cbtLogs"]:
                 cursor.execute(
                     "INSERT OR IGNORE INTO cbt_logs (id, timestamp, situation, automatic_thoughts, distortions, rational_response, mood_before, mood_after, behavioral_link, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (l["id"], l["timestamp"], l["situation"], l["automatic_thoughts"], json.dumps(l["distortions"]), l["rational_response"], l["mood_before"], l.get("mood_after"), l.get("behavioral_link"), user_id)
+                    (log["id"], log["timestamp"], log["situation"], log["automatic_thoughts"], json.dumps(log["distortions"]), log["rational_response"], log["mood_before"], log.get("mood_after"), log.get("behavioral_link"), user_id)
                 )
         
         db.commit()

@@ -2,7 +2,6 @@ import sqlite3
 import json
 import os
 from textblob import TextBlob
-import sys
 
 # Add the parent directory to sys.path to potentially import from main if needed,
 # but for a self-contained script we'll just replicate the logic.
