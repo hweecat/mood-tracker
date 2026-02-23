@@ -3,7 +3,6 @@ import sys
 from contextvars import ContextVar
 from datetime import datetime
 from pythonjsonlogger import jsonlogger
-import uuid
 
 # Context variable to store the correlation ID
 correlation_id_ctx: ContextVar[str] = ContextVar("correlation_id", default="none")
