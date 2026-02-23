@@ -124,20 +124,6 @@ jobs:
         NEXT_PUBLIC_API_URL: http://localhost:8000
         API_SERVER_URL: http://localhost:8000
 
-        echo "Running Accessibility Tests..."
-        npm run test:e2e
-        
-        TEST_EXIT_CODE=$?
-        kill $FRONTEND_PID
-        kill $BACKEND_PID
-        exit $TEST_EXIT_CODE
-      env:
-        ENABLE_RBAC: 'true'
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
-        NEXTAUTH_URL: http://localhost:3000
-        NEXT_PUBLIC_API_URL: http://localhost:8000
-        API_SERVER_URL: http://localhost:8000
-
     - name: Upload Accessibility Reports
       if: always()
       uses: actions/upload-artifact@v4
