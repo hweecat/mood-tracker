@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Brain, ArrowRight, Lock } from 'lucide-react';
 
 export default function LoginPage() {
@@ -9,9 +9,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mounted) return;
+    
     setLoading(true);
     setError('');
 
@@ -45,7 +52,11 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-card p-8 rounded-[2.5rem] shadow-2xl border-2 border-border">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form 
+            onSubmit={handleSubmit} 
+            method="POST" 
+            className={`space-y-6 transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}
+          >
             {error && (
               <div role="alert" className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-100 dark:border-red-900/50 rounded-2xl text-red-600 dark:text-red-400 text-sm font-bold text-center">
                 {error}

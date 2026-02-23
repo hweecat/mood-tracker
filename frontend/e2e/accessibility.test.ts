@@ -45,7 +45,12 @@ async function runAccessibilityTests() {
     await driver.get(`${APP_URL}/login`);
     
     // Wait for mounted state (since we use useEffect to set mounted=true)
-    await driver.sleep(3000);
+    console.log('Waiting for hydration...');
+    await driver.wait(async (d) => {
+      const form = await d.findElement(By.css('form'));
+      const className = await form.getAttribute('class');
+      return className.includes('opacity-100');
+    }, 10000);
     
     let usernameInput;
     try {
@@ -60,6 +65,8 @@ async function runAccessibilityTests() {
 
     await usernameInput.sendKeys('demo');
     await passwordInput.sendKeys('demo');
+    
+    console.log('Submitting login form...');
     await submitButton.click();
 
     // Check if there's an immediate error message
