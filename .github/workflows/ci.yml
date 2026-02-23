@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  lint:
+  frontend-checks:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,36 +23,45 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
-    - name: Install Dependencies
+    - name: Install Frontend Dependencies
       run: npm ci
 
-    - name: Run Lint
+    - name: 👀 Linting Check (Frontend)
       run: npm run lint
 
-  unit-tests:
+    - name: 🧪 Unit Test Suite (Frontend)
+      run: npm test
+
+  backend-checks:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: backend
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
 
-    - name: Install Dependencies
-      run: npm ci
+    - name: Install Backend Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install ruff pytest
 
-    - name: Run Unit Tests
-      run: npm test
+    - name: 👀 Linting Check (Backend)
+      run: ruff check .
 
-  build-and-test-e2e:
-    needs: [lint, unit-tests]
+    - name: 🧪 Unit Test Suite (Backend)
+      run: pytest
+
+  e2e-tests:
+    needs: [frontend-checks, backend-checks]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -72,21 +81,18 @@ jobs:
         cache: 'pip'
         cache-dependency-path: backend/requirements.txt
 
-    - name: Install Backend Dependencies
+    - name: Install All Dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r backend/requirements.txt
+        cd backend && python -m pip install --upgrade pip && pip install -r requirements.txt
+        cd ../frontend && npm ci
 
-    - name: Start Backend
+    - name: Start Backend Service
       run: |
         mkdir -p backend/data
         cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
         echo "BACKEND_PID=$!" >> $GITHUB_ENV
 
-    - name: Install Frontend Dependencies
-      run: cd frontend && npm ci
-
-    - name: Build Frontend
+    - name: Build Frontend Application
       run: cd frontend && npm run build
       env:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'moodtrackersecret123' }}
@@ -95,20 +101,17 @@ jobs:
         API_SERVER_URL: http://localhost:8000
         ENABLE_RBAC: 'true'
 
-    - name: Run Accessibility Tests
+    - name: Run Accessibility & E2E Tests
       run: |
         cd frontend
-        # Use the standalone server instead of next start
         PORT=3000 node .next/standalone/server.js &
         FRONTEND_PID=$!
         
-        # Wait for backend
         echo "Waiting for backend to start..."
-        npx wait-on http://127.0.0.1:8000/health --timeout 60000 || (cat ../backend/backend.log && exit 1)
+        npx wait-on http-get://127.0.0.1:8000/health --timeout 60000 || (cat ../backend/backend.log && exit 1)
 
-        # Wait for frontend
         echo "Waiting for frontend to start..."
-        npx wait-on http://127.0.0.1:3000/login --timeout 60000
+        npx wait-on http-get://127.0.0.1:3000/login --timeout 60000
 
         echo "Running Accessibility Tests..."
         npm run test:e2e
@@ -130,31 +133,3 @@ jobs:
       with:
         name: ci-accessibility-reports
         path: frontend/reports/
-
-  backend-ci:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        cache-dependency-path: backend/requirements.txt
-
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install ruff pytest
-
-    - name: Lint with Ruff
-      run: ruff check .
-
-    - name: Run Tests
-      run: pytest
