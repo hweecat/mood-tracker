@@ -55,6 +55,7 @@ export default function LoginPage() {
           <form 
             onSubmit={handleSubmit} 
             method="POST" 
+            data-hydrated={mounted}
             className={`space-y-6 transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}
           >
             {error && (

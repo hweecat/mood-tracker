@@ -104,16 +104,24 @@ jobs:
     - name: Run Accessibility & E2E Tests
       run: |
         cd frontend
-        PORT=3000 node .next/standalone/server.js &
+        # Copy static and public files to standalone folder for CI execution
+        cp -r .next/static .next/standalone/.next/static
+        cp -r public .next/standalone/public
+        
+        # Start standalone server from within its directory
+        cd .next/standalone
+        PORT=3000 node server.js &
         FRONTEND_PID=$!
         
         echo "Waiting for backend to start..."
-        npx wait-on http-get://127.0.0.1:8000/health --timeout 60000 || (cat ../backend/backend.log && exit 1)
+        npx wait-on http-get://127.0.0.1:8000/health --timeout 60000 || (cat ../../../backend/backend.log && exit 1)
 
         echo "Waiting for frontend to start..."
         npx wait-on http-get://127.0.0.1:3000/login --timeout 60000
 
         echo "Running Accessibility Tests..."
+        # Go back to frontend root to run tests
+        cd ../..
         npm run test:e2e
         
         TEST_EXIT_CODE=$?

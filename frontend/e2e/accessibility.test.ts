@@ -48,9 +48,9 @@ async function runAccessibilityTests() {
     console.log('Waiting for hydration...');
     await driver.wait(async (d) => {
       const form = await d.findElement(By.css('form'));
-      const className = await form.getAttribute('class');
-      return className.includes('opacity-100');
-    }, 10000);
+      const hydrated = await form.getAttribute('data-hydrated');
+      return hydrated === 'true';
+    }, 20000);
     
     let usernameInput;
     try {
