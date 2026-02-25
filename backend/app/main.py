@@ -46,6 +46,7 @@ app.include_router(data.router, prefix="/api/v1/data", tags=["data"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 
 @app.get("/health")
+@app.head("/health")
 async def health_check():
     return {"status": "healthy", "service": "mindful-track-api"}
 

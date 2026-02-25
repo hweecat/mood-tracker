@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from contextlib import contextmanager
 
 DATABASE_PATH = os.getenv("DATABASE_PATH", "data/mood-tracker.db")
 
@@ -13,8 +14,6 @@ def init_db():
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
         if not cursor.fetchone():
             print("Initializing database schema...")
-            # We'll use the existing appschema.sql if available, or just create basic tables
-            # For robustness in Docker, we'll define the core schema here
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS users (
                     id TEXT PRIMARY KEY,

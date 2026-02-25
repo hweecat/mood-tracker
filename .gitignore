@@ -67,7 +67,9 @@ frontend/reports/
 /data/
 frontend/data/
 backend/data/
-db/registry
-db/sqitch.db
+migrations/sqitch.db
+migrations/registry
+migrations/*.db
+migrations/*.db-journal
 *.db
 *.db-journal

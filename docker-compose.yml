@@ -8,6 +8,9 @@ services:
     environment:
       - DATABASE_PATH=data/mood-tracker.db
       - AI_SERVICE_KEY=development_key
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend
@@ -18,3 +21,11 @@ services:
       - API_SERVER_URL=http://backend:8000
     depends_on:
       - backend
+
+  migrations:
+    image: sqitch/sqitch:latest
+    volumes:
+      - ./migrations:/app
+      - ./data:/app/data
+    command: deploy db:sqlite:/app/data/mood-tracker.db
+    working_dir: /app
