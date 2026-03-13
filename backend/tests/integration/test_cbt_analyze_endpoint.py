@@ -1,18 +1,22 @@
 # backend/tests/integration/test_cbt_analyze_endpoint.py
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from fastapi import status
 from unittest.mock import Mock, patch
 from app.main import app
 
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.mark.anyio
 class TestCBTAnalyzeEndpoint:
     """Integration tests for the /analyze endpoint."""
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def async_client(self):
         """Create an async test client for the FastAPI app."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
