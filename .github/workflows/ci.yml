@@ -59,6 +59,10 @@ jobs:
 
     - name: 🧪 Unit Test Suite (Backend)
       run: pytest
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
+        GEMINI_TEMPERATURE: ${{ env.GEMINI_TEMPERATURE }}
 
   e2e-tests:
     needs: [frontend-checks, backend-checks]
