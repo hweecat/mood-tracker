@@ -7,11 +7,11 @@ To ensure parallel streams don't diverge, we will define a shared API schema in 
 
 ## 2. Worktree Configuration
 
-| Directory | Branch | Responsibility |
-| :--- | :--- | :--- |
-| `../mood-tracker-gemini` | `feat/gemini-integration` | **The Brain**: Gemini SDK integration, prompts, and analysis logic. |
-| `../mood-tracker-pii` | `feat/pii-masking` | **The Shield**: PII redaction middleware and AI audit logging. |
-| `../mood-tracker-ui` | `feat/ai-ui-components` | **The Face**: Interactive UI components, "Analyze" buttons, and AI suggestions. |
+| Directory | Branch | Responsibility | Sparse Checkout |
+| :--- | :--- | :--- | :--- |
+| `.worktrees/gemini` | `feat/gemini-integration` | **The Brain**: Gemini logic. | `backend/` |
+| `.worktrees/pii` | `feat/pii-masking` | **The Shield**: PII/Privacy. | `backend/` |
+| `.worktrees/ui` | `feat/ai-ui-components` | **The Face**: UI Components. | `frontend/` |
 
 ## 3. Development Streams
 
@@ -44,10 +44,16 @@ To ensure parallel streams don't diverge, we will define a shared API schema in 
 
 ## 5. Initialization Commands
 ```bash
-git branch feat/gemini-integration
-git branch feat/pii-masking
-git branch feat/ai-ui-components
-git worktree add ../mood-tracker-gemini feat/gemini-integration
-git worktree add ../mood-tracker-pii feat/pii-masking
-git worktree add ../mood-tracker-ui feat/ai-ui-components
+# Initialize internal worktrees
+mkdir -p .worktrees
+git worktree add .worktrees/ui feat/ai-ui-components
+git worktree add .worktrees/gemini feat/gemini-integration
+git worktree add .worktrees/pii feat/pii-masking
+
+# Configure Sparse Checkout for UI (Frontend only)
+cd .worktrees/ui && git sparse-checkout set frontend && cd ../..
+
+# Configure Sparse Checkout for Backend streams
+cd .worktrees/gemini && git sparse-checkout set backend && cd ../..
+cd .worktrees/pii && git sparse-checkout set backend && cd ../..
 ```

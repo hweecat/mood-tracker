@@ -73,3 +73,6 @@ migrations/*.db
 migrations/*.db-journal
 *.db
 *.db-journal
+
+# settings
+*/settings.json
