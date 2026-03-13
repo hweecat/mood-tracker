@@ -5,14 +5,15 @@ This document outlines the phased implementation of a hybrid architecture for Mi
 
 ## 2. Technical Stack
 *   **Web Tier:** Next.js 15, TypeScript, NextAuth.js, Tailwind CSS 4.
-*   **AI Tier:** Python 3.11+, FastAPI, Pydantic, Uvicorn.
+*   **AI Tier:** Python 3.12+, FastAPI, Pydantic, Uvicorn.
 *   **AI/ML Libraries:** 
     *   `textblob` (Implemented in Phase 1 for sentiment/keywords).
-    *   `google-generative-ai` (Gemini API for complex reasoning in Phase 2).
+    *   `google-generativeai==0.8.3` (Gemini API for cognitive analysis in Phase 2).
+    *   `pydantic-settings==2.6.1` (Environment-based AI configuration in Phase 2).
     *   `nltk` (Used for corpora management).
     *   `pandas` / `scikit-learn` (Planned for Phase 3 trend analysis).
 *   **Data Tier:** SQLite (Managed via Backend Repository pattern).
-*   **Observability:** Structured JSON Logging (`python-json-logger`), Correlation IDs (`X-Correlation-ID`).
+*   **Observability:** Structured JSON Logging (`python-json-logger`), Correlation IDs (`X-Correlation-ID`), PII-free AI audit logs (`ai_audit_logs` table).
 
 ## 3. Implementation Roadmap
 
@@ -30,15 +31,25 @@ This document outlines the phased implementation of a hybrid architecture for Mi
     *   [x] Migration to add `ai_analysis` column to `mood_entries`.
     *   [x] Backfill 100% of historical logs with AI metadata.
 
-### Phase 2: Cognitive Intelligence (IN PROGRESS)
+### Phase 2: Cognitive Intelligence (COMPLETED)
 **Goal:** Enhance CBT features with logic checks and reframing assistance.
 *   **Features:**
-    *   **Distortion Detection:** Use LLMs (Gemini) to classify cognitive distortions in "Automatic Thoughts."
-    *   **Rational Reframing:** Provide AI-generated suggestions for "Rational Responses."
-    *   **Semantic Search:** Implement basic embeddings for "Situation" fields to find similar past logs.
+    *   [x] **Distortion Detection:** `GeminiClient` classifies cognitive distortions in "Automatic Thoughts" using Google Gemini with structured JSON output.
+    *   [x] **Rational Reframing:** AI-generated reframes (Compassionate, Logical, Evidence-based perspectives) via `GeminiClient._generate_reframes()`.
+    *   [ ] **Semantic Search:** Planned for a future increment — basic embeddings for finding similar past logs.
+*   **Streams:**
+    *   [x] **Stream A – The Brain:** Full Gemini API integration, `/analyze` endpoint, prompt versioning.
+    *   [x] **Stream B – The Shield:** PII masking middleware, `ai_audit_logs` table, audit service.
+    *   [x] **Stream C – The Face:** AI UI components (Analyze button, distortion highlights, reframe carousel).
 *   **Technical Detail:**
-    *   Integrate `google-generative-ai` SDK.
-    *   Implement PII masking middleware for privacy.
+    *   [x] Integrated `google-generativeai` SDK (`GeminiClient`) with async I/O via `asyncio.to_thread`.
+    *   [x] `SafetyHandler` evaluates Gemini `safetyRatings`; triggers HTTP 451 with crisis resources on HIGH probability.
+    *   [x] `PromptManager` loads versioned templates from `prompt_versions` DB table with hardcoded fallback.
+    *   [x] `AIClientProtocol` adapter pattern enables fallback to `TextBlobClient` when `ENABLE_GEMINI=false`.
+    *   [x] `POST /api/v1/cbt-logs/analyze` endpoint with 10s timeout, safety (HTTP 451), timeout (HTTP 504), and general error (HTTP 503) handling.
+    *   [x] Database migrations: `prompt_versions` and `ai_audit_logs` tables via Sqitch.
+    *   [x] PII masking using regex + name dictionary; masked data is never sent to external AI providers.
+    *   [x] All async tests implemented using `anyio` + `httpx.AsyncClient` (37 tests pass: 27 unit + 10 integration).
 
 ### Phase 3: Predictive Analytics & Personalization (PLANNED)
 **Goal:** Shift from reactive logging to proactive insights.

@@ -41,7 +41,7 @@ backend/app/
 |----------|----------|----------|
 | **Adapter Pattern** | Abstract `AIClientProtocol` with Gemini implementation | Slight overhead, but enables swapping to Claude/OpenAI without business logic changes |
 | **Prompt Storage** | Versioned prompts in database + fallback to code | More complex than hardcoded, but enables A/B testing and historical re-analysis |
-| **Async Implementation** | Full async/await for all AI calls | Slightly more complex testing, but required for non-blocking I/O and future scaling |
+| **Async Implementation** | Full async/await for all AI calls | Testing complexity addressed using `anyio` + `httpx.AsyncClient` in place of `TestClient`; required for non-blocking I/O and future scaling |
 | **Safety Fallback** | Tiered response based on `safetyRatings` | Adds complexity, but essential for mental health domain |
 | **Structured Output** | Use Gemini's `response_schema` for JSON | Limits model expressiveness, but ensures parseable, type-safe responses |
 | **Retry Strategy** | Exponential backoff with 2 retries | Adds latency on failures, but handles transient network issues |
@@ -1001,11 +1001,37 @@ backend/tests/
 │   ├── test_gemini_client.py         # Unit tests with mocked responses
 │   ├── test_safety_handler.py        # Safety tier evaluation tests
 │   ├── test_prompt_manager.py        # Prompt loading tests
-│   └── test_ai_client.py             # Client factory tests
+│   └── test_ai_client_factory.py    # Client factory tests
 ├── integration/
 │   ├── __init__.py
 │   └── test_cbt_analyze_endpoint.py # API endpoint tests
 └── conftest.py                       # Test fixtures
+```
+
+**Async Testing Convention:**
+
+All async tests use `anyio` as the backend instead of `pytest-asyncio`. Each async test file includes:
+
+```python
+import pytest
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+```
+
+And individual async tests are decorated with `@pytest.mark.anyio`.
+
+Integration tests use `httpx.AsyncClient` with `ASGITransport` for async-safe HTTP testing:
+
+```python
+from httpx import AsyncClient, ASGITransport
+from app.main import app
+
+@pytest_asyncio.fixture  # or @pytest.fixture with anyio
+async def async_client(self):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
 ```
 
 **Test conftest.py example:**
@@ -1094,10 +1120,13 @@ cd .worktrees/gemini
 - [X] Update `backend/app/api/v1/routes/cbt_logs.py` with `/analyze` endpoint
 - [X] Create database migrations for `prompt_versions` and `ai_audit_logs`
 - [X] Update `backend/pyproject.toml` with new dependencies
-- [ ] Update `.env` with Gemini configuration
-- [X] Write unit tests for all new services
-- [X] Write integration tests for API endpoint
-- [X] Update documentation (PHASE_2_CHANGELOG.md)
+- [X] Synchronize `backend/requirements.txt` from `pyproject.toml` via `uv pip compile`
+- [X] Update `.env` with Gemini configuration
+- [X] Configure CI (`ci.yml`) to use Python 3.12 and inject Gemini env vars in `e2e-tests`
+- [X] Write unit tests for all new services (using `anyio`)
+- [X] Write integration tests for API endpoint (using `anyio` + `httpx.AsyncClient`)
+- [X] Fix linting violations (11 issues resolved with `ruff`)
+- [X] Update documentation (`docs/PHASE_2_CHANGELOG.md`)
 
 ---
 
