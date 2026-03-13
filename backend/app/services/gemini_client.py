@@ -86,7 +86,7 @@ class GeminiClient:
 
             return response
 
-        except SafetyException as e:
+        except SafetyException:
             latency_ms = int((time.time() - start_time) * 1000)
             self._log_audit(
                 request_id=request_id,

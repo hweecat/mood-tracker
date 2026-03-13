@@ -1,6 +1,5 @@
 # backend/tests/services/test_safety_handler.py
 
-import pytest
 from google.generativeai.types import HarmCategory, HarmProbability
 from app.services.safety_handler import SafetyHandler, SafetyTier
 

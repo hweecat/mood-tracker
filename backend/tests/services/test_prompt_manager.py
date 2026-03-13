@@ -1,7 +1,7 @@
 # backend/tests/services/test_prompt_manager.py
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from app.services.prompt_manager import PromptManager
 
 
@@ -11,7 +11,7 @@ class TestPromptManager:
     def test_init_creates_config(self):
         """Test PromptManager initializes with config."""
         with patch('app.services.prompt_manager.get_ai_config') as mock_config:
-            manager = PromptManager()
+            PromptManager()
             mock_config.assert_called_once()
 
     @pytest.mark.asyncio

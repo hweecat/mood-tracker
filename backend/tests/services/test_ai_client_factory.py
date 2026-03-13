@@ -1,7 +1,6 @@
 # backend/tests/services/test_ai_client_factory.py
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from app.services.ai_client import get_ai_client, TextBlobClient, GeminiAdapter
 
 class TestAIClientFactory:

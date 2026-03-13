@@ -1,7 +1,6 @@
 # backend/tests/services/test_gemini_client.py
 
 import pytest
-import asyncio
 import json
 from unittest.mock import Mock, patch, AsyncMock
 from app.services.gemini_client import GeminiClient, SafetyException, ParseException

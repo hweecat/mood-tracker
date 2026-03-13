@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from fastapi import status
 from unittest.mock import Mock, patch
 from app.main import app
-from app.schemas.cbt import CBTAnalysisRequest
 
 
 class TestCBTAnalyzeEndpoint:

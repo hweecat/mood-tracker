@@ -1,7 +1,7 @@
 # backend/app/services/ai_client.py
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional
 from textblob import TextBlob
 from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse
 from app.core.logging import get_logger

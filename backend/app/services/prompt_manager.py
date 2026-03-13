@@ -5,7 +5,6 @@ from app.core.ai_config import get_ai_config
 from app.core.constants import COGNITIVE_DISTORTIONS
 from app.core.logging import get_logger
 from app.db.session import get_db
-import json
 
 logger = get_logger(__name__)
 
