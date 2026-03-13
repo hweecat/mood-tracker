@@ -62,7 +62,6 @@ jobs:
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
-        GEMINI_TEMPERATURE: ${{ fromJSON(env.GEMINI_TEMPERATURE) }}
 
   e2e-tests:
     needs: [frontend-checks, backend-checks]
@@ -98,7 +97,6 @@ jobs:
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
-        GEMINI_TEMPERATURE: ${{ fromJSON(env.GEMINI_TEMPERATURE) }}
 
     - name: Build Frontend Application
       run: cd frontend && npm run build
