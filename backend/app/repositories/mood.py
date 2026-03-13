@@ -28,7 +28,7 @@ async def create_mood_entry(db: Connection, user_id: str, mood_in: MoodCreate) -
     logger.info("Creating mood entry", extra={"user_id": user_id, "mood_id": mood_in.id})
     ai_analysis = None
     if mood_in.note:
-        ai_analysis = await analyze_mood_note(mood_in.note)
+        ai_analysis = await analyze_mood_note(mood_in.note, db=db)
 
     cursor = db.cursor()
     cursor.execute(
