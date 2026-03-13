@@ -5,6 +5,11 @@ from unittest.mock import patch, MagicMock
 from app.services.prompt_manager import PromptManager
 
 
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
 class TestPromptManager:
     """Tests for PromptManager prompt template loading."""
 
@@ -14,7 +19,7 @@ class TestPromptManager:
             PromptManager()
             mock_config.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_distortion_prompt_default(self):
         """Test default distortion prompt is returned when version not specified."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -27,7 +32,7 @@ class TestPromptManager:
             assert "{situation}" in prompt
             assert "{automatic_thought}" in prompt
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_distortion_prompt_with_version_not_found(self):
         """Test default prompt returned when specific version not found in DB."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -45,7 +50,7 @@ class TestPromptManager:
                 assert version == "default"
                 mock_cursor.execute.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_distortion_prompt_from_db(self):
         """Test prompt loaded from DB when version exists."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -64,7 +69,7 @@ class TestPromptManager:
                 assert prompt == test_template
                 assert version == "test-id"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_distortion_prompt_malformed_template_fallback(self):
         """Test that malformed DB templates (missing placeholders) fallback to default."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -83,7 +88,7 @@ class TestPromptManager:
                 assert version == "default"
                 assert "{situation}" in prompt
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_reframing_prompt_default(self):
         """Test default reframing prompt is returned when version not specified."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -96,7 +101,7 @@ class TestPromptManager:
             assert "{automatic_thought}" in prompt
             assert "{distortions}" in prompt
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_get_reframing_prompt_from_db(self):
         """Test reframing prompt loaded from DB when version exists."""
         with patch('app.services.prompt_manager.get_ai_config'):
@@ -115,7 +120,7 @@ class TestPromptManager:
                 assert prompt == test_template
                 assert version == "reframe-id"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_db_error_falls_back_to_default(self):
         """Test DB error falls back to default template."""
         with patch('app.services.prompt_manager.get_ai_config'):

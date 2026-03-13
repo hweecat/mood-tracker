@@ -8,6 +8,11 @@ from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse, DistortionS
 from google.generativeai.types import HarmProbability
 
 
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
 class TestGeminiClient:
     """Tests for GeminiClient CBT analysis."""
 
@@ -23,7 +28,7 @@ class TestGeminiClient:
             assert client.model is not None
             mock_model.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_analyze_cbt_success(self):
         """Test successful CBT analysis returns suggestions and reframes."""
         with patch('app.services.gemini_client.get_ai_config'), \
@@ -58,7 +63,7 @@ class TestGeminiClient:
                 assert result.prompt_version == "v1.0"
                 mock_audit.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_detect_distortions_filters_unknown_distortions(self):
         """Test that distortions not in COGNITIVE_DISTORTIONS are filtered or handled."""
         from app.core.constants import COGNITIVE_DISTORTIONS
@@ -96,7 +101,7 @@ class TestGeminiClient:
                 # Behavioral Requirement: Only valid distortions allowed
                 assert "Unknown Distortion" not in distortion_names
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_analyze_cbt_logs_accurate_metadata(self):
         """Test that audit logs capture correct metadata."""
         with patch('app.services.gemini_client.get_ai_config'), \
@@ -122,7 +127,7 @@ class TestGeminiClient:
                 assert kwargs["latency_ms"] >= 0
                 assert "request_id" in kwargs
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_detect_distortions_with_retry_logic(self):
         """Test that distortion detection retries on generic exceptions but not on ParseException."""
         with patch('app.services.gemini_client.get_ai_config') as mock_config, \
@@ -148,7 +153,7 @@ class TestGeminiClient:
                     await client._detect_distortions_with_retry("s", "t")
                 assert mock_detect.call_count == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_detect_distortions_safety_high_triggers_exception(self):
         """Test HIGH safety rating triggers SafetyException."""
         from google.generativeai.types import HarmCategory
@@ -178,7 +183,7 @@ class TestGeminiClient:
 
                 assert len(exc_info.value.crisis_resources) > 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_detect_distortions_invalid_json_raises_parse_exception(self):
         """Test invalid JSON response raises ParseException."""
         from google.generativeai.types import HarmCategory
