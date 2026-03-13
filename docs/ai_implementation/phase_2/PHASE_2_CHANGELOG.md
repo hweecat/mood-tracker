@@ -186,3 +186,40 @@ This document tracks the incremental changes made during the implementation of P
 
 ---
 **Status**: Stream B (The Shield) implementation is complete within the `pii` worktree. Ready for integration with Stream A (Gemini Integration).
+
+## [2026-03-13] - Stream A: Gemini Integration (The Brain) - PR Fixes & Test Quality
+
+### Added
+- **Integration Test Suite**: `backend/tests/integration/test_cbt_analyze_endpoint.py`
+    - 10 integration tests covering the `/api/v1/cbt-logs/analyze` endpoint.
+    - Covers: POST acceptance, JSON validation, required field validation, response structure, `SafetyException` (HTTP 451), timeout (HTTP 504), general error (HTTP 503), field shape, and empty response handling.
+
+### Changed
+- **CI Workflow**: `.github/workflows/ci.yml`
+    - Updated Python version from `3.11` to `3.12` in both `backend-checks` and `e2e-tests` jobs to match the `requires-python = ">=3.12"` constraint in `pyproject.toml`.
+    - Added `GEMINI_API_KEY`, `GEMINI_MODEL`, and `GEMINI_TEMPERATURE` environment variables to the `Start Backend Service` step in `e2e-tests`, sourced from GitHub Actions secrets/env.
+- **Backend Dependencies**: `backend/requirements.txt`
+    - Regenerated via `uv pip compile pyproject.toml` to include all transitive dependencies, including the previously missing `google-generativeai` and `pydantic-settings`.
+- **Gitignore**: `.gitignore`
+    - Added `*/settings.json` pattern to avoid accidentally committing editor settings files.
+
+### Fixed
+- **Linting**: Resolved 11 `ruff` linting violations across the codebase:
+    - 10 auto-fixed via `ruff check . --fix` (unused imports, formatting).
+    - 1 manually fixed: unused variable assignment `manager` in `tests/services/test_prompt_manager.py`.
+- **Async Test Execution**: Replaced synchronous `fastapi.testclient.TestClient` with `httpx.AsyncClient` (via `ASGITransport`) throughout `test_cbt_analyze_endpoint.py` to correctly handle the async FastAPI app under `anyio`.
+
+### Refactored
+- **Async Test Framework** — migrated from `pytest-asyncio` to `anyio` across all async test files:
+    - `backend/tests/integration/test_cbt_analyze_endpoint.py`: Added `anyio_backend` fixture, replaced `@pytest.mark.asyncio` with `@pytest.mark.anyio`, replaced `TestClient` with `AsyncClient`.
+    - `backend/tests/services/test_gemini_client.py`: Added `anyio_backend` fixture, replaced `@pytest.mark.asyncio` with `@pytest.mark.anyio`.
+    - `backend/tests/services/test_prompt_manager.py`: Added `anyio_backend` fixture, replaced `@pytest.mark.asyncio` with `@pytest.mark.anyio`.
+
+### Technical Notes
+- **Test Count**: All 37 tests pass (27 unit + 10 integration).
+- **anyio Consistency**: Using a single async backend (`anyio`) across all test files ensures consistent behaviour between local runs and CI environments.
+- **Python 3.12 Alignment**: CI now correctly reflects the project's minimum Python requirement, eliminating environment-related false negatives.
+
+---
+**Status**: All fixes applied. PR ready for merge.
+
