@@ -1,19 +1,22 @@
 # backend/tests/integration/test_cbt_analyze_endpoint.py
 
 import pytest
-from fastapi.testclient import TestClient
+import pytest_asyncio
+from httpx import AsyncClient, ASGITransport
 from fastapi import status
 from unittest.mock import Mock, patch
 from app.main import app
 
 
+@pytest.mark.asyncio
 class TestCBTAnalyzeEndpoint:
     """Integration tests for the /analyze endpoint."""
 
-    @pytest.fixture
-    def client(self):
-        """Create a test client for the FastAPI app."""
-        return TestClient(app)
+    @pytest_asyncio.fixture
+    async def async_client(self):
+        """Create an async test client for the FastAPI app."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            yield client
 
     @pytest.fixture
     def valid_request(self):
@@ -50,7 +53,7 @@ class TestCBTAnalyzeEndpoint:
             "prompt_version": "1.0.0"
         }
 
-    def test_analyze_endpoint_accepts_post(self, client, valid_request, mock_ai_response):
+    async def test_analyze_endpoint_accepts_post(self, async_client, valid_request, mock_ai_response):
         """Test /analyze endpoint accepts POST requests."""
         # We patch get_ai_client to avoid real API calls during generic test
         with patch('app.api.v1.routes.cbt_logs.get_ai_client') as mock_get_client:
@@ -59,33 +62,33 @@ class TestCBTAnalyzeEndpoint:
             mock_client.analyze_cbt = mock_analyze
             mock_get_client.return_value = mock_client
             
-            response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+            response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
             assert response.status_code == status.HTTP_200_OK
 
-    def test_analyze_endpoint_requires_json(self, client):
+    async def test_analyze_endpoint_requires_json(self, async_client):
         """Test /analyze endpoint requires JSON body."""
-        response = client.post("/api/v1/cbt-logs/analyze")
+        response = await async_client.post("/api/v1/cbt-logs/analyze")
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_analyze_endpoint_validates_required_fields(self, client):
+    async def test_analyze_endpoint_validates_required_fields(self, async_client):
         """Test /analyze endpoint validates required fields."""
         # Missing automatic_thought
         invalid_request = {"situation": "Test situation"}
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=invalid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=invalid_request)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_returns_correct_structure(self, mock_get_client, client, valid_request, mock_ai_response):
+    async def test_analyze_endpoint_returns_correct_structure(self, mock_get_client, async_client, valid_request, mock_ai_response):
         """Test /analyze endpoint returns correct response structure."""
         mock_client = Mock()
         async def mock_analyze(*args, **kwargs): return mock_ai_response
         mock_client.analyze_cbt = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -96,7 +99,7 @@ class TestCBTAnalyzeEndpoint:
         assert isinstance(data["reframes"], list)
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles SafetyException correctly."""
         from app.services.gemini_client import SafetyException
 
@@ -109,7 +112,7 @@ class TestCBTAnalyzeEndpoint:
         mock_client.analyze_cbt = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
         data = response.json()
@@ -119,12 +122,12 @@ class TestCBTAnalyzeEndpoint:
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     @patch('asyncio.wait_for')
-    def test_analyze_endpoint_handles_timeout(self, mock_wait_for, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_handles_timeout(self, mock_wait_for, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles timeout correctly."""
         import asyncio
         mock_wait_for.side_effect = asyncio.TimeoutError()
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_504_GATEWAY_TIMEOUT
         # We verify that the status code is correct. 
@@ -132,20 +135,20 @@ class TestCBTAnalyzeEndpoint:
         assert response.json().get("detail") is not None
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_handles_general_error(self, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_handles_general_error(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles general exceptions correctly."""
         mock_client = Mock()
         async def mock_analyze(*args, **kwargs): raise Exception("Unexpected error")
         mock_client.analyze_cbt = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
         assert "unavailable" in response.json()["detail"].lower()
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_returns_suggestions_with_correct_fields(self, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_returns_suggestions_with_correct_fields(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint returns suggestions with expected fields."""
         mock_ai_response = {
             "suggestions": [
@@ -159,7 +162,7 @@ class TestCBTAnalyzeEndpoint:
         mock_client.analyze_cbt.side_effect = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -168,7 +171,7 @@ class TestCBTAnalyzeEndpoint:
         assert "reasoning" in data["suggestions"][0]
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_returns_reframes_with_correct_fields(self, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_returns_reframes_with_correct_fields(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint returns reframes with expected fields."""
         mock_ai_response = {
             "suggestions": [],
@@ -182,7 +185,7 @@ class TestCBTAnalyzeEndpoint:
         mock_client.analyze_cbt = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -191,7 +194,7 @@ class TestCBTAnalyzeEndpoint:
         assert "content" in data["reframes"][0]
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
-    def test_analyze_endpoint_empty_response_is_valid(self, mock_get_client, client, valid_request):
+    async def test_analyze_endpoint_empty_response_is_valid(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles empty suggestions/reframes correctly."""
         mock_ai_response = {
             "suggestions": [],
@@ -203,7 +206,7 @@ class TestCBTAnalyzeEndpoint:
         mock_client.analyze_cbt = mock_analyze
         mock_get_client.return_value = mock_client
 
-        response = client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
