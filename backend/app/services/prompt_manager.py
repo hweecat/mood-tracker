@@ -76,8 +76,9 @@ Return ONLY a valid JSON object with this structure:
             Tuple of (prompt_template, version_id)
         """
         if version:
+            db_gen = get_db()
             try:
-                db = next(get_db())
+                db = next(db_gen)
                 cursor = db.cursor()
                 cursor.execute(
                     "SELECT id, template FROM prompt_versions WHERE version = ? AND prompt_type = ? AND is_active = 1",
@@ -94,6 +95,11 @@ Return ONLY a valid JSON object with this structure:
                         logger.error("DB distortion prompt missing placeholders", extra={"version": version})
             except Exception as e:
                 logger.error("Failed to load distortion prompt from DB", extra={"error": str(e)})
+            finally:
+                try:
+                    next(db_gen)
+                except StopIteration:
+                    pass
 
         # Use default template
         logger.info("Using default distortion prompt template")
@@ -107,8 +113,9 @@ Return ONLY a valid JSON object with this structure:
             Tuple of (prompt_template, version_id)
         """
         if version:
+            db_gen = get_db()
             try:
-                db = next(get_db())
+                db = next(db_gen)
                 cursor = db.cursor()
                 cursor.execute(
                     "SELECT id, template FROM prompt_versions WHERE version = ? AND prompt_type = ? AND is_active = 1",
@@ -125,6 +132,11 @@ Return ONLY a valid JSON object with this structure:
                         logger.error("DB reframing prompt missing placeholders", extra={"version": version})
             except Exception as e:
                 logger.error("Failed to load reframing prompt from DB", extra={"error": str(e)})
+            finally:
+                try:
+                    next(db_gen)
+                except StopIteration:
+                    pass
 
         # Use default template
         logger.info("Using default reframing prompt template")
@@ -133,16 +145,10 @@ Return ONLY a valid JSON object with this structure:
     def _format_distortion_prompt(self) -> str:
         """Format the default distortion prompt with distortions list."""
         distortions_str = '", "'.join(COGNITIVE_DISTORTIONS)
-        return self.DEFAULT_DISTORTION_PROMPT.format(
-            situation="{situation}",
-            automatic_thought="{automatic_thought}",
-            distortions=f'"{distortions_str}"'
-        )
+        # Use replace for the distortions list to avoid double-formatting issues with JSON braces
+        return self.DEFAULT_DISTORTION_PROMPT.replace("{distortions}", f'"{distortions_str}"')
 
     def _format_reframing_prompt(self) -> str:
         """Format the default reframing prompt."""
-        return self.DEFAULT_REFRAMING_PROMPT.format(
-            situation="{situation}",
-            automatic_thought="{automatic_thought}",
-            distortions="{distortions}"
-        )
+        # No placeholders to pre-format here, but returning for consistency
+        return self.DEFAULT_REFRAMING_PROMPT
