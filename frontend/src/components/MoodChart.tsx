@@ -37,10 +37,10 @@ export function MoodChart({ entries }: MoodChartProps) {
   }, []);
 
   // Determine actual dates (handle "All Time" logic)
-  const { actualStartDate, actualEndDate, isAllTime: _isAllTime } = useMemo(() => {
-    const isAllTimeOption = dateRange.startDate.getFullYear() === 2020 && 
-                            dateRange.startDate.getMonth() === 0 && 
-                            dateRange.startDate.getDate() === 1;
+  const { actualStartDate, actualEndDate } = useMemo(() => {
+    const isAllTimeOption = dateRange.startDate.getFullYear() === 2020 &&
+      dateRange.startDate.getMonth() === 0 &&
+      dateRange.startDate.getDate() === 1;
 
     if (isAllTimeOption && entries.length > 0) {
       const timestamps = entries.map(e => e.timestamp);
@@ -48,15 +48,13 @@ export function MoodChart({ entries }: MoodChartProps) {
       const latestTimestamp = Math.max(...timestamps);
       return {
         actualStartDate: startOfDay(new Date(earliestTimestamp)),
-        actualEndDate: endOfDay(new Date(latestTimestamp)),
-        isAllTime: true
+        actualEndDate: endOfDay(new Date(latestTimestamp))
       };
     }
-    
+
     return {
       actualStartDate: dateRange.startDate,
-      actualEndDate: dateRange.endDate,
-      isAllTime: isAllTimeOption
+      actualEndDate: dateRange.endDate
     };
   }, [dateRange.startDate, dateRange.endDate, entries]);
 
@@ -94,9 +92,9 @@ export function MoodChart({ entries }: MoodChartProps) {
   // Get range label for display
   const getRangeLabel = () => {
     // Check if it's All Time based on the same logic used in useMemo
-    const isAllTimeOption = dateRange.startDate.getFullYear() === 2020 && 
-                            dateRange.startDate.getMonth() === 0 && 
-                            dateRange.startDate.getDate() === 1;
+    const isAllTimeOption = dateRange.startDate.getFullYear() === 2020 &&
+      dateRange.startDate.getMonth() === 0 &&
+      dateRange.startDate.getDate() === 1;
 
     if (isAllTimeOption) {
       if (entries.length === 0) return 'All Time (No entries)';
