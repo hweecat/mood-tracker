@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog, DistortionSuggestion, RationalReframe } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
@@ -232,7 +232,6 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   {DISTORTIONS.map(d => {
                     const isSuggested = formData.aiSuggestedDistortions.includes(d);
                     const isSelected = formData.distortions.includes(d);
-                    const suggestion = analysis?.suggestions.find(s => s.distortion === d);
 
                     return (
                       <div key={d} className="flex gap-2 items-stretch">
@@ -289,7 +288,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                             <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">{ref.perspective}</span>
                             <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
                           </div>
-                          <p className="text-xs font-bold text-foreground line-clamp-3 italic">"{ref.content}"</p>
+                          <p className="text-xs font-bold text-foreground line-clamp-3 italic">&ldquo;{ref.content}&rdquo;</p>
                         </button>
                       ))}
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CBTAnalysisResponse, DistortionSuggestion, RationalReframe } from '@/types';
+import { CBTAnalysisResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_V1_URL = `${API_BASE_URL}/api/v1`;
