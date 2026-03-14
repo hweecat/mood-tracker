@@ -9,19 +9,19 @@ and crisis resources used throughout the AI services.
 # The 13 cognitive distortions from Cognitive Behavioral Therapy
 # Reference: Burns, David D. (1980). Feeling Good: The New Mood Therapy.
 COGNITIVE_DISTORTIONS = [
-    "all-or-nothing thinking",
-    "overgeneralization",
-    "mental filter",
-    "disqualifying the positive",
-    "jumping to conclusions",
-    "magnification",
-    "emotional reasoning",
-    "should statements",
-    "labeling",
-    "personalization",
-    "control fallacies",
-    "fallacy of fairness",
-    "always being right"
+    "All-or-Nothing Thinking",
+    "Overgeneralization",
+    "Mental Filter",
+    "Disqualifying the Positive",
+    "Mind Reading",
+    "Fortune Telling",
+    "Magnification/Minimization",
+    "Emotional Reasoning",
+    "Should Statements",
+    "Labeling",
+    "Personalization",
+    "Control Fallacies",
+    "Fallacy of Fairness"
 ]
 
 # Safety fallback messages for different content categories

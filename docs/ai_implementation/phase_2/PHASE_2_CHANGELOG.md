@@ -223,3 +223,38 @@ This document tracks the incremental changes made during the implementation of P
 ---
 **Status**: All fixes applied. PR ready for merge.
 
+## [2026-03-14] - Phase 2: Full Integration & Alignment
+
+### Added
+- **API Specification v2**: `docs/api_spec_cbt_v2.md`
+    - Documented actual implementation of `POST /api/v1/cbt-logs/analyze`.
+    - Captured camelCase schema alignment and error handling (HTTP 451, 504, 503).
+- **CI Secret Injection**: `.github/workflows/ci.yml`
+    - Injected `GEMINI_API_KEY` and `GEMINI_MODEL` into the backend unit test suite to ensure tests requiring AI configuration pass in CI.
+
+### Changed
+- **Distortion Normalization**: `backend/app/core/constants.py`
+    - Normalized `COGNITIVE_DISTORTIONS` to **Title Case** to match frontend TypeScript types.
+    - Enhanced granularity by splitting "Jumping to Conclusions" into "Mind Reading" and "Fortune Telling".
+- **Implementation Spec**: `docs/ai_implementation/ai_implementation_spec.md`
+    - Promoted Phase 2 status to **COMPLETED**.
+    - Updated technical details to reflect Python 3.12+, Pydantic Settings, and PII-free audit logging.
+
+### Fixed
+- **UI Distortion Identification**: `frontend/src/components/CBTLogForm.tsx`
+    - Implemented case-insensitive matching (`toLowerCase()`) for AI suggestions to ensure amber highlights and Brain icons appear regardless of casing mismatches.
+- **Frontend Linting**: Resolved 7 ESLint issues:
+    - Escaped unescaped quote characters in JSX (e.g., `&ldquo;` / `&rdquo;`).
+    - Removed unused imports (`DistortionSuggestion`, `RationalReframe`).
+    - Cleaned up or aliased unused variables (`suggestion`, `isAllTime`).
+- **Database Orchestration**: `docker-compose.yml`
+    - Added explicit `sqitch init` and `sqitch plan` commands to the `db-migrate` service to ensure a reliable migration baseline.
+
+### Technical Notes
+- **End-to-End Alignment**: Cross-stream assessment confirmed backend/frontend alignment on distortion categories.
+- **Test Integrity**: Updated `backend/tests/services/test_gemini_client.py` to match Title Case constants; all 37 tests remain green.
+- **Consolidation**: Deprecated `.worktrees/gemini/docs/phase_2_brain_implementation_worktree_plan.md` in favor of the primary implementation document.
+
+---
+**Status**: Phase 2 "Brain" is fully integrated, aligned, and verified.
+

@@ -43,7 +43,7 @@ class TestGeminiClient:
                  patch.object(client, '_log_audit') as mock_audit:
 
                 mock_detect.return_value = (
-                    [DistortionSuggestion(distortion="all-or-nothing thinking", reasoning="Test reasoning")],
+                    [DistortionSuggestion(distortion="All-or-Nothing Thinking", reasoning="Test reasoning")],
                     "v1.0"
                 )
                 mock_reframe.return_value = (
