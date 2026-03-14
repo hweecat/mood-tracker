@@ -27,5 +27,5 @@ services:
     volumes:
       - ./migrations:/app
       - ./data:/app/data
-    command: deploy db:sqlite:/app/data/mood-tracker.db
+    command: init "mood-tracker" --engine sqlite && sqitch plan db:sqlite:/app/data/mood-tracker.db && sqitch deploy db:sqlite:/app/data/mood-tracker.db
     working_dir: /app
