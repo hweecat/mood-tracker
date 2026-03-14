@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, DistortionSuggestion, RationalReframe } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Info, X } from 'lucide-react';
+import { RotateCcw, Info, X, Sparkles, Brain, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { CBT_DISTORTIONS } from '@/lib/cbt-content';
 
 const DISTORTIONS = CBT_DISTORTIONS.map(d => d.name) as CognitiveDistortion[];
@@ -25,10 +26,12 @@ const DEFAULT_FORM_DATA = {
   moodAfter: 5 as MoodRating,
   behavioralLink: '',
   actionPlanStatus: 'pending' as 'pending' | 'completed',
+  aiSuggestedDistortions: [] as CognitiveDistortion[],
 };
 
 export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps) {
-  // Use local storage for drafts if not editing an existing entry
+  const { analyze, analysis, loading: analysisLoading, error: analysisError, reset: resetAnalysis } = useCBTAnalysis();
+  
   const [draftData, setDraftData] = useLocalStorage('cbt-draft-data', DEFAULT_FORM_DATA);
   const [draftStep, setDraftStep] = useLocalStorage('cbt-draft-step', 1);
 
@@ -42,11 +45,11 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     moodAfter: initialData.moodAfter || 5,
     behavioralLink: initialData.behavioralLink || '',
     actionPlanStatus: initialData.actionPlanStatus || 'pending',
+    aiSuggestedDistortions: initialData.aiSuggestedDistortions || [],
   } : draftData);
 
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
 
-  // Sync state to draft storage if not in edit mode
   useEffect(() => {
     if (!initialData) {
       setDraftData(formData);
@@ -54,15 +57,26 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     }
   }, [formData, step, initialData, setDraftData, setDraftStep]);
 
+  // Handle AI analysis results
+  useEffect(() => {
+    if (analysis) {
+      setFormData(prev => ({
+        ...prev,
+        aiSuggestedDistortions: analysis.suggestions.map(s => s.distortion),
+      }));
+    }
+  }, [analysis]);
+
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
   const clearDraft = () => {
-    if (confirm('Are you sure you want to clear your current journaling progress?')) {
+    if (confirm('Are you sure you want to clear your progress?')) {
       setFormData(DEFAULT_FORM_DATA);
       setStep(1);
       setDraftData(DEFAULT_FORM_DATA);
       setDraftStep(1);
+      resetAnalysis();
     }
   };
 
@@ -75,25 +89,35 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     }));
   };
 
+  const selectReframe = (reframe: RationalReframe) => {
+    setFormData(prev => ({
+      ...prev,
+      rationalResponse: reframe.content
+    }));
+  };
+
+  const handleAnalyze = async () => {
+    await analyze(formData.situation, formData.automaticThoughts);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
     
-    // Reset and clear draft
     if (!initialData) {
       setDraftData(DEFAULT_FORM_DATA);
       setDraftStep(1);
     }
     setStep(1);
     setFormData(DEFAULT_FORM_DATA);
+    resetAnalysis();
   };
 
   return (
     <div className="card space-y-0 bg-card border-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
-      {/* Header Section with Distinct Background */}
       <div className="flex justify-between items-center p-8 bg-[#f8fafc] dark:bg-[#1e293b] border-b-2 border-border">
-        <h2 className="text-2xl font-black text-foreground tracking-tighter">
-          {initialData ? 'Edit CBT Journal Entry' : 'CBT Journal Entry'}
+        <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
+          {initialData ? 'Edit Entry' : 'CBT Journal'}
         </h2>
         <div className="flex items-center gap-3">
           {!initialData && (formData.situation || step > 1) && (
@@ -135,7 +159,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Initial Mood</label>
-                <div className="pt-2" role="group" aria-labelledby="mood-before-label">
+                <div className="pt-2">
                   <MoodSelector 
                     value={formData.moodBefore} 
                     onChange={val => setFormData({...formData, moodBefore: val})} 
@@ -149,7 +173,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="thoughts-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">2. Automatic Thoughts</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts exactly as they appear.</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is your inner critic telling you? Capture the raw thoughts.</p>
                 <textarea
                   id="thoughts-textarea"
                   className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
@@ -158,6 +182,31 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   placeholder="e.g., I'm incompetent. Everyone else is better than me. I'll never succeed."
                 />
               </div>
+              
+              <button
+                type="button"
+                onClick={handleAnalyze}
+                disabled={analysisLoading || !formData.automaticThoughts}
+                className={cn(
+                  "w-full flex items-center justify-center gap-3 py-4 rounded-2xl border-2 transition-all font-black uppercase tracking-widest",
+                  analysisLoading 
+                    ? "bg-muted text-muted-foreground border-border animate-pulse" 
+                    : "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800"
+                )}
+              >
+                {analysisLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-4 border-amber-900 border-t-transparent rounded-full animate-spin" />
+                    Analyzing Thought...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} className="text-amber-600" />
+                    Seek AI Perspective
+                  </>
+                )}
+              </button>
+              {analysisError && <p className="text-xs font-bold text-red-600 dark:text-red-400 text-center">{analysisError}</p>}
             </div>
           )}
 
@@ -165,49 +214,48 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <h3 className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">3. Identification</h3>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">Which cognitive distortions (logical errors) can you spot in those thoughts?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">Spot the logical errors. {formData.aiSuggestedDistortions.length > 0 && "AI has highlighted some common patterns for you."}</p>
                 
                 {activeInfo && (
                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" onClick={() => setActiveInfo(null)}>
                      <div className="bg-card p-6 rounded-3xl max-w-md w-full shadow-2xl space-y-3 relative" onClick={e => e.stopPropagation()}>
-                       <button onClick={() => setActiveInfo(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" aria-label="Close info"><X size={20}/></button>
+                       <button onClick={() => setActiveInfo(null)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X size={20}/></button>
                        <h3 className="text-xl font-black text-brand-700">{activeInfo}</h3>
                        <p className="text-card-foreground leading-relaxed">
                          {CBT_DISTORTIONS.find(d => d.name === activeInfo)?.definition}
                        </p>
-                       <div className="bg-[#f1f5f9] dark:bg-[#1e293b] p-3 rounded-xl">
-                         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Example</span>
-                         <p className="text-sm italic text-foreground mt-1">&quot;{CBT_DISTORTIONS.find(d => d.name === activeInfo)?.example}&quot;</p>
-                       </div>
                      </div>
                    </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2" role="group" aria-label="Cognitive Distortions">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {DISTORTIONS.map(d => {
-                    const isLong = d.length > 20; // Threshold for correction
+                    const isSuggested = formData.aiSuggestedDistortions.includes(d);
+                    const isSelected = formData.distortions.includes(d);
+                    const suggestion = analysis?.suggestions.find(s => s.distortion === d);
+
                     return (
-                      <div key={d} className={cn("flex gap-2 items-stretch", isLong && "sm:col-span-2")}>
+                      <div key={d} className="flex gap-2 items-stretch">
                         <button
                           type="button"
                           onClick={() => toggleDistortion(d)}
-                          aria-pressed={formData.distortions.includes(d)}
-                          style={{ hyphens: 'auto' }}
                           className={cn(
-                            "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 active:scale-[0.98] font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500 break-words overflow-hidden",
-                            formData.distortions.includes(d)
-                              ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800 ring-4 ring-brand-500/20"
-                              : "bg-[#ffffff] dark:bg-[#0d0d0d] text-foreground border-border hover:border-brand-500 hover:bg-secondary"
+                            "flex-1 px-5 py-4 rounded-2xl text-left text-sm transition-all border-2 font-bold shadow-md outline-none focus-visible:ring-4 focus-visible:ring-brand-500 break-words flex justify-between items-center group",
+                            isSelected
+                              ? "bg-slate-800 text-white border-slate-900 dark:bg-brand-700 dark:border-brand-800"
+                              : isSuggested
+                                ? "bg-amber-50 dark:bg-amber-900/10 border-amber-400 dark:border-amber-800 text-foreground ring-2 ring-amber-400/20"
+                                : "bg-card text-foreground border-border hover:border-brand-500"
                           )}
                         >
-                          {d}
-                          {formData.distortions.includes(d) && <span className="sr-only"> (Selected)</span>}
+                          <span className="flex-1">{d}</span>
+                          {isSuggested && !isSelected && <Brain size={16} className="text-amber-500 animate-pulse shrink-0 ml-2" />}
+                          {isSelected && <CheckCircle2 size={16} className="text-brand-400 shrink-0 ml-2" />}
                         </button>
                         <button 
                           type="button"
                           onClick={() => setActiveInfo(d)}
-                          className="px-4 rounded-2xl bg-[#f1f5f9] dark:bg-[#1e293b] text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent active:scale-95 flex items-center justify-center"
-                          aria-label={`Show info about ${d}`}
+                          className="px-4 rounded-2xl bg-secondary text-muted-foreground hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all border-2 border-transparent"
                         >
                           <Info size={18} />
                         </button>
@@ -223,10 +271,37 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">4. Rational Challenge</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">Look at the evidence. What is a more objective, realistic, and compassionate way to view the situation?</p>
+                
+                {/* AI Reframing Carousel */}
+                {analysis?.reframes && analysis.reframes.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500 flex items-center gap-2">
+                      <Sparkles size={12} /> AI Suggested Reframes (HITL)
+                    </p>
+                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                      {analysis.reframes.map((ref, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => selectReframe(ref)}
+                          className="shrink-0 w-[280px] p-5 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 hover:border-amber-500 transition-all text-left space-y-2 group shadow-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">{ref.perspective}</span>
+                            <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                          <p className="text-xs font-bold text-foreground line-clamp-3 italic">"{ref.content}"</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">
+                  What is a more objective and compassionate way to view the situation?
+                </p>
                 <textarea
                   id="rational-textarea"
-                  className="w-full min-h-[200px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
+                  className="w-full min-h-[180px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.rationalResponse}
                   onChange={e => setFormData({...formData, rationalResponse: e.target.value})}
                   placeholder="e.g., While this promotion didn't happen, my performance reviews have been consistently high..."
@@ -234,7 +309,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Mood After Reframing</label>
-                <div className="pt-2" role="group" aria-labelledby="mood-after-label">
+                <div className="pt-2">
                   <MoodSelector 
                     value={formData.moodAfter} 
                     onChange={val => setFormData({...formData, moodAfter: val})} 
@@ -248,13 +323,13 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-600 pl-4 block">5. Actionable Plan</label>
-                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward constructively?</p>
+                <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward?</p>
                 <textarea
                   id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.behavioralLink}
                   onChange={e => setFormData({...formData, behavioralLink: e.target.value, actionPlanStatus: 'pending'})}
-                  placeholder="e.g., I will schedule a meeting with my manager to ask for specific feedback on areas for growth."
+                  placeholder="e.g., I will schedule a meeting with my manager to ask for feedback."
                 />
               </div>
             </div>
@@ -266,7 +341,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <button
               type="button"
               onClick={step > 1 ? prevStep : onCancel}
-              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground bg-[#f1f5f9] dark:bg-[#1e293b] hover:bg-secondary transition-all active:scale-95 shadow-md shadow-slate-100 dark:shadow-none outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground bg-secondary hover:bg-muted transition-all active:scale-95 shadow-md"
             >
               {step > 1 ? 'Back' : 'Cancel'}
             </button>
@@ -275,14 +350,14 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <button
               onClick={nextStep}
               disabled={step === 1 && !formData.situation}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-[#1e293b] dark:bg-[#0369a1] text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-[#075985] transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-[#0f172a] dark:border-[#0c4a6e] outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-[2] py-5 px-8 rounded-[2rem] bg-[#1e293b] dark:bg-[#0369a1] text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-[#075985] transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-[#0f172a] dark:border-[#0c4a6e]"
             >
               Next Step
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-green-600 text-white font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-2xl active:scale-95 border-b-8 border-green-800 outline-none focus-visible:ring-4 focus-visible:ring-brand-500"
+              className="flex-[2] py-5 px-8 rounded-[2rem] bg-green-600 text-white font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-2xl active:scale-95 border-b-8 border-green-800"
             >
               {initialData ? 'Update Journal' : 'Finalize Entry'}
             </button>

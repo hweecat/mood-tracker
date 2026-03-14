@@ -31,6 +31,23 @@ export interface MoodEntry {
   } | null;
 }
 
+export interface DistortionSuggestion {
+  distortion: CognitiveDistortion;
+  reasoning: string;
+  confidence?: number;
+}
+
+export interface RationalReframe {
+  perspective: string;
+  content: string;
+}
+
+export interface CBTAnalysisResponse {
+  suggestions: DistortionSuggestion[];
+  reframes: RationalReframe[];
+  promptVersion?: string;
+}
+
 export interface CBTLog {
   id: string;
   userId: string;
@@ -43,6 +60,9 @@ export interface CBTLog {
   moodAfter?: MoodRating;
   behavioralLink?: string;
   actionPlanStatus?: 'pending' | 'completed';
+  // HITL Metadata
+  aiSuggestedDistortions?: CognitiveDistortion[];
+  aiAnalysis?: CBTAnalysisResponse | null;
 }
 
 export interface User {
