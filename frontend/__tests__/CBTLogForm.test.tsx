@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { CBTLogForm } from '@/components/CBTLogForm';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 
 // Mock the hooks
 vi.mock('@/hooks/useCBTAnalysis', () => ({
@@ -45,7 +45,7 @@ describe('CBTLogForm Flow & Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useCBTAnalysis as any).mockReturnValue({
+    (useCBTAnalysis as Mock).mockReturnValue({
       analyze: mockAnalyze,
       analysis: null,
       loading: false,
@@ -72,7 +72,7 @@ describe('CBTLogForm Flow & Integration', () => {
     expect(mockAnalyze).toHaveBeenCalledWith('Got a low grade', "I'm a failure");
 
     // Simulate AI loading and then success
-    (useCBTAnalysis as any).mockReturnValue({
+    (useCBTAnalysis as Mock).mockReturnValue({
       analyze: mockAnalyze,
       analysis: MOCK_ANALYSIS,
       loading: false,
@@ -152,7 +152,7 @@ describe('CBTLogForm Flow & Integration', () => {
   });
 
   it('displays error message if AI analysis fails', async () => {
-    (useCBTAnalysis as any).mockReturnValue({
+    (useCBTAnalysis as Mock).mockReturnValue({
       analyze: mockAnalyze,
       analysis: null,
       loading: false,
