@@ -230,7 +230,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {DISTORTIONS.map(d => {
-                    const isSuggested = formData.aiSuggestedDistortions.includes(d);
+                    const isSuggested = formData.aiSuggestedDistortions.some(s => s.toLowerCase() === d.toLowerCase());
                     const isSelected = formData.distortions.includes(d);
 
                     return (

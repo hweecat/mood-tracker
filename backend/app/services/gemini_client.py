@@ -187,6 +187,7 @@ class GeminiClient:
 
         # Parse JSON response
         try:
+            logger.debug("Gemini response content", extra={"content": response.text})
             data = json.loads(response.text)
             suggestions = []
             for item in data.get("distortions", []):
@@ -276,8 +277,9 @@ class GeminiClient:
         success: bool
     ):
         """Log AI audit entry (PII-free)."""
+        db_gen = get_db()
         try:
-            db = next(get_db())
+            db = next(db_gen)
             cursor = db.cursor()
             cursor.execute(
                 """
@@ -293,6 +295,11 @@ class GeminiClient:
             logger.info("AI audit log created", extra={"request_id": request_id, "latency_ms": latency_ms})
         except Exception as e:
             logger.error("Failed to create AI audit log", extra={"error": str(e)})
+        finally:
+            try:
+                next(db_gen)
+            except StopIteration:
+                pass
 
 
 class SafetyException(Exception):
