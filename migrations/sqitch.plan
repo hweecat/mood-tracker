@@ -7,3 +7,4 @@ seed-data 2026-02-06T07:41:20Z ,,, <hweecat@AsusZenbook14X> # Seed initial demo 
 add_ai_analysis 2026-02-12T06:30:26Z sqitch_user <hello@example.com> # Add ai_analysis column to mood_entries table.
 add_ai_audit_logs_table 2026-02-24T14:57:26Z sqitch_user <hello@example.com> # Adds the ai_audit_logs table for storing AI interaction data.
 add_prompt_versions 2026-02-25T14:30:00Z sqitch_user <hello@example.com> # Adds the prompt_versions table for storing AI prompt templates.
+add_user_auth_fields 2026-03-15T07:25:00Z sqitch_user <hello@example.com> # Add username, password_hash, and created_at to users table.

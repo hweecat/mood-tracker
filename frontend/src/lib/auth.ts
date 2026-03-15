@@ -8,28 +8,44 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text", placeholder: "demo" },
+        username: { label: "Email or Username", type: "text", placeholder: "demo@example.com" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Hardcoded demo user check for this local app
-        if (credentials?.username === "demo" && credentials?.password === "demo") {
-          try {
-            // Fetch user data from the backend API instead of direct DB access
-            const res = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+        try {
+          // POST to backend login
+          const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: credentials?.username,
+              password: credentials?.password,
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            // Data contains access_token, we need the user info too
+            const userRes = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
               method: 'GET',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.accessToken}` 
+              }
             });
 
-            if (res.ok) {
-              const user = await res.json();
-              return { id: user.id, name: user.name, email: user.email };
+            if (userRes.ok) {
+              const user = await userRes.json();
+              return { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email,
+                accessToken: data.accessToken 
+              };
             }
-          } catch (e) {
-            console.error("Auth API Error (authorize):", e);
           }
-          // Fallback if backend is unreachable during build or first login
-          return { id: "1", name: "Demo User", email: "demo@example.com" };
+        } catch (e) {
+          console.error("Auth API Error (authorize):", e);
         }
         return null;
       }
@@ -42,14 +58,18 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.sub = user.id;
+        token.accessToken = user.accessToken;
       }
       
       // Fetch latest user data from Backend to keep session updated
-      if (token.sub) {
+      if (token.sub && token.accessToken) {
         try {
           const res = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token.accessToken}`
+            }
           });
           if (res.ok) {
             const dbUser = await res.json();
@@ -71,10 +91,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as { id?: string }).id = token.sub;
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
         session.user.name = token.name;
         session.user.email = token.email;
+        session.accessToken = token.accessToken;
       }
       return session;
     }

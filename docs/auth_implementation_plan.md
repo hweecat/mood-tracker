@@ -2,20 +2,22 @@
 
 ## Current Status & Todos
 
-- [ ] Create a new git worktree `auth` and a new branch `feat/auth`.
-- [ ] Move this plan to `docs/auth_implementation_plan.md` within the new worktree.
-- [ ] Add `passlib[bcrypt]` and `python-jose[cryptography]` to `backend/pyproject.toml`
-- [ ] Update database schema in `backend/app/db/session.py` (Add `password_hash`, `created_at`)
-- [ ] Implement `AuthService` in `backend/app/core/security.py` (Hashing, JWT)
-- [ ] Create Pydantic schemas in `backend/app/schemas/user.py`
-- [ ] Implement `/auth/register` and `/auth/login` in `backend/app/api/v1/routes/auth.py`
-- [ ] Implement `get_current_user` dependency in `backend/app/api/deps.py`
-- [ ] Refactor `moods.py`, `cbt_logs.py`, and `users.py` to use `get_current_user`
-- [ ] Update `backend/app/repositories/` to handle dynamic `user_id`
-- [ ] Update `frontend/src/lib/auth.ts` to call Backend Login
-- [ ] Update `frontend/src/hooks/useTrackerData.ts` to use JWT from session
-- [ ] Create `frontend/src/app/register/page.tsx`
-- [ ] Verify implementation with integration tests
+- [x] Create a new git worktree `auth` and a new branch `feat/auth`.
+- [x] Move this plan to `docs/auth_implementation_plan.md` within the new worktree.
+- [x] Add `passlib[bcrypt]` and `python-jose[cryptography]` to `backend/pyproject.toml`
+- [x] Update database schema in `backend/app/db/session.py` (Add `password_hash`, `created_at`)
+- [x] Implement `AuthService` in `backend/app/core/security.py` (Hashing, JWT)
+- [x] Create Pydantic schemas in `backend/app/schemas/user.py`
+- [x] Implement `/auth/register` and `/auth/login` in `backend/app/api/v1/routes/auth.py`
+- [x] Implement `get_current_user` dependency in `backend/app/api/deps.py`
+- [x] Refactor `moods.py`, `cbt_logs.py`, and `users.py` to use `get_current_user`
+- [x] Update `backend/app/repositories/` to handle dynamic `user_id`
+- [x] Update `frontend/src/lib/auth.ts` to call Backend Login
+- [x] Update `frontend/src/hooks/useTrackerData.ts` to use JWT from session
+- [x] Create `frontend/src/app/register/page.tsx`
+- [x] Verify implementation with integration tests
+- [x] Update backend to support login via Username or Email
+- [x] Update frontend login form to accept Username or Email
 
 ## 0. Git Workspace Setup
 - Command: `git worktree add auth -b feat/auth`

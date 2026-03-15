@@ -1,10 +1,16 @@
+import os
+
 # backend/app/core/constants.py
 """
-Constants for the MindfulTrack AI integration.
+Constants for the MindfulTrack AI integration and Authentication.
 
 This module defines the cognitive distortions list, safety fallback messages,
 and crisis resources used throughout the AI services.
 """
+
+SECRET_KEY = os.getenv("SECRET_KEY", "moodtrackersecret123")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 
 # The 13 cognitive distortions from Cognitive Behavioral Therapy
 # Reference: Burns, David D. (1980). Feeling Good: The New Mood Therapy.

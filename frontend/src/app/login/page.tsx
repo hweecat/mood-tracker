@@ -2,10 +2,11 @@
 
 import { signIn } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Brain, ArrowRight, Lock } from 'lucide-react';
+import { Brain, ArrowRight, Lock, User } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        username,
+        username: identifier,
         password,
         callbackUrl: '/',
         redirect: true,
@@ -65,17 +66,20 @@ export default function LoginPage() {
             )}
             
             <div className="space-y-2">
-              <label htmlFor="username" className="text-xs font-black uppercase tracking-widest text-muted-foreground pl-3">Username</label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-secondary border-2 border-border focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none font-bold transition-all text-foreground"
-                placeholder="Enter your username"
-                required
-              />
+              <label htmlFor="identifier" className="text-xs font-black uppercase tracking-widest text-muted-foreground pl-3">Email or Username</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full p-4 pl-12 rounded-2xl bg-secondary border-2 border-border focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 outline-none font-bold transition-all text-foreground"
+                  placeholder="Enter your email or username"
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -110,9 +114,12 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-xs text-muted-foreground font-medium">
-              Demo Credentials: <span className="font-mono bg-secondary px-1 py-0.5 rounded">demo</span> / <span className="font-mono bg-secondary px-1 py-0.5 rounded">demo</span>
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-sm font-bold">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="text-brand-600 hover:underline">
+                Register here
+              </Link>
             </p>
           </div>
         </div>
