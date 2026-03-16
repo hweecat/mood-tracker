@@ -4,6 +4,9 @@ from app.db.session import get_db
 from app.schemas.user import UserCreate, UserPublic, Token, UserLogin
 from app.repositories import user as user_repo
 from app.core.security import verify_password, create_access_token
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -36,4 +39,5 @@ def login(user_in: UserLogin, db: Connection = Depends(get_db)):
         )
     
     access_token = create_access_token(subject=user["id"])
+    logger.info("User logged in", extra={"user_id": user["id"], "token": access_token})
     return {"access_token": access_token, "token_type": "bearer"}

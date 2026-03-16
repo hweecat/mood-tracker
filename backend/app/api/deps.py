@@ -1,3 +1,5 @@
+import os
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -7,12 +9,25 @@ from app.schemas.user import UserPublic, TokenData
 from app.repositories import user as user_repo
 from app.core.constants import SECRET_KEY, ALGORITHM
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+AUTH_ENABLED = os.getenv("ENABLE_AUTH", "false").lower() == "true"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login", auto_error=False)
+
+DEMO_USER = UserPublic(id="1", username="demo", name="Demo User", email="demo@example.com")
 
 def get_current_user(
     db: Connection = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    token: str | None = Depends(oauth2_scheme)
 ) -> UserPublic:
+    if not AUTH_ENABLED:
+        return DEMO_USER
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

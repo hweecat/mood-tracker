@@ -45,13 +45,13 @@ def export_data(format: str = "json", db = Depends(get_db)):
         
         writer.writerow([])
         writer.writerow(["--- CBT LOGS ---"])
-        writer.writerow(["ID", "Timestamp", "Situation", "Automatic Thoughts", "Distortions", "Rational Response", "Mood Before", "Mood After", "Behavioral Link"])
+        writer.writerow(["ID", "Timestamp", "Situation", "Automatic Thoughts", "Distortions", "Rational Response", "Mood Before", "Mood After", "Behavioral Link", "Action Plan Status"])
         for log in cbt_logs:
             writer.writerow([
                 log["id"], log["timestamp"], log["situation"], 
                 log["automatic_thoughts"], ", ".join(log["distortions"]), 
                 log["rational_response"], log["mood_before"], 
-                log.get("mood_after", ""), log.get("behavioral_link", "")
+                log.get("mood_after", ""), log.get("behavioral_link", ""), log.get("action_plan_status", "pending")
             ])
             
         return Response(
@@ -114,8 +114,8 @@ def import_data(req: ImportRequest, db = Depends(get_db)):
         if "cbtLogs" in data:
             for log in data["cbtLogs"]:
                 cursor.execute(
-                    "INSERT OR IGNORE INTO cbt_logs (id, timestamp, situation, automatic_thoughts, distortions, rational_response, mood_before, mood_after, behavioral_link, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (log["id"], log["timestamp"], log["situation"], log["automatic_thoughts"], json.dumps(log["distortions"]), log["rational_response"], log["mood_before"], log.get("mood_after"), log.get("behavioral_link"), user_id)
+                    "INSERT OR IGNORE INTO cbt_logs (id, timestamp, situation, automatic_thoughts, distortions, rational_response, mood_before, mood_after, behavioral_link, action_plan_status, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (log["id"], log["timestamp"], log["situation"], log["automatic_thoughts"], json.dumps(log["distortions"]), log["rational_response"], log["mood_before"], log.get("mood_after"), log.get("behavioral_link"), log.get("action_plan_status", "pending"), user_id)
                 )
         
         db.commit()

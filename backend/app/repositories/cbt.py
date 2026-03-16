@@ -34,9 +34,9 @@ def create_cbt_log(db: Connection, user_id: str, log_in: CBTLogCreate) -> dict:
         """
         INSERT INTO cbt_logs (
             id, timestamp, situation, automatic_thoughts, distortions, 
-            rational_response, mood_before, mood_after, behavioral_link, user_id
+            rational_response, mood_before, mood_after, behavioral_link, action_plan_status, user_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             log_in.id,
@@ -48,6 +48,7 @@ def create_cbt_log(db: Connection, user_id: str, log_in: CBTLogCreate) -> dict:
             log_in.mood_before,
             log_in.mood_after,
             log_in.behavioral_link,
+            log_in.action_plan_status,
             user_id
         )
     )
@@ -69,6 +70,7 @@ def update_cbt_log(db: Connection, user_id: str, log_in: CBTLogPublic) -> bool:
             mood_before = ?, 
             mood_after = ?, 
             behavioral_link = ?,
+            action_plan_status = ?,
             timestamp = ?
         WHERE id = ? AND user_id = ?
         """,
@@ -80,6 +82,7 @@ def update_cbt_log(db: Connection, user_id: str, log_in: CBTLogPublic) -> bool:
             log_in.mood_before,
             log_in.mood_after,
             log_in.behavioral_link,
+            log_in.action_plan_status,
             log_in.timestamp,
             log_in.id,
             user_id
