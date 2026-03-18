@@ -15,7 +15,8 @@ MindfulTrack is a comprehensive Cognitive Behavioral Therapy (CBT) and mood trac
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
-- **Database**: [SQLite](https://sqlite.org/) via `better-sqlite3`
+- **Backend API**: Python FastAPI (`/api/v1/*`)
+- **Persistence**: SQLite (owned by the backend; the frontend never talks to SQLite directly)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **Charts**: [Recharts](https://recharts.org/)
 - **Icons**: [Lucide React](https://lucide.dev/)
@@ -28,9 +29,9 @@ MindfulTrack is a comprehensive Cognitive Behavioral Therapy (CBT) and mood trac
 - **State Management**: React Hooks (useState, useMemo, useEffect) & Custom Hooks (`useTrackerData`) for optimistic UI updates.
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) with a **Neo-brutalist** design system.
 - **Component Architecture**: Atomic design using `class-variance-authority` (CVA) for UI primitives (`Button`, `Card`, `Input`, `Badge`).
-- **Backend**: Next.js Route Handlers (Server-side logic).
-- **Database**: [SQLite](https://sqlite.org/) via `better-sqlite3` for local persistence.
-- **Authentication**: [NextAuth.js](https://next-auth.js.org/) with session-based RBAC (Role-Based Access Control).
+- **Backend**: Separate FastAPI service exposing `/api/v1/*` (the UI calls it via `NEXT_PUBLIC_API_URL`).
+- **Database**: SQLite file accessed by the backend (raw SQL repositories over `sqlite3`).
+- **Authentication (mainline)**: [NextAuth.js](https://next-auth.js.org/) demo credentials to gate UI routes; backend assumes demo `user_id = "1"`.
 - **Validation**: [Zod](https://zod.dev/) for type-safe API requests and responses.
 
 ### 📂 Module Breakdown
@@ -40,26 +41,25 @@ MindfulTrack is a comprehensive Cognitive Behavioral Therapy (CBT) and mood trac
 - `src/hooks/`: Custom React hooks for data orchestration and lifecycle management.
 - `src/lib/`: Shared utilities, database initialization, and authentication configuration.
 - `src/types/`: Centralized TypeScript definitions and Zod schemas.
-- `db/`: Database migrations (Sqitch), schema definitions, and seed data.
+- Backend integration lives in the hooks (`src/hooks/*`) and calls FastAPI (`/api/v1/*`).
 
 ### 🔄 Data Flow
 ```mermaid
 graph TD
     User([User Interface]) -->|User Actions| Hooks[useTrackerData Hook]
     Hooks -->|Optimistic Update| State[(React State)]
-    Hooks -->|Fetch/POST/PUT| API[Next.js API Routes]
-    API -->|Zod Validation| Lib[API Utils/Auth Context]
-    Lib -->|Authorized Query| DB[(better-sqlite3 / SQLite)]
-    DB -->|Result| API
-    API -->|JSON| Hooks
+    Hooks -->|fetch() calls| BE[FastAPI Backend (/api/v1/*)]
+    BE -->|Raw SQL repos| DB[(SQLite DB file)]
+    DB -->|Result| BE
+    BE -->|JSON| Hooks
     Hooks -->|Reconcile State| User
 ```
 
 ### 📡 API Design Principles
-- **RESTful Conventions**: Clean endpoint structure (`/api/mood`, `/api/cbt`).
-- **Type Safety**: End-to-end type safety using shared Zod schemas between client and server.
+- **RESTful Conventions**: Clean endpoint structure (`/api/v1/moods`, `/api/v1/cbt-logs`, `/api/v1/data/*`).
+- **Type Safety**: Zod schemas for request/response validation on the UI side.
 - **Standardized Responses**: Unified success/error response formats via `api-utils.ts`.
-- **Middleware Security**: NextAuth middleware protects all routes except login and static assets.
+- **Route Gating**: NextAuth middleware gates UI routes (mainline backend does not enforce bearer-token auth).
 
 ### 🧪 Testing Methodologies
 - **Unit/Integration**: [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/) for component logic and hook behavior.
@@ -68,16 +68,15 @@ graph TD
 - **Access Control**: Dedicated test suite for RBAC validation in API routes.
 
 ### 🔒 Security Considerations
-- **RBAC**: Environment-toggled Role-Based Access Control (`ENABLE_RBAC`).
-- **Input Sanitization**: Pervasive use of Zod to prevent injection and malformed data.
-- **Secret Management**: Secure environment variable handling for `NEXTAUTH_SECRET` and DB paths.
-- **CSRF Protection**: Native NextAuth CSRF protection for all mutating requests.
+- **Input Validation**: Zod on the UI boundary; Pydantic on the FastAPI boundary.
+- **Secret Management**: Environment variable handling for `NEXTAUTH_SECRET` and `NEXT_PUBLIC_API_URL`.
+- **Auth (mainline)**: NextAuth gates UI routes; backend assumes a demo user.
 
 ### 📈 Scalability & Performance
 - **Dynamic Imports**: Strategic use of `next/dynamic` for heavy visual components (Charts, Insights) to minimize initial bundle size.
 - **Tailwind 4 Optimization**: Use of CSS variables and design tokens in `@theme` for high-performance style injection.
 - **Modular UI**: Decoupled component architecture allows for easy extraction into a standalone library if needed.
-- **Database Portability**: `better-sqlite3` implementation is abstracted, allowing for future migration to PostgreSQL or PlanetScale if horizontal scaling is required.
+- **Backend-owned DB**: Persistence lives behind FastAPI, keeping the frontend stateless and simplifying future DB migrations.
 
 ### 🔌 Third-Party Integrations
 - **Lucide React**: Unified icon system.
@@ -144,44 +143,26 @@ Navigate to the **Insights** tab to see your progress metrics, including your mo
 
 ## 🗄️ Database Management
 
-This project uses [Sqitch](https://sqitch.org/) for database schema management and migrations. This ensures data integrity and provides a clear audit trail of schema changes.
+The database schema is managed by [Sqitch](https://sqitch.org/) in the repo root `migrations/` directory and is typically applied via Docker Compose.
 
 ### Prerequisites
 
-You must have Sqitch and the appropriate database drivers installed on your system.
+- Recommended: Docker (so Compose can run the `migrations` service).
 
 ### Common Commands
 
-All Sqitch commands should be run from the `db/` directory:
-```bash
-cd db
-```
-
-- **Deploy changes**: Apply pending migrations to your local database.
+- **Bring up the stack (runs migrations first):**
   ```bash
-  sqitch deploy local
-  ```
-- **Revert changes**: Undo the last applied migration.
-  ```bash
-  sqitch revert local
-  ```
-- **Verify changes**: Run verification scripts to ensure the database matches the plan.
-  ```bash
-  sqitch verify local
+  docker-compose up --build
   ```
 
-The migration plan is stored in `db/sqitch.plan`, and SQL scripts are located in the `db/deploy/`, `db/revert/`, and `db/verify/` directories. The migration registry is stored in `db/registry`.
+To inspect migrations directly, see:
+- Plan: `migrations/sqitch.plan`
+- Scripts: `migrations/deploy/`, `migrations/revert/`, `migrations/verify/`
 
 ### Environment Configuration
 
-The application uses the `DATABASE_PATH` environment variable to locate the SQLite database.
-- **Local**: `data/mood-tracker.db`
-- **Development**: `data/mood-tracker-dev.db`
-
-Ensure you have a `.env.local` file with the correct path:
-```text
-DATABASE_PATH=data/mood-tracker.db
-```
+The backend uses `DATABASE_PATH` to locate the SQLite DB file (default: `data/mood-tracker.db`). In Docker Compose, `./data` is mounted into the backend container so the DB persists across restarts.
 
 ## 🧪 Testing
 
