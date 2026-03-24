@@ -1,4 +1,5 @@
 -- Revert mood-tracker:add_user_auth_fields from sqlite
+-- requires: users
 
 BEGIN;
 

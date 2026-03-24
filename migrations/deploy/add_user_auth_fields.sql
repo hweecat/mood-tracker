@@ -1,4 +1,5 @@
 -- Deploy mood-tracker:add_user_auth_fields to sqlite
+-- requires: users
 
 BEGIN;
 

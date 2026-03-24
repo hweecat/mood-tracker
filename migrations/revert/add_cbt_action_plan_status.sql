@@ -1,4 +1,5 @@
 -- Revert mood-tracker:add_cbt_action_plan_status from sqlite
+-- requires: cbt_logs
 
 BEGIN;
 

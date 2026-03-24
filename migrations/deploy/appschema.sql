@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS cbt_logs (
     mood_before INTEGER NOT NULL,
     mood_after INTEGER,
     behavioral_link TEXT,
-    action_plan_status TEXT NOT NULL DEFAULT 'pending',
     user_id TEXT NOT NULL DEFAULT '1',
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

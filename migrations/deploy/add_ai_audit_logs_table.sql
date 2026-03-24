@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE ai_audit_logs (
     id TEXT PRIMARY KEY,
     correlation_id TEXT NOT NULL,
@@ -8,3 +10,5 @@ CREATE TABLE ai_audit_logs (
     status TEXT NOT NULL,
     timestamp INTEGER NOT NULL
 );
+
+COMMIT;
