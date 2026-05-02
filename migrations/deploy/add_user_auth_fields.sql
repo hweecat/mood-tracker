@@ -14,7 +14,10 @@ CREATE TABLE users (
     email TEXT UNIQUE,
     password_hash TEXT,
     image TEXT,
-    created_at INTEGER
+    created_at INTEGER,
+    password_reset_token_hash TEXT,
+    password_reset_expires_at INTEGER,
+    password_reset_requested_at INTEGER
 );
 
 -- Copy data from backup

@@ -10,11 +10,21 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=gemini-2.5-flash-lite
       - ENABLE_GEMINI=true
+      - ENABLE_AUTH=true
+      - PASSWORD_RESET_DEBUG=false
+      - FRONTEND_BASE_URL=http://localhost:3000
+      - SMTP_ENABLED=true
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
+      - SMTP_FROM_EMAIL=no-reply@mindfultrack.local
+      - SMTP_FROM_NAME=MindfulTrack
       - AI_TIMEOUT=10
       - AI_MAX_RETRIES=2
     depends_on:
       migrations:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
 
   frontend:
     build: ./frontend
@@ -34,3 +44,8 @@ services:
     command: deploy db:sqlite:/app/data/mood-tracker.db
     user: 1000:1000
     working_dir: /app
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"

@@ -24,6 +24,9 @@ def init_db():
                     name TEXT,
                     email TEXT UNIQUE,
                     password_hash TEXT,
+                    password_reset_token_hash TEXT,
+                    password_reset_expires_at INTEGER,
+                    password_reset_requested_at INTEGER,
                     image TEXT,
                     created_at INTEGER
                 );
@@ -125,6 +128,18 @@ def init_db():
             if "created_at" not in columns:
                 print("Migrating users table: adding created_at...")
                 conn.execute("ALTER TABLE users ADD COLUMN created_at INTEGER")
+
+            if "password_reset_token_hash" not in columns:
+                print("Migrating users table: adding password_reset_token_hash...")
+                conn.execute("ALTER TABLE users ADD COLUMN password_reset_token_hash TEXT")
+
+            if "password_reset_expires_at" not in columns:
+                print("Migrating users table: adding password_reset_expires_at...")
+                conn.execute("ALTER TABLE users ADD COLUMN password_reset_expires_at INTEGER")
+
+            if "password_reset_requested_at" not in columns:
+                print("Migrating users table: adding password_reset_requested_at...")
+                conn.execute("ALTER TABLE users ADD COLUMN password_reset_requested_at INTEGER")
             
             # Ensure Demo User has a password hash and username
             demo_password_hash = get_password_hash("demo")

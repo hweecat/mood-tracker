@@ -2,7 +2,7 @@
 
 BEGIN;
 
-SELECT id, name, username, email, password_hash, image, created_at
+SELECT id, name, username, email, password_hash, image, created_at, password_reset_token_hash, password_reset_expires_at, password_reset_requested_at
 FROM users
 LIMIT 1;
 

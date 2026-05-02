@@ -73,3 +73,50 @@ def create_user(db: Connection, user_in: UserCreate) -> dict:
         "image": user_in.image,
         "created_at": created_at
     }
+
+def set_password_reset_token(
+    db: Connection,
+    user_id: str,
+    token_hash: str,
+    expires_at: int,
+    requested_at: int
+) -> None:
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        UPDATE users
+        SET password_reset_token_hash = ?, password_reset_expires_at = ?, password_reset_requested_at = ?
+        WHERE id = ?
+        """,
+        (token_hash, expires_at, requested_at, user_id)
+    )
+    db.commit()
+
+def get_user_by_password_reset_token_hash(db: Connection, token_hash: str) -> Optional[dict]:
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE password_reset_token_hash = ?",
+        (token_hash,)
+    )
+    row = cursor.fetchone()
+    return dict(row) if row else None
+
+def clear_password_reset_fields(db: Connection, user_id: str) -> None:
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        UPDATE users
+        SET password_reset_token_hash = NULL, password_reset_expires_at = NULL, password_reset_requested_at = NULL
+        WHERE id = ?
+        """,
+        (user_id,)
+    )
+    db.commit()
+
+def update_password_hash(db: Connection, user_id: str, password_hash: str) -> None:
+    cursor = db.cursor()
+    cursor.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (password_hash, user_id)
+    )
+    db.commit()

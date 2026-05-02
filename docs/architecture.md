@@ -4,7 +4,7 @@ This document defines the production-ready architecture for MindfulTrack, utiliz
 
 ## 1. Technical Stack
 
-*   **Frontend Tier:** Next.js 15 (App Router), TypeScript, Tailwind CSS 4, NextAuth.js.
+*   **Frontend Tier:** Next.js 15 (App Router), TypeScript, Tailwind CSS 4, NextAuth.js Credentials.
 *   **Backend Tier:** Python 3.11+, FastAPI, Pydantic, SQLModel, Uvicorn.
 *   **Data Tier:** SQLite (managed by Backend), Docker Volumes for persistence.
 *   **AI/ML Tier:** TextBlob (Phase 1), Google Gemini (Phase 2).
@@ -42,6 +42,10 @@ The system is organized into three primary layers:
 | | `DELETE` | `/api/v1/cbt-logs/{id}` | Permanently remove a CBT log. |
 | **Users** | `GET` | `/api/v1/users/me` | Fetch current user profile information. |
 | | `PUT` | `/api/v1/users/me` | Update user profile details (name, email). |
+| **Auth** | `POST` | `/api/v1/auth/register` | Register a new user with username, email, and password. |
+| | `POST` | `/api/v1/auth/login` | Exchange credentials for a backend JWT. |
+| | `POST` | `/api/v1/auth/forgot-password` | Request a password reset without exposing account existence. |
+| | `POST` | `/api/v1/auth/reset-password` | Redeem a reset token and update the password. |
 | **Data** | `GET` | `/api/v1/data/export` | Export data in JSON, CSV, or Markdown format. |
 | | `POST` | `/api/v1/data/import` | Bulk import mood and CBT data from JSON. |
 
@@ -55,7 +59,7 @@ The system is organized into three primary layers:
 *   **Frontend Stack:**
     *   `Next.js 15` / `React 19`: Framework and UI runtime.
     *   `Tailwind CSS 4`: Styling and Neo-brutalist design system.
-    *   `NextAuth.js`: Authentication orchestration.
+    *   `NextAuth.js`: Credentials-based frontend session orchestration.
     *   `Recharts`: Data visualization for mood trends.
     *   `Lucide React`: Iconography.
 *   **Backend Stack:**
@@ -71,6 +75,8 @@ The system is organized into three primary layers:
 *   **Internal Networking:** Backend is shielded within a private Docker network, unreachable from the public internet except through the intended frontend routes.
 *   **Input Validation:** Mandatory schema enforcement via Pydantic (Backend) and Zod (Frontend).
 *   **Correlation Tracking:** Every request is assigned a unique `X-Correlation-ID` for auditing and incident response.
+*   **Auth Boundary:** Frontend session state is handled by NextAuth, while backend API authorization is enforced with bearer JWT validation.
+*   **Password Reset Delivery:** Reset links are delivered over SMTP when enabled, with Mailpit used for local production-style testing.
 
 ### Measurable Outcomes (Security)
 *   **Vulnerability Surface:** 0 direct public exposure points for the database or internal AI logic.
@@ -81,6 +87,7 @@ The system is organized into three primary layers:
 *   **Data Minimization:** Only specific text fields required for analysis are sent to the AI service layer.
 *   **PII Masking:** (Planned) Middleware to redact user-identifiable information before processing by external LLMs.
 *   **Local Persistence:** Users maintain control of their data via the SQLite file stored in their deployment environment.
+*   **Password Reset Tokens:** Only hashed reset tokens are persisted in the database; raw reset links are not stored.
 
 ### Measurable Outcomes (Privacy)
 *   **Data Leakage:** 0 user-identifiable metadata (IDs, emails) sent to external AI providers during enrichment.

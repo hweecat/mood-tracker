@@ -1,4 +1,114 @@
-Critical Assessment of Auth Implementation
+# Critical Assessment of Auth Implementation
+
+This document now preserves both:
+
+1. the **original assessment and recommendation history**
+2. a **current-state addendum** explaining the implemented auth shape
+
+## Current-State Addendum
+
+The auth worktree did **not** land on a pure JWT-only frontend. The current implementation is a **hybrid model**:
+
+- **Frontend:** NextAuth Credentials + session middleware
+- **Backend:** FastAPI JWT issuance + bearer-token validation
+
+This is now the authoritative architecture for the branch.
+
+### What changed from earlier proposals
+
+Earlier planning discussed removing NextAuth and moving to a lightweight custom token context. That is **not** the current implementation.
+
+What is actually running today:
+
+- `frontend/src/lib/auth.ts` keeps NextAuth Credentials
+- `frontend/src/middleware.ts` protects authenticated pages with `withAuth`
+- `backend/app/api/v1/routes/auth.py` still mints backend JWTs
+- `backend/app/api/deps.py` still validates backend bearer tokens for API access
+
+So the practical model is:
+
+- NextAuth owns browser session state
+- Backend JWT owns API authorization
+
+### Current implemented decisions
+
+#### 1. NextAuth stays
+
+**Decision:** Keep NextAuth Credentials for frontend login/session handling.
+
+**Why:**
+
+- The login page, middleware, and session hooks are already built around NextAuth.
+- Replacing it now would create extra churn without improving the password reset rollout directly.
+
+#### 2. Backend JWT stays
+
+**Decision:** Keep backend-issued JWTs as the authorization mechanism for protected API routes.
+
+**Why:**
+
+- The FastAPI route layer is already wired around `get_current_user`.
+- This keeps backend auth explicit and testable independent of the browser session.
+
+#### 3. CamelCase wire format is canonical
+
+**Decision:** Treat camelCase API responses as the frontend contract.
+
+**Why:**
+
+- Backend schemas inherit from `TunedBaseModel`, which uses `to_camel`.
+- The live login payload returns `accessToken`, not `access_token`.
+- Auth bugs have already occurred when frontend code assumed snake_case in JSON responses.
+
+#### 4. Password reset uses SMTP + Mailpit for prod-like testing
+
+**Decision:** Password reset is delivered through SMTP when enabled, with Mailpit acting as the local mailbox for production-style testing.
+
+**Why:**
+
+- It exercises the real “email arrives, user clicks reset link” path.
+- It avoids shipping raw reset URLs by default.
+- `PASSWORD_RESET_DEBUG=true` remains available when a direct link response is needed.
+
+#### 5. Demo-user bypass remains behind `ENABLE_AUTH=false`
+
+**Decision:** Preserve the backend fallback to `DEMO_USER` when auth is disabled.
+
+**Why:**
+
+- This minimizes disruption for demo-mode development.
+- It also means docs must clearly distinguish auth-enabled and auth-disabled behavior.
+
+### Current risks
+
+#### Session handoff fragility
+
+If the frontend stores the wrong response property (`access_token` vs `accessToken`), login will appear to fail even though backend `/auth/login` succeeded.
+
+#### Mixed auth state debugging
+
+Because frontend session and backend bearer auth are separate layers, debugging requires checking:
+
+1. Was the backend JWT minted?
+2. Was it stored in the NextAuth session?
+3. Was it sent back on protected API requests?
+
+#### No post-reset JWT invalidation
+
+Password reset updates `password_hash`, but existing JWTs remain valid until expiry.
+
+### Current recommendation
+
+Keep the current hybrid model for this branch, but document it clearly and treat the following as mandatory operational rules:
+
+- Frontend reads camelCase auth fields from backend JSON
+- `session.accessToken` is the source for protected API calls
+- Password reset flows are tested through Mailpit when SMTP is enabled
+- `ENABLE_AUTH` must be treated as a real mode switch
+
+## Historical Record: Original Assessment
+
+The following section preserves the earlier assessment that informed the branch before the final implementation settled.
 
   Based on my analysis of the auth worktree (feat/auth) against the main branch and documentation, here's a
   comprehensive assessment:
@@ -259,11 +369,11 @@ Critical Assessment of Auth Implementation
   3. Simpler architecture (single auth mechanism)
   4. Better alignment with API-first design (RESTful API with Bearer auth)
 
-  Implementation Priority:
+## Revisit Triggers
 
-  1. Phase 1 (Non-breaking): Add backend auth routes, add JWT dependency injection with optional flag
-  2. Phase 2 (Non-breaking): Add frontend auth context with ENABLE_AUTH flag
-  3. Phase 3 (Breaking): When ready, enable auth by default and remove userId: '1' hardcoded logic
+Reassess this architecture if any of the following happen:
 
-  This approach allows the auth worktree to be integrated incrementally without disrupting the main branch, while
-  maintaining the architectural integrity of the API-first design documented in architecture.md.
+- repeated regressions in token/session handoff
+- desire to support non-browser clients more broadly
+- requirement to invalidate sessions immediately after password reset
+- desire to simplify to a single auth abstraction on the frontend

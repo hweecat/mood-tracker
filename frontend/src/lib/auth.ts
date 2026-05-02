@@ -25,12 +25,13 @@ export const authOptions: NextAuthOptions = {
 
           if (res.ok) {
             const data = await res.json();
+            const accessToken = data.accessToken ?? data.access_token;
             // Data contains access_token, we need the user info too
             const userRes = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
               method: 'GET',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${data.accessToken}` 
+                'Authorization': `Bearer ${accessToken}` 
               }
             });
 
@@ -40,7 +41,7 @@ export const authOptions: NextAuthOptions = {
                 id: user.id, 
                 name: user.name, 
                 email: user.email,
-                accessToken: data.accessToken 
+                accessToken,
               };
             }
           }

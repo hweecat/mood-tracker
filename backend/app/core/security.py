@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
+import hashlib
+import secrets
 from jose import jwt
 from passlib.context import CryptContext
 from app.core.constants import SECRET_KEY, ALGORITHM
@@ -31,3 +33,15 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def generate_password_reset_token() -> str:
+    """
+    Generate a high-entropy, URL-safe password reset token.
+    """
+    return secrets.token_urlsafe(32)
+
+def hash_password_reset_token(token: str) -> str:
+    """
+    Hash a password reset token for storage (never store raw tokens).
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
