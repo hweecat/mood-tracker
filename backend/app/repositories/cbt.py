@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from typing import List
 from sqlite3 import Connection
 from app.schemas.cbt import CBTLogPublic, CBTLogCreate
@@ -64,45 +65,80 @@ def _capture_ai_feedback_event(db: Connection, user_id: str, log_in: CBTLogCreat
     if not (log_in.ai_analysis_id or log_in.feedback_source):
         return
 
-    accepted_distortions = [
-        {"distortion": distortion}
-        for distortion in log_in.distortions
+    accepted_distortions = log_in.accepted_distortions_payload or [
+        {"distortion": distortion} for distortion in log_in.distortions
     ]
     suggested_distortions = log_in.ai_suggested_distortions or []
-    ignored_distortions = [
+    ignored_distortions = log_in.ignored_distortions_payload or [
         {"distortion": distortion}
         for distortion in suggested_distortions
         if distortion not in log_in.distortions
     ]
-    ignored_reframes = [
+    ignored_reframes = log_in.ignored_reframes_payload or [
         {"id": reframe_id}
         for reframe_id in (log_in.ignored_reframe_ids or [])
     ]
+    audit_log_id = _verified_user_audit_log_id(
+        db,
+        audit_log_id=log_in.ai_analysis_id,
+        user_id=user_id,
+    )
 
     create_ai_feedback_event(
         db,
         AIFeedbackEventCreate(
-            audit_log_id=log_in.ai_analysis_id,
+            audit_log_id=audit_log_id,
             user_id=user_id,
             cbt_log_id=log_in.id,
             accepted_distortions_payload=accepted_distortions,
             ignored_distortions_payload=ignored_distortions,
             accepted_reframe_payload=(
-                {"id": log_in.accepted_reframe_id}
-                if log_in.accepted_reframe_id
-                else None
+                log_in.accepted_reframe_payload
+                if log_in.accepted_reframe_payload is not None
+                else (
+                    {"id": log_in.accepted_reframe_id}
+                    if log_in.accepted_reframe_id
+                    else None
+                )
             ),
             ignored_reframes_payload=ignored_reframes,
             user_rational_response=log_in.rational_response,
             accepted_action_plan_payload=(
-                {"id": log_in.accepted_action_plan_id}
-                if log_in.accepted_action_plan_id
-                else None
+                log_in.accepted_action_plan_payload
+                if log_in.accepted_action_plan_payload is not None
+                else (
+                    {"id": log_in.accepted_action_plan_id}
+                    if log_in.accepted_action_plan_id
+                    else None
+                )
             ),
             user_action_plan=log_in.behavioral_link,
             source=log_in.feedback_source or "user_original",
         ),
     )
+
+
+def _verified_user_audit_log_id(
+    db: Connection,
+    audit_log_id: str | None,
+    user_id: str,
+) -> str | None:
+    if not audit_log_id or not _table_exists(db, "ai_audit_logs"):
+        return None
+
+    row = db.execute(
+        "SELECT id FROM ai_audit_logs WHERE id = ? AND user_id = ?",
+        (audit_log_id, user_id),
+    ).fetchone()
+    return audit_log_id if row else None
+
+
+def _table_exists(db: Connection, table_name: str) -> bool:
+    row = db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
 
 def update_cbt_log(db: Connection, user_id: str, log_in: CBTLogPublic) -> bool:
     logger.info("Updating CBT log", extra={"user_id": user_id, "log_id": log_in.id})
@@ -151,6 +187,8 @@ def delete_cbt_log(db: Connection, user_id: str, log_id: str) -> bool:
         logger.info("CBT log not found, considering delete successful (idempotent)", extra={"log_id": log_id})
         return True
 
+    _delete_feedback_events_for_cbt_log(db, user_id=user_id, log_id=log_id)
+
     cursor.execute(
         "DELETE FROM cbt_logs WHERE id = ? AND user_id = ?",
         (log_id, user_id)
@@ -159,3 +197,23 @@ def delete_cbt_log(db: Connection, user_id: str, log_id: str) -> bool:
     success = cursor.rowcount > 0
     logger.info("CBT log deletion result", extra={"log_id": log_id, "success": success})
     return success
+
+
+def _delete_feedback_events_for_cbt_log(
+    db: Connection,
+    user_id: str,
+    log_id: str,
+) -> None:
+    if not _table_exists(db, "ai_feedback_events"):
+        return
+
+    try:
+        db.execute(
+            "DELETE FROM ai_feedback_events WHERE cbt_log_id = ? AND user_id = ?",
+            (log_id, user_id),
+        )
+    except sqlite3.OperationalError:
+        logger.warning(
+            "AI feedback cleanup skipped because feedback schema is unavailable",
+            extra={"log_id": log_id},
+        )

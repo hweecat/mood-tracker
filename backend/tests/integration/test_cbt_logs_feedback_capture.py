@@ -17,6 +17,7 @@ def test_create_cbt_log_captures_ai_feedback_event(tmp_path):
         session.init_db()
     finally:
         session.DATABASE_PATH = original_database_path
+    _insert_audit_log(db_path, audit_id="audit-1", user_id="1")
 
     def override_get_db():
         conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -128,3 +129,32 @@ def test_create_cbt_log_does_not_log_raw_sensitive_feedback_text(tmp_path, caplo
     for record in caplog.records:
         assert "jane@example.com" not in record.getMessage()
         assert "jane@example.com" not in str(record.__dict__)
+
+
+def _insert_audit_log(db_path, audit_id: str, user_id: str) -> None:
+    db = sqlite3.connect(db_path)
+    try:
+        db.execute(
+            """
+            INSERT INTO ai_audit_logs (
+                id, correlation_id, user_id, operation, provider, model,
+                latency_ms, status, schema_version, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                audit_id,
+                f"corr-{audit_id}",
+                user_id,
+                "analyze_cbt",
+                "gemini",
+                "gemini-1.5-flash",
+                25,
+                "success",
+                1,
+                1710000100,
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
