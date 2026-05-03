@@ -2,7 +2,6 @@ import json
 from typing import List
 from sqlite3 import Connection
 from app.schemas.mood import MoodCreate
-from app.services.ai_client import analyze_mood_note
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,10 +25,6 @@ def get_mood_entries(db: Connection, user_id: str) -> List[dict]:
 
 async def create_mood_entry(db: Connection, user_id: str, mood_in: MoodCreate) -> dict:
     logger.info("Creating mood entry", extra={"user_id": user_id, "mood_id": mood_in.id})
-    ai_analysis = None
-    if mood_in.note:
-        ai_analysis = await analyze_mood_note(mood_in.note)
-
     cursor = db.cursor()
     cursor.execute(
         """
@@ -45,7 +40,7 @@ async def create_mood_entry(db: Connection, user_id: str, mood_in: MoodCreate) -
             mood_in.behavior,
             mood_in.timestamp,
             user_id,
-            json.dumps(ai_analysis) if ai_analysis else None
+            None
         )
     )
     db.commit()
@@ -55,7 +50,7 @@ async def create_mood_entry(db: Connection, user_id: str, mood_in: MoodCreate) -
     return {
         **mood_in.model_dump(), 
         "user_id": user_id, 
-        "ai_analysis": ai_analysis
+        "ai_analysis": None
     }
 
 def delete_mood_entry(db: Connection, user_id: str, mood_id: str) -> bool:

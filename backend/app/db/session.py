@@ -98,6 +98,25 @@ def init_db():
                     source TEXT NOT NULL,
                     created_at INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS analysis_jobs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    entry_type TEXT NOT NULL,
+                    entry_id TEXT NOT NULL,
+                    analysis_type TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    result_payload TEXT,
+                    error_code TEXT,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_analysis_jobs_user_entry_created_at
+                ON analysis_jobs(user_id, entry_type, entry_id, created_at);
+
+                CREATE INDEX IF NOT EXISTS idx_analysis_jobs_created_at
+                ON analysis_jobs(created_at);
             """)
             
             # Seed default user
@@ -184,6 +203,7 @@ def init_db():
 
             _ensure_cbt_log_columns(conn)
             _ensure_ai_audit_tables(conn)
+            _ensure_analysis_jobs_table(conn)
             
             # Ensure Demo User has a password hash and username
             demo_password_hash = get_password_hash("demo")
@@ -313,6 +333,30 @@ def _ensure_cbt_log_columns(conn: sqlite3.Connection):
         conn.execute(
             "ALTER TABLE cbt_logs ADD COLUMN action_plan_status TEXT NOT NULL DEFAULT 'pending'"
         )
+
+def _ensure_analysis_jobs_table(conn: sqlite3.Connection):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS analysis_jobs (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            entry_type TEXT NOT NULL,
+            entry_id TEXT NOT NULL,
+            analysis_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            result_payload TEXT,
+            error_code TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_analysis_jobs_user_entry_created_at
+        ON analysis_jobs(user_id, entry_type, entry_id, created_at)
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_analysis_jobs_created_at
+        ON analysis_jobs(created_at)
+    """)
 
 def _table_columns(conn: sqlite3.Connection, table_name: str) -> list[str]:
     cursor = conn.execute(f"PRAGMA table_info({table_name})")
