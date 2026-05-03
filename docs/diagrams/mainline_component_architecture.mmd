@@ -1,0 +1,41 @@
+flowchart LR
+  user([User]) --> browser[Browser]
+
+  subgraph fe[Frontend]
+    nextjs[Next.js App Router UI]
+    nextauth["NextAuth session (user credentials)"]
+    hooks["React client hooks </br> (useTrackerData -> useCBTAnalysis)"]
+    ui[UI primitives + domain components]
+  end
+
+  subgraph be[Backend]
+    fastapi[FastAPI </br> /api/v1/*]
+    repos[Repositories]
+    aiclient[AI client factory]
+    cid[CorrelationIdMiddleware </br> X-Correlation-ID]
+  end
+
+  subgraph data[Data]
+    sqlite[(SQLite DB file)]
+    sqitch[Sqitch migrations]
+  end
+
+  subgraph ai[AI / NLP]
+    textblob["TextBlob </br> (mood note enrichment)"]
+    llm["LLM provider </br> (Gemini / other)"]
+  end
+
+  browser --> nextjs
+  nextjs --> nextauth
+  nextjs --> ui
+  nextjs --> hooks
+  hooks -->|fetch NEXT_PUBLIC_API_URL| fastapi
+
+  fastapi --> cid
+  fastapi --> repos
+  repos --> sqlite
+  sqitch -->|deploy| sqlite
+
+  fastapi --> aiclient
+  aiclient --> textblob
+  aiclient --> llm

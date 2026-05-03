@@ -2,7 +2,9 @@
 
 This document defines the production-ready architecture for MindfulTrack, utilizing a decoupled Next.js (Frontend) and FastAPI (Backend) stack.
 
-This document reflects the current implementation in the auth worktree, which builds on the root `frontend/` and `backend/` services while adding auth-specific behavior and password reset support.
+This document reflects the current implementation in the root `frontend/` (Next.js) and `backend/` (FastAPI) directories.
+
+Note: `.worktrees/*` contains experimental/feature snapshots (including an auth/JWT variant). This document is intentionally **not** describing those worktrees.
 
 ## Diagrams
 
@@ -13,7 +15,7 @@ Diagram sources (Mermaid) live in `docs/diagrams/`:
 
 ## 1. Technical Stack
 
-*   **Frontend Tier:** Next.js 15 (App Router), TypeScript, Tailwind CSS 4, NextAuth.js Credentials.
+*   **Frontend Tier:** Next.js (App Router), TypeScript, Tailwind CSS 4, NextAuth.
 *   **Backend Tier:** Python 3.11+, FastAPI, Pydantic, Uvicorn.
 *   **Data Tier:** SQLite file (mounted via Docker volume) accessed via `sqlite3` + raw SQL repositories.
 *   **AI/ML Tier:** TextBlob for mood-note enrichment; optional Gemini-backed CBT analysis behind `/api/v1/cbt-logs/analyze`.
@@ -22,10 +24,9 @@ Diagram sources (Mermaid) live in `docs/diagrams/`:
 ## 2. Core Components
 
 *   **Frontend (Next.js):** UI shell + client hooks that call the backend using `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). Example: `frontend/src/hooks/useTrackerData.ts`.
-*   **Backend (FastAPI):** REST API under `/api/v1/*`, SQLite persistence, auth logic, and AI orchestration. Entry: `backend/app/main.py`.
+*   **Backend (FastAPI):** REST API under `/api/v1/*`, SQLite persistence, and AI orchestration. Entry: `backend/app/main.py`.
 *   **Database (SQLite):** A single DB file (default `data/mood-tracker.db`) mounted into the backend container.
 *   **Migrations (Sqitch):** `migrations/` is deployed by the `migrations` service in `docker-compose.yml` before the backend starts.
-*   **API Gateway:** Docker Bridge network providing a private communication channel between services.
 
 ### 2.1 Component Diagram Overview
 The system is organized into three primary layers:
@@ -78,7 +79,7 @@ The system is organized into three primary layers:
 *   **Frontend Stack:**
     *   `Next.js 15` / `React 19`: Framework and UI runtime.
     *   `Tailwind CSS 4`: Styling and Neo-brutalist design system.
-    *   `NextAuth.js`: Credentials-based frontend session orchestration.
+    *   `NextAuth`: UI session gating.
     *   `Recharts`: Data visualization for mood trends.
     *   `Lucide React`: Iconography.
 *   **Backend Stack:**
@@ -101,6 +102,10 @@ The system is organized into three primary layers:
 * The UI uses NextAuth Credentials to gate access and establish a browser session (`frontend/src/lib/auth.ts`).
 * Backend authorization is enforced when `ENABLE_AUTH=true` through `get_current_user`.
 * When `ENABLE_AUTH=false`, the backend falls back to the demo user (`user_id = "1"`).
+
+### Current Auth Reality (UI)
+* The UI uses NextAuth to gate access to the app and establish a session (`frontend/src/lib/auth.ts`).
+* Backend authorization is not enforced in the current root implementation; backend routes generally assume a demo user (`user_id = "1"`).
 
 ### Measurable Outcomes (Security)
 *   **Vulnerability Surface:** 0 direct public exposure points for the database or internal AI logic.

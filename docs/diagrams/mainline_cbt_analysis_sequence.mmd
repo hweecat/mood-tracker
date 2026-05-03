@@ -1,0 +1,18 @@
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant UI as Next.js UI (CBTLogForm)
+  participant H as useCBTAnalysis()
+  participant API as FastAPI /api/v1/cbt-logs/analyze
+  participant A as AIClient (model-agnostic)
+  participant M as Model provider (Gemini / other)
+
+  U->>UI: Enter situation + automatic thoughts
+  UI->>H: analyze(situation, automaticThought)\n(mandatory for CBT flow)
+  H->>API: POST /api/v1/cbt-logs/analyze
+  API->>A: get_ai_client().analyze_cbt()
+  A->>M: Generate structured suggestions + reframes
+  M-->>A: JSON response
+  API-->>H: CBTAnalysisResponse
+  H-->>UI: analysis state updated
+  UI-->>U: Show suggestions + reframes (HITL selection)

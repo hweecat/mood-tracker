@@ -21,7 +21,7 @@ The system is designed as a production-oriented case study in **inference-heavy,
 | Frontend | React / TypeScript |
 | Backend API | Python (FastAPI) |
 | Database | SQLite (with future plans to migrate to Postgres) |
-| AI Layer | Gemini or Claude (LLM) API |
+| AI Layer | TextBlob (mood note enrichment) + optional Gemini (CBT analysis) |
 | Infrastructure | Docker Compose |
 | CI | GitHub Actions |
 | AI Dev Tooling | Continue.dev, Gemini |
@@ -34,20 +34,20 @@ Detailed architectural diagrams (Component and Data Flow) can be found in [docs/
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   React Frontend                    │
-│  Structured journaling UI · Async AI response poll │
+│                 Next.js Frontend UI                 │
+│  Structured journaling UI · AI-assisted analysis    │
 └──────────────────────┬──────────────────────────────┘
                        │ REST
 ┌──────────────────────▼──────────────────────────────┐
 │               Python Backend API                    │
-│  Input validation · Auth · AI orchestration layer  │
+│  Input validation · SQLite persistence · AI calls   │
 └────────────┬──────────────────────┬─────────────────┘
              │                      │
 ┌────────────▼────────┐   ┌─────────▼──────────────────┐
 │     SQLite DB       │   │     Gemini API             │
 │  journal entries   │   │  Distortion classification │
-│  AI analysis cache │   │  Thought reframing gen.    │
-│  prompt versions   │   │  Structured JSON output    │
+│  mood ai_analysis  │   │  Thought reframing gen.    │
+│  (optional) prompts│   │  Structured JSON output    │
 └─────────────────────┘   └────────────────────────────┘
 ```
 
@@ -105,7 +105,7 @@ Full decision records are in [`/docs/decisions/`](./docs/decisions/). Summaries 
 
 **Context:** AI prompts will evolve as we observe output quality. Without versioning, we lose the ability to understand why an analysis changed, run A/B comparisons, or re-analyze historical entries under an improved prompt.
 
-**Decision:** Each `AIAnalysis` record stores a reference to the `PromptVersion` used to generate it. Prompt versions are immutable once used in production.
+**Decision:** Store prompt templates as versioned data (`prompt_versions`), and return the prompt identifier on AI responses where applicable (e.g. `CBTAnalysisResponse.prompt_version`). Persisting the prompt identifier alongside saved journal entries is a follow-up enhancement.
 
 **Tradeoff accepted:** Slightly more complex data model upfront. The alternative — hardcoded prompts — creates an invisible dependency that becomes very painful to untangle at scale.
 
@@ -115,19 +115,23 @@ Full decision records are in [`/docs/decisions/`](./docs/decisions/). Summaries 
 
 ```
 User
- └── JournalEntry
+ ├── MoodEntry
       ├── mood_rating
-      ├── situation
-      ├── automatic_thought
       ├── emotions[]
-      └── AIAnalysis
-           ├── distortions[]         ← structured, validated output
-           ├── reframed_thought
-           ├── severity_score
-           └── prompt_version_id → PromptVersion
-                                      ├── template
-                                      ├── version_hash
-                                      └── deployed_at
+      ├── note / trigger / behavior
+      └── ai_analysis (optional JSON)
+
+ └── CBTLog
+      ├── situation
+      ├── automatic_thoughts
+      ├── distortions[]
+      ├── rational_response
+      ├── mood_before / mood_after (optional)
+      └── behavioral_link (optional)
+
+(Infrastructure tables via migrations)
+- prompt_versions (optional prompt templates)
+- ai_audit_logs (intended AI interaction audit records; schema/code currently need alignment)
 ```
 
 Separating `AIAnalysis` from `JournalEntry` as a first-class entity enables:

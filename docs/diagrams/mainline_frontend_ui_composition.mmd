@@ -1,0 +1,34 @@
+flowchart TD
+  subgraph Root[App Router]
+    L[RootLayout\n(layout.tsx)]
+    P[Home page\n(page.tsx)]
+    Login[/login\n(login/page.tsx)]
+  end
+
+  subgraph Providers[Providers]
+    Auth[AuthProvider\n(SessionProvider)]
+    Theme[ThemeProvider\n(light/dark/system)]
+  end
+
+  subgraph UI[UI Composition]
+    Tabs[Tab state\n(dashboard/mood/journal/insights/menu)]
+    Views[Dynamic views\n(HistoryView, MoodChart, InsightsView, etc.)]
+    Primitives[UI primitives\n(Button, Card, Input, Badge)]
+    Domain[Domain components\n(MoodEntryForm, CBTLogForm, DataManagement, SettingsView)]
+  end
+
+  subgraph Hooks[Hooks]
+    TDHook[useTrackerData\n(CRUD + fetchData)]
+    CBT[useCBTAnalysis\n(POST /cbt-logs/analyze)]
+  end
+
+  subgraph Backend[Backend]
+    API[FastAPI\n/api/v1/*]
+  end
+
+  L --> Auth --> Theme --> P
+  P --> Tabs --> Views
+  Views --> Domain --> Primitives
+
+  Domain --> TDHook --> API
+  Domain --> CBT --> API
