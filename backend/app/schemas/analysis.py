@@ -5,7 +5,6 @@ from app.schemas.base import TunedBaseModel
 
 class AnalysisJobPublic(TunedBaseModel):
     id: str
-    user_id: str
     entry_type: str
     entry_id: str
     analysis_type: str

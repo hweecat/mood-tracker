@@ -36,7 +36,7 @@ def test_mood_post_commits_entry_and_schedules_analysis_without_inline_inference
         finally:
             db.close()
         assert row is not None
-        assert job[0] == "pending"
+        assert job[0] == "queued"
 
     monkeypatch.setattr(moods, "analyze_mood_note", forbidden_inline_analysis, raising=False)
     monkeypatch.setattr(moods.BackgroundTasks, "add_task", capture_task)
@@ -87,7 +87,7 @@ def test_cbt_post_commits_entry_and_schedules_longitudinal_analysis(
         finally:
             db.close()
         assert row is not None
-        assert job == ("longitudinal_cbt", "pending")
+        assert job == ("longitudinal_cbt", "queued")
 
     monkeypatch.setattr(cbt_logs.BackgroundTasks, "add_task", capture_task)
 
@@ -170,7 +170,127 @@ def test_analysis_retrieval_is_scoped_to_current_user(tmp_path, monkeypatch):
     assert response.status_code == 200
     payload = response.json()
     assert [item["id"] for item in payload] == ["analysis-user-1"]
+    assert "userId" not in payload[0]
+    assert "user_id" not in payload[0]
     assert payload[0]["resultPayload"] == {"summary": "mine"}
+
+
+def test_deleting_mood_entry_removes_its_analysis_jobs(tmp_path, monkeypatch):
+    db_path = _init_test_db(tmp_path, monkeypatch)
+    db = sqlite3.connect(db_path)
+    try:
+        db.execute(
+            """
+            INSERT INTO mood_entries (
+                id, rating, emotions, note, timestamp, user_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            ("mood-delete-1", 2, '["sad"]', "A hard day", 1710000000, "1"),
+        )
+        db.execute(
+            """
+            INSERT INTO analysis_jobs (
+                id, user_id, entry_type, entry_id, analysis_type, status,
+                created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "analysis-mood-delete",
+                "1",
+                "mood_entry",
+                "mood-delete-1",
+                "mood_enrichment",
+                "queued",
+                1710000000,
+                1710000000,
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    app.dependency_overrides[moods.get_db] = _db_override(db_path)
+    try:
+        response = TestClient(app).delete("/api/v1/moods/mood-delete-1")
+    finally:
+        app.dependency_overrides.pop(moods.get_db, None)
+
+    assert response.status_code == 200
+    verification_db = sqlite3.connect(db_path)
+    try:
+        analysis = verification_db.execute(
+            "SELECT id FROM analysis_jobs WHERE id = ?",
+            ("analysis-mood-delete",),
+        ).fetchone()
+    finally:
+        verification_db.close()
+    assert analysis is None
+
+
+def test_deleting_cbt_log_removes_its_analysis_jobs(tmp_path, monkeypatch):
+    db_path = _init_test_db(tmp_path, monkeypatch)
+    db = sqlite3.connect(db_path)
+    try:
+        db.execute(
+            """
+            INSERT INTO cbt_logs (
+                id, timestamp, situation, automatic_thoughts, distortions,
+                rational_response, mood_before, user_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "cbt-delete-1",
+                1710000000,
+                "A hard conversation",
+                "I ruined everything",
+                '["Catastrophizing"]',
+                "I can repair this.",
+                3,
+                "1",
+            ),
+        )
+        db.execute(
+            """
+            INSERT INTO analysis_jobs (
+                id, user_id, entry_type, entry_id, analysis_type, status,
+                created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "analysis-cbt-delete",
+                "1",
+                "cbt_log",
+                "cbt-delete-1",
+                "longitudinal_cbt",
+                "queued",
+                1710000000,
+                1710000000,
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    app.dependency_overrides[cbt_logs.get_db] = _db_override(db_path)
+    try:
+        response = TestClient(app).delete("/api/v1/cbt-logs/cbt-delete-1")
+    finally:
+        app.dependency_overrides.pop(cbt_logs.get_db, None)
+
+    assert response.status_code == 200
+    verification_db = sqlite3.connect(db_path)
+    try:
+        analysis = verification_db.execute(
+            "SELECT id FROM analysis_jobs WHERE id = ?",
+            ("analysis-cbt-delete",),
+        ).fetchone()
+    finally:
+        verification_db.close()
+    assert analysis is None
 
 
 def _init_test_db(tmp_path, monkeypatch):

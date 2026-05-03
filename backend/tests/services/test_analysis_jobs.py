@@ -1,7 +1,48 @@
 import sqlite3
 
 from app.repositories.analysis import create_analysis_job, get_analysis_job
-from app.services.analysis_jobs import run_analysis_job
+from app.services import analysis_jobs
+
+
+def test_run_analysis_job_marks_job_running_before_analysis(tmp_path, monkeypatch):
+    db_path = tmp_path / "data" / "mood-tracker.db"
+    db_path.parent.mkdir()
+    request_db = sqlite3.connect(db_path)
+    request_db.row_factory = sqlite3.Row
+    _create_schema(request_db)
+    request_db.execute(
+        """
+        INSERT INTO mood_entries (
+            id, rating, emotions, note, timestamp, user_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        ("mood-running-1", 3, '["tired"]', "I feel worn down", 1710000000, "user-1"),
+    )
+    job_id = create_analysis_job(
+        request_db,
+        user_id="user-1",
+        entry_type="mood_entry",
+        entry_id="mood-running-1",
+        analysis_type="mood_enrichment",
+    )
+    request_db.close()
+    observed_statuses = []
+
+    def capture_running_status(db, job):
+        observed_statuses.append(
+            db.execute(
+                "SELECT status FROM analysis_jobs WHERE id = ?",
+                (job["id"],),
+            ).fetchone()["status"]
+        )
+        return {"summary": "running status observed"}
+
+    monkeypatch.setattr(analysis_jobs, "analyze_mood_entry", capture_running_status)
+
+    analysis_jobs.run_analysis_job(job_id, database_path=str(db_path))
+
+    assert observed_statuses == ["running"]
 
 
 def test_run_analysis_job_uses_fresh_connection_after_source_commit(tmp_path):
@@ -28,7 +69,7 @@ def test_run_analysis_job_uses_fresh_connection_after_source_commit(tmp_path):
     )
     request_db.close()
 
-    run_analysis_job(job_id, database_path=str(db_path))
+    analysis_jobs.run_analysis_job(job_id, database_path=str(db_path))
 
     verification_db = sqlite3.connect(db_path)
     verification_db.row_factory = sqlite3.Row
@@ -74,7 +115,7 @@ def test_run_analysis_job_failure_does_not_remove_source_entry(tmp_path):
     )
     db.close()
 
-    run_analysis_job(job_id, database_path=str(db_path))
+    analysis_jobs.run_analysis_job(job_id, database_path=str(db_path))
 
     verification_db = sqlite3.connect(db_path)
     verification_db.row_factory = sqlite3.Row

@@ -31,6 +31,13 @@ def read_analyses(
 def _row_to_public(row) -> dict:
     result_payload = row["result_payload"]
     return {
-        **dict(row),
+        "id": row["id"],
+        "entry_type": row["entry_type"],
+        "entry_id": row["entry_id"],
+        "analysis_type": row["analysis_type"],
+        "status": row["status"],
         "result_payload": json.loads(result_payload) if result_payload else None,
+        "error_code": row["error_code"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
     }

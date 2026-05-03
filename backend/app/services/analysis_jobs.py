@@ -4,6 +4,7 @@ from app.db import session
 from app.repositories.analysis import (
     get_analysis_job_by_id,
     mark_analysis_job_failed,
+    mark_analysis_job_running,
     mark_analysis_job_succeeded,
 )
 from app.services.journal_analysis import analyze_cbt_log, analyze_mood_entry
@@ -19,6 +20,7 @@ def run_analysis_job(job_id: str, database_path: str | None = None) -> None:
             return
 
         try:
+            mark_analysis_job_running(db, job_id)
             if job["analysis_type"] == "mood_enrichment":
                 result = analyze_mood_entry(db, job)
             elif job["analysis_type"] == "longitudinal_cbt":

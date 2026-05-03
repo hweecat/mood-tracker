@@ -5,6 +5,7 @@ from sqlite3 import Connection
 from app.schemas.cbt import CBTLogPublic, CBTLogCreate
 from app.schemas.ai_audit import AIFeedbackEventCreate
 from app.repositories.ai_audit import create_ai_feedback_event
+from app.repositories.analysis import delete_analysis_jobs_for_entry
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -217,6 +218,12 @@ def delete_cbt_log(db: Connection, user_id: str, log_id: str) -> bool:
         return True
 
     _delete_feedback_events_for_cbt_log(db, user_id=user_id, log_id=log_id)
+    delete_analysis_jobs_for_entry(
+        db,
+        user_id=user_id,
+        entry_type="cbt_log",
+        entry_id=log_id,
+    )
 
     cursor.execute(
         "DELETE FROM cbt_logs WHERE id = ? AND user_id = ?",

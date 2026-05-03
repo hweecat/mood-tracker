@@ -28,7 +28,7 @@ def create_analysis_job(
             entry_type,
             entry_id,
             analysis_type,
-            "pending",
+            "queued",
             None,
             None,
             now,
@@ -78,6 +78,18 @@ def list_analysis_jobs(
     ).fetchall()
 
 
+def mark_analysis_job_running(db: Connection, job_id: str) -> None:
+    db.execute(
+        """
+        UPDATE analysis_jobs
+        SET status = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        ("running", int(time.time()), job_id),
+    )
+    db.commit()
+
+
 def mark_analysis_job_succeeded(
     db: Connection,
     job_id: str,
@@ -97,6 +109,23 @@ def mark_analysis_job_succeeded(
         ),
     )
     db.commit()
+
+
+def delete_analysis_jobs_for_entry(
+    db: Connection,
+    user_id: str,
+    entry_type: str,
+    entry_id: str,
+) -> int:
+    cursor = db.execute(
+        """
+        DELETE FROM analysis_jobs
+        WHERE user_id = ? AND entry_type = ? AND entry_id = ?
+        """,
+        (user_id, entry_type, entry_id),
+    )
+    db.commit()
+    return cursor.rowcount
 
 
 def mark_analysis_job_failed(

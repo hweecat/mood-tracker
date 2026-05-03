@@ -2,6 +2,7 @@ import json
 from typing import List
 from sqlite3 import Connection
 from app.schemas.mood import MoodCreate
+from app.repositories.analysis import delete_analysis_jobs_for_entry
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -62,6 +63,13 @@ def delete_mood_entry(db: Connection, user_id: str, mood_id: str) -> bool:
     if not cursor.fetchone():
         logger.info("Mood entry not found, considering delete successful (idempotent)", extra={"mood_id": mood_id})
         return True
+
+    delete_analysis_jobs_for_entry(
+        db,
+        user_id=user_id,
+        entry_type="mood_entry",
+        entry_id=mood_id,
+    )
 
     cursor.execute(
         "DELETE FROM mood_entries WHERE id = ? AND user_id = ?",
