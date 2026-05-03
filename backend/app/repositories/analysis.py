@@ -117,6 +117,9 @@ def delete_analysis_jobs_for_entry(
     entry_type: str,
     entry_id: str,
 ) -> int:
+    if not _table_exists(db, "analysis_jobs"):
+        return 0
+
     cursor = db.execute(
         """
         DELETE FROM analysis_jobs
@@ -142,3 +145,11 @@ def mark_analysis_job_failed(
         ("failed", error_code, int(time.time()), job_id),
     )
     db.commit()
+
+
+def _table_exists(db: Connection, table_name: str) -> bool:
+    row = db.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (table_name,),
+    ).fetchone()
+    return row is not None
