@@ -77,6 +77,13 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 | Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
 | Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
 
+## Workstream Review Status
+
+| Worktree | Branch | Status | Latest verification |
+| --- | --- | --- | --- |
+| `.worktrees/llm-provider-fallbacks` | `codex/llm-provider-fallbacks` | Draft PR opened; CI passing; merged into async-analysis for dependency alignment | GitHub CI run #84 passed frontend, backend, and e2e checks on commit `81cc1fa`. |
+| `.worktrees/async-analysis` | `codex/async-analysis` | Review hardening complete for backend async job lifecycle, retrieval privacy, source-delete cleanup, and provider audit linkage | `uv run --with ruff ruff check .` passed; `uv run --with pytest pytest -p no:cacheprovider` passed with `93 passed, 94 warnings`. |
+
 ## Orchestrator Responsibilities
 
 - Keep this roadmap current as streams merge or requirements change.
