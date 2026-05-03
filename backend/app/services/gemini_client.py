@@ -55,7 +55,6 @@ class GeminiClient:
         latency_ms = 0
         prompt_version = "unknown"
         reframe_prompt_version = "unknown"
-        success = False
 
         try:
             # 1. Detect distortions
@@ -74,7 +73,6 @@ class GeminiClient:
             )
 
             latency_ms = int((time.time() - start_time) * 1000)
-            success = True
 
             # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
             audit_log_id = self._log_audit(
