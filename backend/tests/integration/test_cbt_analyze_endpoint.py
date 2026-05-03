@@ -55,7 +55,10 @@ class TestCBTAnalyzeEndpoint:
                     "content": "You've gotten good grades before. This test doesn't change that."
                 }
             ],
-            "prompt_version": "1.0.0"
+            "prompt_version": "1.0.0",
+            "provider": "openai",
+            "model": "gpt-5.5",
+            "ai_analysis_id": "audit-1",
         }
 
     async def test_analyze_endpoint_accepts_post(self, async_client, valid_request, mock_ai_response):
@@ -100,6 +103,9 @@ class TestCBTAnalyzeEndpoint:
         assert "suggestions" in data
         assert "reframes" in data
         assert "promptVersion" in data # Pydantic converts to camelCase
+        assert data["provider"] == "openai"
+        assert data["model"] == "gpt-5.5"
+        assert data["aiAnalysisId"] == "audit-1"
         assert isinstance(data["suggestions"], list)
         assert isinstance(data["reframes"], list)
 
@@ -122,6 +128,29 @@ class TestCBTAnalyzeEndpoint:
         assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
         data = response.json()
         assert "detail" in data
+        assert data["detail"]["trigger"] == "safety"
+        assert "crisis_resources" in data["detail"]
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_handles_provider_safety_block(self, mock_get_client, async_client, valid_request):
+        """Test /analyze endpoint handles provider-orchestrator safety blocks correctly."""
+        from app.services.llm_provider import LLMSafetyBlocked
+
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            raise LLMSafetyBlocked(
+                "Safety message",
+                crisis_resources=[{"name": "Test Crisis Line", "phone": "988"}],
+            )
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
+        data = response.json()
         assert data["detail"]["trigger"] == "safety"
         assert "crisis_resources" in data["detail"]
 
