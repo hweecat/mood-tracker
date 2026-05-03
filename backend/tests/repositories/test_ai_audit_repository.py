@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from pathlib import Path
 
 from app.repositories.ai_audit import AIAuditLogCreate, create_ai_audit_log
 
@@ -127,3 +128,77 @@ def test_create_ai_feedback_event_persists_hitl_outcomes():
         "steps": ["Text my study group"],
     }
     assert row["source"] == "edited_ai"
+
+
+def test_sqitch_migrations_create_canonical_ai_audit_tables():
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    repo_root = Path(__file__).resolve().parents[3]
+    migrations = repo_root / "migrations" / "deploy"
+
+    for migration_name in [
+        "appschema.sql",
+        "add_ai_audit_logs_table.sql",
+        "align_ai_audit_feedback_schema.sql",
+    ]:
+        db.executescript((migrations / migration_name).read_text())
+
+    assert _table_columns(db, "ai_audit_logs") == [
+        "id",
+        "correlation_id",
+        "user_id",
+        "entry_type",
+        "entry_id",
+        "operation",
+        "provider",
+        "model",
+        "prompt_version_id",
+        "masked_request_payload",
+        "response_payload",
+        "safety_ratings",
+        "safety_tier",
+        "latency_ms",
+        "status",
+        "error_code",
+        "schema_version",
+        "created_at",
+    ]
+    assert _table_columns(db, "ai_feedback_events") == [
+        "id",
+        "audit_log_id",
+        "user_id",
+        "cbt_log_id",
+        "accepted_distortions_payload",
+        "ignored_distortions_payload",
+        "accepted_reframe_payload",
+        "ignored_reframes_payload",
+        "user_rational_response",
+        "accepted_action_plan_payload",
+        "user_action_plan",
+        "source",
+        "created_at",
+    ]
+
+
+def test_init_db_creates_canonical_ai_audit_tables(tmp_path, monkeypatch):
+    from app.db import session
+
+    db_path = tmp_path / "data" / "mood-tracker.db"
+    monkeypatch.setattr(session, "DATABASE_PATH", str(db_path))
+
+    session.init_db()
+
+    db = sqlite3.connect(db_path)
+    try:
+        assert "provider" in _table_columns(db, "ai_audit_logs")
+        assert "model" in _table_columns(db, "ai_audit_logs")
+        assert "masked_request_payload" in _table_columns(db, "ai_audit_logs")
+        assert "user_rational_response" in _table_columns(db, "ai_feedback_events")
+        assert "accepted_action_plan_payload" in _table_columns(db, "ai_feedback_events")
+    finally:
+        db.close()
+
+
+def _table_columns(db: sqlite3.Connection, table_name: str) -> list[str]:
+    rows = db.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return [row["name"] if isinstance(row, sqlite3.Row) else row[1] for row in rows]
