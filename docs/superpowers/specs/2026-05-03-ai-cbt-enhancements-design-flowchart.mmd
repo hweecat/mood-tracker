@@ -1,0 +1,11 @@
+flowchart LR
+  UI["Next.js CBT and mood UI"] --> API["FastAPI routes"]
+  API --> Repo["SQLite repositories"]
+  API --> LLM["LLM orchestration service"]
+  LLM --> Mask["PII minimization and masking"]
+  Mask --> Providers["Gemini / OpenAI / Ollama"]
+  LLM --> Audit["AI audit and feedback tables"]
+  Repo --> Jobs["Analysis job scheduler"]
+  Jobs --> Analysis["Async analysis worker service"]
+  Audit --> Evals["Offline eval pipeline"]
+  Repo --> Evals
