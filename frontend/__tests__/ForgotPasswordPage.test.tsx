@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 
 import ForgotPasswordPage from '../src/app/forgot-password/page';
