@@ -104,15 +104,15 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen pb-28 bg-background">
+    <div className="min-h-screen overflow-x-hidden pb-28 bg-background">
       <header className="bg-background border-b-2 border-border sticky top-0 z-10 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-4">
           <h1 className="text-xl font-black text-brand-700 tracking-tighter uppercase">MindfulTrack</h1>
           <div className="flex items-center gap-3 relative">
             {mounted && (
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 rounded-xl bg-secondary text-foreground hover:bg-muted transition-all border border-border shadow-sm active:scale-90 focus-visible:ring-4 focus-visible:ring-brand-500 outline-none"
+                className="flex h-[44px] w-[44px] items-center justify-center rounded-xl border border-border bg-secondary p-2.5 text-foreground shadow-sm transition-all hover:bg-muted active:scale-90 focus-visible:ring-4 focus-visible:ring-brand-500 outline-none"
                 aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {resolvedTheme === 'dark' ? (
@@ -167,13 +167,13 @@ export default function Home() {
         </div>
       </header>
 
-      <main aria-label="Main Content" className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+      <main aria-label="Main Content" className="mx-auto w-full max-w-2xl space-y-8 overflow-x-hidden px-4 py-8">
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             <Card aria-label="Welcome Banner" className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl border-b-8 border-slate-900 border-none">
               <h2 className="text-3xl font-black mb-2 tracking-tight">Hello there!</h2>
               <p className="font-bold text-sm uppercase tracking-widest text-[#e2e8f0]">How is your mind feeling today?</p>
-              <div className="mt-8 flex gap-4">
+              <div className="mt-8 flex flex-col gap-4 min-[360px]:flex-row">
                 <Button 
                   onClick={() => navigateTo('mood')}
                   variant="neo"
@@ -328,7 +328,7 @@ export default function Home() {
       {/* Navigation Bar */}
       <nav 
         aria-label="Main Navigation"
-        className="fixed bottom-0 left-0 right-0 bg-background border-t-2 border-border px-6 py-3 flex justify-between items-center z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"
+        className="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-around gap-1 border-t-2 border-border bg-background px-2 py-2 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] sm:px-6 sm:py-3"
       >
         <NavButton active={activeTab === 'dashboard'} onClick={() => navigateTo('dashboard')} icon={LayoutDashboard} label="Home" />
         <NavButton active={activeTab === 'mood'} onClick={() => navigateTo('mood')} icon={PlusCircle} label="Mood" />
@@ -347,14 +347,14 @@ function NavButton({ active, onClick, icon: Icon, label }: { active: boolean, on
       aria-label={label}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        "flex flex-col items-center gap-1 transition-none min-w-[64px] min-h-[64px] rounded-2xl p-2 outline-none focus-visible:ring-4 focus-visible:ring-brand-500",
+        "flex min-h-[64px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl p-2 transition-none outline-none focus-visible:ring-4 focus-visible:ring-brand-500 sm:max-w-20",
         active 
           ? "text-black dark:text-white bg-brand-200 dark:bg-brand-900 shadow-sm" 
           : "text-foreground dark:text-foreground hover:bg-secondary"
       )}
     >
       <Icon size={24} strokeWidth={active ? 3 : 2} aria-hidden="true" />
-      <span className="text-xs font-black uppercase tracking-normal">
+      <span className="text-[11px] font-black uppercase tracking-normal sm:text-xs">
         {label}
       </span>
     </button>

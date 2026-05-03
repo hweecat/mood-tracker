@@ -171,7 +171,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     <button
       type="button"
       onClick={clearDraft}
-      className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-destructive"
+      className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-destructive"
       aria-label="Clear draft"
       title="Clear Draft"
     >
@@ -234,7 +234,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Initial Mood</label>
-                <div className="pt-2">
+                <div className="cbt-mood-selector pt-2">
                   <MoodSelector 
                     value={formData.moodBefore} 
                     onChange={val => setFormData({...formData, moodBefore: val})} 
@@ -374,7 +374,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Mood After Reframing</label>
-                <div className="pt-2">
+                <div className="cbt-mood-selector pt-2">
                   <MoodSelector 
                     value={formData.moodAfter} 
                     onChange={val => setFormData({...formData, moodAfter: val})} 
