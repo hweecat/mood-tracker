@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { CBTLogForm } from '@/components/CBTLogForm';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
@@ -52,6 +52,22 @@ describe('CBTLogForm Flow & Integration', () => {
       error: null,
       reset: mockResetAnalysis,
     });
+  });
+
+  it('keeps primary navigation available through the CBT mobile flow', async () => {
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    const actionGroup = screen.getByRole('group', { name: /cbt step actions/i });
+    expect(within(actionGroup).getByRole('button', { name: /next/i })).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A difficult work conversation' } });
+    await act(async () => {
+      fireEvent.click(within(actionGroup).getByRole('button', { name: /next/i }));
+    });
+
+    const updatedActionGroup = screen.getByRole('group', { name: /cbt step actions/i });
+    expect(within(updatedActionGroup).getByRole('button', { name: /back/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /seek ai perspective/i })).toBeVisible();
   });
 
   it('navigates through the steps and triggers AI analysis', async () => {

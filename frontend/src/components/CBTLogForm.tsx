@@ -8,6 +8,7 @@ import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { cn } from '@/lib/utils';
 import { RotateCcw, Info, X, Sparkles, Brain, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { CBT_DISTORTIONS } from '@/lib/cbt-content';
+import { CBTStepShell } from './cbt/CBTStepShell';
 
 const DISTORTIONS = CBT_DISTORTIONS.map(d => d.name) as CognitiveDistortion[];
 
@@ -113,37 +114,58 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     resetAnalysis();
   };
 
+  const headerActions = !initialData && (formData.situation || step > 1) ? (
+    <button
+      type="button"
+      onClick={clearDraft}
+      className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-destructive"
+      aria-label="Clear draft"
+      title="Clear Draft"
+    >
+      <RotateCcw size={18} />
+    </button>
+  ) : null;
+
+  const stepActions = (
+    <>
+      {(onCancel || step > 1) && (
+        <button
+          type="button"
+          onClick={step > 1 ? prevStep : onCancel}
+          className="min-h-11 flex-1 rounded-2xl border-4 border-border bg-secondary px-5 py-4 text-sm font-black uppercase tracking-wide text-foreground shadow-md transition-all active:scale-95 sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          {step > 1 ? 'Back' : 'Cancel'}
+        </button>
+      )}
+      {step < 5 ? (
+        <button
+          type="button"
+          onClick={nextStep}
+          disabled={step === 1 && !formData.situation}
+          className="min-h-11 flex-[2] rounded-2xl border-b-8 border-[#0f172a] bg-[#1e293b] px-5 py-4 text-sm font-black uppercase tracking-wide text-white shadow-2xl transition-all active:scale-95 disabled:opacity-20 dark:border-[#0c4a6e] dark:bg-[#0369a1] dark:hover:bg-[#075985] sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          Next Step
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="min-h-11 flex-[2] rounded-2xl border-b-8 border-green-800 bg-green-600 px-5 py-4 text-sm font-black uppercase tracking-wide text-white shadow-2xl transition-all active:scale-95 hover:bg-green-700 sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          {initialData ? 'Update Journal' : 'Finalize Entry'}
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div className="card space-y-0 bg-card border-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
-      <div className="flex justify-between items-center p-8 bg-[#f8fafc] dark:bg-[#1e293b] border-b-2 border-border">
-        <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-          {initialData ? 'Edit Entry' : 'CBT Journal'}
-        </h2>
-        <div className="flex items-center gap-3">
-          {!initialData && (formData.situation || step > 1) && (
-            <button 
-              onClick={clearDraft}
-              className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-              title="Clear Draft"
-            >
-              <RotateCcw size={18} />
-            </button>
-          )}
-          <span className="text-xs font-black text-foreground uppercase tracking-widest bg-card px-4 py-1.5 rounded-full border-2 border-border shadow-sm">
-            Step {step} / 5
-          </span>
-        </div>
-      </div>
-
-      <div className="px-8 pt-6 pb-8 space-y-8">
-        <div className="w-full bg-secondary h-4 rounded-full overflow-hidden border-2 border-border shadow-inner p-0.5">
-          <div 
-            className="bg-brand-700 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(2,132,199,0.6)]" 
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-        </div>
-
-        <div className="min-h-[400px]">
+    <CBTStepShell
+      title={initialData ? 'Edit Entry' : 'CBT Journal'}
+      step={step}
+      totalSteps={5}
+      headerActions={headerActions}
+      actions={stepActions}
+    >
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
@@ -333,36 +355,6 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex gap-5 pt-8 border-t-4 border-border">
-          {(onCancel || step > 1) && (
-            <button
-              type="button"
-              onClick={step > 1 ? prevStep : onCancel}
-              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground bg-secondary hover:bg-muted transition-all active:scale-95 shadow-md"
-            >
-              {step > 1 ? 'Back' : 'Cancel'}
-            </button>
-          )}
-          {step < 5 ? (
-            <button
-              onClick={nextStep}
-              disabled={step === 1 && !formData.situation}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-[#1e293b] dark:bg-[#0369a1] text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-[#075985] transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-[#0f172a] dark:border-[#0c4a6e]"
-            >
-              Next Step
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-green-600 text-white font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-2xl active:scale-95 border-b-8 border-green-800"
-            >
-              {initialData ? 'Update Journal' : 'Finalize Entry'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </CBTStepShell>
   );
 }
