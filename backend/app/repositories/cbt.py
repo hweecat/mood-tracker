@@ -2,6 +2,8 @@ import json
 from typing import List
 from sqlite3 import Connection
 from app.schemas.cbt import CBTLogPublic, CBTLogCreate
+from app.schemas.ai_audit import AIFeedbackEventCreate
+from app.repositories.ai_audit import create_ai_feedback_event
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -53,8 +55,54 @@ def create_cbt_log(db: Connection, user_id: str, log_in: CBTLogCreate) -> dict:
         )
     )
     db.commit()
+    _capture_ai_feedback_event(db, user_id=user_id, log_in=log_in)
     logger.info("CBT log created successfully", extra={"log_id": log_in.id})
     return {**log_in.model_dump(), "user_id": user_id}
+
+
+def _capture_ai_feedback_event(db: Connection, user_id: str, log_in: CBTLogCreate) -> None:
+    if not (log_in.ai_analysis_id or log_in.feedback_source):
+        return
+
+    accepted_distortions = [
+        {"distortion": distortion}
+        for distortion in log_in.distortions
+    ]
+    suggested_distortions = log_in.ai_suggested_distortions or []
+    ignored_distortions = [
+        {"distortion": distortion}
+        for distortion in suggested_distortions
+        if distortion not in log_in.distortions
+    ]
+    ignored_reframes = [
+        {"id": reframe_id}
+        for reframe_id in (log_in.ignored_reframe_ids or [])
+    ]
+
+    create_ai_feedback_event(
+        db,
+        AIFeedbackEventCreate(
+            audit_log_id=log_in.ai_analysis_id,
+            user_id=user_id,
+            cbt_log_id=log_in.id,
+            accepted_distortions_payload=accepted_distortions,
+            ignored_distortions_payload=ignored_distortions,
+            accepted_reframe_payload=(
+                {"id": log_in.accepted_reframe_id}
+                if log_in.accepted_reframe_id
+                else None
+            ),
+            ignored_reframes_payload=ignored_reframes,
+            user_rational_response=log_in.rational_response,
+            accepted_action_plan_payload=(
+                {"id": log_in.accepted_action_plan_id}
+                if log_in.accepted_action_plan_id
+                else None
+            ),
+            user_action_plan=log_in.behavioral_link,
+            source=log_in.feedback_source or "user_original",
+        ),
+    )
 
 def update_cbt_log(db: Connection, user_id: str, log_in: CBTLogPublic) -> bool:
     logger.info("Updating CBT log", extra={"user_id": user_id, "log_id": log_in.id})

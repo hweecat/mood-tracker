@@ -54,6 +54,7 @@ def init_db():
                     mood_before INTEGER NOT NULL,
                     mood_after INTEGER,
                     behavioral_link TEXT,
+                    action_plan_status TEXT NOT NULL DEFAULT 'pending',
                     user_id TEXT NOT NULL DEFAULT '1',
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 );
@@ -178,6 +179,7 @@ def init_db():
                 print("Migrating users table: adding password_reset_requested_at...")
                 conn.execute("ALTER TABLE users ADD COLUMN password_reset_requested_at INTEGER")
 
+            _ensure_cbt_log_columns(conn)
             _ensure_ai_audit_tables(conn)
             
             # Ensure Demo User has a password hash and username
@@ -290,6 +292,13 @@ def _ensure_ai_audit_tables(conn: sqlite3.Connection):
             created_at INTEGER NOT NULL
         )
     """)
+
+def _ensure_cbt_log_columns(conn: sqlite3.Connection):
+    cbt_columns = _table_columns(conn, "cbt_logs")
+    if cbt_columns and "action_plan_status" not in cbt_columns:
+        conn.execute(
+            "ALTER TABLE cbt_logs ADD COLUMN action_plan_status TEXT NOT NULL DEFAULT 'pending'"
+        )
 
 def _table_columns(conn: sqlite3.Connection, table_name: str) -> list[str]:
     cursor = conn.execute(f"PRAGMA table_info({table_name})")

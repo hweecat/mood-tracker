@@ -51,6 +51,11 @@ class CBTLogBase(TunedBaseModel):
 
 class CBTLogCreate(CBTLogBase):
     id: str
+    ai_analysis_id: Optional[str] = None
+    accepted_reframe_id: Optional[str] = None
+    ignored_reframe_ids: Optional[List[str]] = None
+    accepted_action_plan_id: Optional[str] = None
+    feedback_source: Optional[str] = None
 
 class CBTLogPublic(CBTLogBase):
     id: str
