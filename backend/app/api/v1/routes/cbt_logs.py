@@ -10,37 +10,59 @@ from app.services.ai_client import get_ai_client
 from app.services.gemini_client import SafetyException
 from app.core.logging import get_logger
 
+from app.api.deps import get_current_user
+from app.schemas.user import UserPublic
+
 logger = get_logger(__name__)
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[CBTLogPublic])
-def read_cbt_logs(db = Depends(get_db)):
-    return get_cbt_logs(db, user_id="1")
+def read_cbt_logs(
+    db = Depends(get_db),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    return get_cbt_logs(db, user_id=current_user.id)
 
 
 @router.post("/", response_model=CBTLogPublic)
-def create_cbt(log_in: CBTLogCreate, db = Depends(get_db)):
-    return create_cbt_log(db, user_id="1", log_in=log_in)
+def create_cbt(
+    log_in: CBTLogCreate,
+    db = Depends(get_db),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    return create_cbt_log(db, user_id=current_user.id, log_in=log_in)
 
 
 @router.put("/{log_id}", response_model=CBTLogPublic)
-def update_cbt(log_id: str, log_in: CBTLogPublic, db = Depends(get_db)):
-    if not update_cbt_log(db, user_id="1", log_in=log_in):
+def update_cbt(
+    log_id: str,
+    log_in: CBTLogPublic,
+    db = Depends(get_db),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    if not update_cbt_log(db, user_id=current_user.id, log_in=log_in):
         raise HTTPException(status_code=404, detail="CBT log not found")
     return log_in
 
 
 @router.delete("/{log_id}")
-def remove_cbt(log_id: str, db = Depends(get_db)):
-    if not delete_cbt_log(db, user_id="1", log_id=log_id):
+def remove_cbt(
+    log_id: str,
+    db = Depends(get_db),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    if not delete_cbt_log(db, user_id=current_user.id, log_id=log_id):
         raise HTTPException(status_code=404, detail="CBT log not found")
     return {"status": "success"}
 
 
 @router.post("/analyze", response_model=CBTAnalysisResponse)
-async def analyze_cbt(request: CBTAnalysisRequest):
+async def analyze_cbt(
+    request: CBTAnalysisRequest,
+    current_user: UserPublic = Depends(get_current_user)
+):
     """
     AI-powered cognitive analysis of automatic thoughts.
 

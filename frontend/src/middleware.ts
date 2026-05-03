@@ -10,10 +10,12 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - api/auth (NextAuth API routes)
      * - login (Login page)
+     * - forgot-password (Password reset request page)
+     * - reset-password (Password reset completion page)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)"
+    "/((?!api/auth|login|register|forgot-password|reset-password|_next/static|_next/image|favicon.ico).*)"
   ]
 };

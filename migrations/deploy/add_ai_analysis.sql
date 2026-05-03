@@ -1,4 +1,5 @@
 -- Deploy mood-tracker:add_ai_analysis to sqlite
+-- requires: mood_entries
 
 BEGIN;
 

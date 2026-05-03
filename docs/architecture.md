@@ -61,6 +61,10 @@ The system is organized into three primary layers:
 | | `POST` | `/api/v1/cbt-logs/analyze` | Run AI cognitive analysis (suggest distortions + reframes). |
 | **Users** | `GET` | `/api/v1/users/me` | Fetch current user profile information. |
 | | `PUT` | `/api/v1/users/me` | Update user profile details (name, email). |
+| **Auth** | `POST` | `/api/v1/auth/register` | Register a new user with username, email, and password. |
+| | `POST` | `/api/v1/auth/login` | Exchange credentials for a backend JWT. |
+| | `POST` | `/api/v1/auth/forgot-password` | Request a password reset without exposing account existence. |
+| | `POST` | `/api/v1/auth/reset-password` | Redeem a reset token and update the password. |
 | **Data** | `GET` | `/api/v1/data/export` | Export data in JSON, CSV, or Markdown format. |
 | | `POST` | `/api/v1/data/import` | Bulk import mood and CBT data from JSON. |
 | **Health** | `GET` | `/health` | Backend health check. |
@@ -91,6 +95,13 @@ The system is organized into three primary layers:
 *   **Internal Networking:** Backend is shielded within a private Docker network, unreachable from the public internet except through the intended frontend routes.
 *   **Input Validation:** Mandatory schema enforcement via Pydantic (Backend) and Zod (Frontend).
 *   **Correlation Tracking:** Every request is assigned a unique `X-Correlation-ID` for auditing and incident response.
+*   **Auth Boundary:** Frontend session state is handled by NextAuth, while backend API authorization is enforced with bearer JWT validation.
+*   **Password Reset Delivery:** Reset links are delivered over SMTP when enabled, with Mailpit used for local production-style testing.
+
+### Current Auth Reality (Auth Worktree)
+* The UI uses NextAuth Credentials to gate access and establish a browser session (`frontend/src/lib/auth.ts`).
+* Backend authorization is enforced when `ENABLE_AUTH=true` through `get_current_user`.
+* When `ENABLE_AUTH=false`, the backend falls back to the demo user (`user_id = "1"`).
 
 ### Current Auth Reality (UI)
 * The UI uses NextAuth to gate access to the app and establish a session (`frontend/src/lib/auth.ts`).
@@ -105,6 +116,7 @@ The system is organized into three primary layers:
 *   **Data Minimization:** Only specific text fields required for analysis are sent to the AI service layer.
 *   **PII Masking:** (Planned) Middleware to redact user-identifiable information before processing by external LLMs.
 *   **Local Persistence:** Users maintain control of their data via the SQLite file stored in their deployment environment.
+*   **Password Reset Tokens:** Only hashed reset tokens are persisted in the database; raw reset links are not stored.
 
 ### Measurable Outcomes (Privacy)
 *   **Data Leakage:** 0 user-identifiable metadata (IDs, emails) sent to external AI providers during enrichment.

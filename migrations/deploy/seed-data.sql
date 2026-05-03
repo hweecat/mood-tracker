@@ -1,4 +1,5 @@
 -- Deploy mood-tracker:seed-data to sqlite
+-- requires: users
 
 BEGIN;
 

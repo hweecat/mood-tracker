@@ -52,18 +52,18 @@ async function runAccessibilityTests() {
       return hydrated === 'true';
     }, 20000);
     
-    let usernameInput;
+    let identifierInput;
     try {
-      usernameInput = await driver.wait(until.elementLocated(By.id('username')), 20000);
+      identifierInput = await driver.wait(until.elementLocated(By.id('identifier')), 20000);
     } catch (e) {
-      console.error('Failed to find username input. Page source:');
+      console.error('Failed to find email or username input. Page source:');
       console.log(await driver.getPageSource());
       throw e;
     }
     const passwordInput = await driver.findElement(By.id('password'));
     const submitButton = await driver.findElement(By.css('button[type="submit"]'));
 
-    await usernameInput.sendKeys('demo');
+    await identifierInput.sendKeys('demo');
     await passwordInput.sendKeys('demo');
     
     console.log('Submitting login form...');
