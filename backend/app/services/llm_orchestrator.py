@@ -20,10 +20,14 @@ class LLMOrchestrator:
         self.providers = providers
         self.audit_service = audit_service
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
         last_error: Exception | None = None
+        correlation_id = str(uuid.uuid4())
         for provider in self.providers:
-            correlation_id = str(uuid.uuid4())
             try:
                 result = await provider.analyze_cbt(request)
             except LLMSafetyBlocked as exc:
@@ -36,6 +40,7 @@ class LLMOrchestrator:
                     safety_tier="high",
                     latency_ms=0,
                     error_code=type(exc).__name__,
+                    user_id=user_id,
                 )
                 raise
             except LLMParseError as exc:
@@ -49,6 +54,7 @@ class LLMOrchestrator:
                     safety_tier="error",
                     latency_ms=0,
                     error_code=type(exc).__name__,
+                    user_id=user_id,
                 )
             except LLMTimeoutError as exc:
                 last_error = exc
@@ -61,6 +67,7 @@ class LLMOrchestrator:
                     safety_tier="error",
                     latency_ms=0,
                     error_code=type(exc).__name__,
+                    user_id=user_id,
                 )
             except LLMProviderError as exc:
                 last_error = exc
@@ -73,8 +80,25 @@ class LLMOrchestrator:
                     safety_tier="error",
                     latency_ms=0,
                     error_code=type(exc).__name__,
+                    user_id=user_id,
                 )
             else:
+                try:
+                    response = self._to_response(result, audit_id=None)
+                except Exception as exc:
+                    last_error = LLMParseError("Provider response did not match CBT schema")
+                    self._record_attempt(
+                        request=request,
+                        provider=result.provider,
+                        model=result.model,
+                        correlation_id=correlation_id,
+                        status="parse_error",
+                        safety_tier="error",
+                        latency_ms=result.latency_ms,
+                        error_code=type(exc).__name__,
+                        user_id=user_id,
+                    )
+                    continue
                 audit_id = self._record_attempt(
                     request=request,
                     provider=result.provider,
@@ -85,8 +109,11 @@ class LLMOrchestrator:
                     latency_ms=result.latency_ms,
                     safety_ratings=result.safety_ratings,
                     prompt_version_id=result.parsed_payload.get("prompt_version"),
+                    user_id=user_id,
                 )
-                return self._to_response(result, audit_id)
+                response.analysis_id = audit_id
+                response.ai_analysis_id = audit_id
+                return response
 
         if last_error:
             raise last_error
@@ -104,9 +131,11 @@ class LLMOrchestrator:
         error_code: str | None = None,
         prompt_version_id: str | None = None,
         safety_ratings: dict | None = None,
+        user_id: str | None = None,
     ) -> str | None:
         audit_in = AIAuditLogCreate(
             correlation_id=correlation_id,
+            user_id=user_id,
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider=provider,
@@ -128,9 +157,10 @@ class LLMOrchestrator:
 
     def _to_response(self, result: LLMResult, audit_id: str | None) -> CBTAnalysisResponse:
         return CBTAnalysisResponse(
-            suggestions=result.parsed_payload.get("suggestions", []),
-            reframes=result.parsed_payload.get("reframes", []),
+            suggestions=result.parsed_payload["suggestions"],
+            reframes=result.parsed_payload["reframes"],
             prompt_version=result.parsed_payload.get("prompt_version"),
+            analysis_id=audit_id,
             ai_analysis_id=audit_id,
             provider=result.provider,
             model=result.model,

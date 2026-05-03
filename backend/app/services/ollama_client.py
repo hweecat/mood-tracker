@@ -5,7 +5,13 @@ from typing import Any
 import httpx
 
 from app.schemas.cbt import CBTAnalysisRequest
-from app.services.llm_provider import LLMParseError, LLMProviderError, LLMResult
+from app.services.llm_provider import (
+    LLMParseError,
+    LLMProviderError,
+    LLMResult,
+    LLMTimeoutError,
+    minimize_cbt_request_for_provider,
+)
 
 
 class OllamaClient:
@@ -26,20 +32,23 @@ class OllamaClient:
     async def analyze_cbt(self, request: CBTAnalysisRequest) -> LLMResult:
         start = time.time()
         url = f"{self.base_url}/api/generate"
-        response = await self.http_client.post(
-            url,
-            json={
-                "model": self.model,
-                "prompt": self._build_prompt(request),
-                "stream": False,
-                "format": "json",
-            },
-            timeout=self.timeout,
-        )
+        minimized_request = minimize_cbt_request_for_provider(request)
         try:
+            response = await self.http_client.post(
+                url,
+                json={
+                    "model": self.model,
+                    "prompt": self._build_prompt(minimized_request),
+                    "stream": False,
+                    "format": "json",
+                },
+                timeout=self.timeout,
+            )
             response.raise_for_status()
             payload = response.json()
             parsed = json.loads(payload["response"])
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError("Ollama provider request timed out") from exc
         except (httpx.HTTPError, KeyError, TypeError) as exc:
             raise LLMProviderError("Ollama provider request failed") from exc
         except (json.JSONDecodeError, ValueError) as exc:

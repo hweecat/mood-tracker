@@ -99,6 +99,7 @@ class GeminiClient:
                 suggestions=distortions,
                 reframes=reframes,
                 prompt_version=prompt_version,
+                analysis_id=audit_log_id,
                 ai_analysis_id=audit_log_id,
             )
 

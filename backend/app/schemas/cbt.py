@@ -33,6 +33,7 @@ class CBTAnalysisResponse(TunedBaseModel):
     suggestions: List[DistortionSuggestion]
     reframes: List[RationalReframe]
     prompt_version: Optional[str] = None
+    analysis_id: Optional[str] = None
     ai_analysis_id: Optional[str] = None
     provider: Optional[str] = None
     model: Optional[str] = None
