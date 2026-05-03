@@ -17,6 +17,7 @@ from evals.runner import run_examples
 DEFAULT_PROVIDER = "mock-provider"
 DEFAULT_MODEL = "mock-cbt-v1"
 DEFAULT_PROMPT_VERSION = "cbt-eval-v1"
+DATASET_TYPES = ("internal-feedback", "cbt-bench-distortions", "cactus", "auto")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -25,6 +26,12 @@ def main(argv: list[str] | None = None) -> int:
 
     run_parser = subparsers.add_parser("run", help="Run offline evals over a fixture/export")
     run_parser.add_argument("--dataset", required=True, type=Path)
+    run_parser.add_argument(
+        "--dataset-type",
+        required=True,
+        choices=DATASET_TYPES,
+        help="Dataset adapter to use. Use 'auto' only for recognizable fixture names.",
+    )
     run_parser.add_argument("--output", required=True, type=Path)
     run_parser.add_argument("--provider", default=DEFAULT_PROVIDER)
     run_parser.add_argument("--model", default=DEFAULT_MODEL)
@@ -32,7 +39,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "run":
-        examples = _load_examples(args.dataset)
+        try:
+            examples = _load_examples(args.dataset, dataset_type=args.dataset_type)
+        except ValueError as exc:
+            parser.error(str(exc))
         results = run_examples(
             examples,
             model_adapter=_mock_model_adapter,
@@ -55,13 +65,32 @@ def main(argv: list[str] | None = None) -> int:
     return 2
 
 
-def _load_examples(path: Path) -> list[EvalExample]:
-    name = path.name.lower()
-    if name.endswith(".jsonl") or "internal_feedback" in name:
+def _load_examples(path: Path, *, dataset_type: str) -> list[EvalExample]:
+    if dataset_type == "auto":
+        dataset_type = _detect_dataset_type(path)
+
+    if dataset_type == "internal-feedback":
         return load_internal_feedback_examples(path)
-    if "cactus" in name:
+    if dataset_type == "cactus":
         return load_cactus_examples(path)
-    return load_cbt_bench_distortion_examples(path)
+    if dataset_type == "cbt-bench-distortions":
+        return load_cbt_bench_distortion_examples(path)
+
+    raise ValueError(f"Unsupported dataset type: {dataset_type}")
+
+
+def _detect_dataset_type(path: Path) -> str:
+    name = path.name.lower()
+    if "internal_feedback" in name or "internal-feedback" in name or "ai_feedback_events" in name:
+        return "internal-feedback"
+    if "cactus" in name:
+        return "cactus"
+    if "cbt_bench" in name or "cbt-bench" in name or "distortion" in name:
+        return "cbt-bench-distortions"
+    raise ValueError(
+        "Unable to infer dataset type from filename; pass --dataset-type with one "
+        "of: internal-feedback, cbt-bench-distortions, cactus."
+    )
 
 
 def _mock_model_adapter(example: EvalExample) -> dict[str, Any]:

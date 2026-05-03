@@ -63,6 +63,16 @@ frontend/next-env.d.ts
 /reports
 frontend/reports/
 
+# eval outputs may include sensitive user-authored CBT content
+evals/out/
+evals/reports/
+evals/runs/
+*.results.jsonl
+evals/*-report.json
+evals/*-report.md
+evals/**/*-report.json
+evals/**/*-report.md
+
 # database
 /data/
 frontend/data/

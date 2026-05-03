@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -35,9 +36,19 @@ INTERNAL_FEEDBACK_PROVENANCE = {
 }
 
 
-def load_cbt_bench_distortion_examples(path: Path) -> list[EvalExample]:
+def load_cbt_bench_distortion_examples(
+    path: Path,
+    *,
+    provenance_overrides: Mapping[str, Any] | None = None,
+) -> list[EvalExample]:
     records = _load_json_records(path)
     examples: list[EvalExample] = []
+    provenance = _build_provenance(
+        path,
+        CBT_BENCH_PROVENANCE,
+        real_human_authored=None,
+        provenance_overrides=provenance_overrides,
+    )
 
     for index, record in enumerate(records):
         automatic_thought = _first_present(record, "automatic_thought", "thoughts", "thought")
@@ -56,7 +67,7 @@ def load_cbt_bench_distortion_examples(path: Path) -> list[EvalExample]:
                     "situation": situation,
                 },
                 reference={"distortions": distortions},
-                provenance=CBT_BENCH_PROVENANCE | {"fixture_path": str(path)},
+                provenance=provenance,
                 license="cc-by-nc-4.0",
                 metadata={"source_record_index": index},
             )
@@ -65,9 +76,19 @@ def load_cbt_bench_distortion_examples(path: Path) -> list[EvalExample]:
     return examples
 
 
-def load_cactus_examples(path: Path) -> list[EvalExample]:
+def load_cactus_examples(
+    path: Path,
+    *,
+    provenance_overrides: Mapping[str, Any] | None = None,
+) -> list[EvalExample]:
     records = _load_json_records(path)
     examples: list[EvalExample] = []
+    provenance = _build_provenance(
+        path,
+        CACTUS_PROVENANCE,
+        real_human_authored=None,
+        provenance_overrides=provenance_overrides,
+    )
 
     for index, record in enumerate(records):
         examples.append(
@@ -83,7 +104,7 @@ def load_cactus_examples(path: Path) -> list[EvalExample]:
                     "attitude": record.get("attitude"),
                 },
                 reference={"cbt_plan": record.get("cbt_plan", "")},
-                provenance=CACTUS_PROVENANCE | {"fixture_path": str(path)},
+                provenance=provenance,
                 license="gpl",
                 metadata={
                     "source_record_index": index,
@@ -95,9 +116,19 @@ def load_cactus_examples(path: Path) -> list[EvalExample]:
     return examples
 
 
-def load_internal_feedback_examples(path: Path) -> list[EvalExample]:
+def load_internal_feedback_examples(
+    path: Path,
+    *,
+    provenance_overrides: Mapping[str, Any] | None = None,
+) -> list[EvalExample]:
     records = _load_jsonl_records(path)
     examples: list[EvalExample] = []
+    provenance = _build_provenance(
+        path,
+        INTERNAL_FEEDBACK_PROVENANCE,
+        real_human_authored=True,
+        provenance_overrides=provenance_overrides,
+    )
 
     for index, record in enumerate(records):
         feedback = record.get("feedback_event", {})
@@ -134,9 +165,8 @@ def load_internal_feedback_examples(path: Path) -> list[EvalExample]:
                     ),
                     "source": feedback.get("source"),
                 },
-                provenance=INTERNAL_FEEDBACK_PROVENANCE
+                provenance=provenance
                 | {
-                    "fixture_path": str(path),
                     "audit_log_id": audit.get("id"),
                     "feedback_event_id": feedback.get("id"),
                 },
@@ -155,6 +185,37 @@ def load_internal_feedback_examples(path: Path) -> list[EvalExample]:
         )
 
     return examples
+
+
+def _build_provenance(
+    path: Path,
+    default_provenance: Mapping[str, Any],
+    *,
+    real_human_authored: bool | None,
+    provenance_overrides: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    is_fixture = _is_committed_fixture_path(path)
+    provenance = dict(default_provenance)
+    provenance["source_file"] = (
+        str(default_provenance.get("source_file", path.name)) if is_fixture else path.name
+    )
+    provenance["is_synthetic_fixture"] = is_fixture
+    provenance["human_authored"] = False if is_fixture else real_human_authored
+
+    if provenance_overrides:
+        provenance.update(dict(provenance_overrides))
+
+    if provenance.get("is_synthetic_fixture") and is_fixture:
+        provenance.setdefault("fixture_path", str(path))
+    else:
+        provenance.pop("fixture_path", None)
+
+    return provenance
+
+
+def _is_committed_fixture_path(path: Path) -> bool:
+    normalized_parts = {part.lower() for part in path.parts}
+    return "evals" in normalized_parts and "fixtures" in normalized_parts
 
 
 def _load_json_records(path: Path) -> list[dict[str, Any]]:

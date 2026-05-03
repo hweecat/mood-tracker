@@ -4,6 +4,8 @@ import sys
 
 import pytest
 
+from evals.cli import _load_examples
+
 
 def test_cli_run_writes_internal_feedback_report(tmp_path):
     output_path = tmp_path / "internal-feedback-report.json"
@@ -16,6 +18,8 @@ def test_cli_run_writes_internal_feedback_report(tmp_path):
             "run",
             "--dataset",
             "evals/fixtures/internal_feedback_sample.jsonl",
+            "--dataset-type",
+            "internal-feedback",
             "--output",
             str(output_path),
         ],
@@ -42,3 +46,81 @@ def test_cli_run_writes_internal_feedback_report(tmp_path):
     ]
     assert report["results"][0]["metrics"]["token_overlap"]["f1"] == pytest.approx(1.0)
     assert report["results"][0]["provenance"]["source_url"] == "internal ai_feedback_events export"
+
+
+def test_load_examples_uses_explicit_dataset_type_for_ambiguous_cactus_json(tmp_path):
+    dataset_path = tmp_path / "export.json"
+    dataset_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "cactus-upstream-1",
+                    "thought": "A tense meeting means I failed.",
+                    "patterns": ["catastrophizing"],
+                    "cbt_plan": "Name one concrete next step before revisiting the meeting.",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    examples = _load_examples(dataset_path, dataset_type="cactus")
+
+    assert examples[0].dataset == "LangAGI-Lab/cactus"
+    assert examples[0].task == "cbt_action_plan_generation"
+
+
+def test_load_examples_auto_requires_recognizable_dataset_name(tmp_path):
+    dataset_path = tmp_path / "export.json"
+    dataset_path.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="--dataset-type"):
+        _load_examples(dataset_path, dataset_type="auto")
+
+
+def test_cli_run_requires_explicit_dataset_type(tmp_path):
+    output_path = tmp_path / "internal-feedback-report.json"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "evals.cli",
+            "run",
+            "--dataset",
+            "evals/fixtures/internal_feedback_sample.jsonl",
+            "--output",
+            str(output_path),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert "--dataset-type" in completed.stderr
+
+
+def test_cli_run_auto_dataset_type_is_explicitly_named_and_supported(tmp_path):
+    output_path = tmp_path / "internal-feedback-auto-report.json"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "evals.cli",
+            "run",
+            "--dataset",
+            "evals/fixtures/internal_feedback_sample.jsonl",
+            "--dataset-type",
+            "auto",
+            "--output",
+            str(output_path),
+        ],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+    assert str(output_path) in completed.stdout
+    assert report["summary"]["example_count"] == 1

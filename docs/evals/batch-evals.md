@@ -8,17 +8,20 @@ metrics, and writes JSON reports. It does not import or require the FastAPI app.
 ## Run
 
 ```powershell
-python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl --output evals/out/internal-feedback-report.json
+python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl --dataset-type internal-feedback --output evals/out/internal-feedback-report.json
 ```
 
 In this worktree, Python is available through `uv`:
 
 ```powershell
-uv run --with pytest python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl --output evals/out/internal-feedback-report.json
+uv run --with pytest python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl --dataset-type internal-feedback --output evals/out/internal-feedback-report.json
 ```
 
 The CLI uses a deterministic mock adapter by default. Real provider calls are
 disabled unless code explicitly passes a model adapter into `evals.runner`.
+`--dataset-type` is required and accepts `internal-feedback`,
+`cbt-bench-distortions`, `cactus`, or explicit `auto`. Auto mode only uses
+recognizable filenames and refuses ambiguous names.
 
 ## Datasets
 
@@ -32,8 +35,14 @@ format fixtures, not redistributions of full upstream datasets.
 | `load_internal_feedback_examples` | `mindfultrack/internal-feedback` | `evals/fixtures/internal_feedback_sample.jsonl` | Internal application export shape; fixture is synthetic and marked `internal-use-only`. |
 
 Every normalized example includes dataset name, source URL or internal export
-source, split/file metadata, transformation version, fixture path, synthetic
-fixture flag, human-authored flag, and license.
+source, split/file metadata, transformation version, fixture path for committed
+fixtures, synthetic fixture flag, human-authored flag, and license.
+
+Committed fixtures are inferred as synthetic and non-human-authored. Internal
+exports outside `evals/fixtures/` default to non-synthetic and human-authored,
+because they may contain real user-authored CBT content. Loader callers can pass
+`provenance_overrides` to correct source file, split, synthetic fixture, or
+human-authored metadata for redacted fixtures and real upstream datasets.
 
 ## Metrics
 
@@ -53,3 +62,9 @@ CI or local fixture tests.
 provenance to JSONL. `build_report` writes a JSON summary with aggregate metrics,
 dataset/license summaries, per-example metrics, and failures below the configured
 threshold.
+
+Reports and `.results.jsonl` files can contain sensitive user-authored
+therapeutic content from internal exports. They should not be committed or shared
+outside the approved review context. Generated eval output paths such as
+`evals/out/`, `evals/reports/`, and `*.results.jsonl` are intentionally ignored
+by git.
