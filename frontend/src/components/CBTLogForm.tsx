@@ -6,9 +6,10 @@ import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Info, X, Sparkles, Brain, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, Info, X, Sparkles, Brain, CheckCircle2 } from 'lucide-react';
 import { CBT_DISTORTIONS } from '@/lib/cbt-content';
 import { CBTStepShell } from './cbt/CBTStepShell';
+import { AISuggestionPanel } from './cbt/AISuggestionPanel';
 
 const DISTORTIONS = CBT_DISTORTIONS.map(d => d.name) as CognitiveDistortion[];
 
@@ -28,6 +29,9 @@ const DEFAULT_FORM_DATA = {
   behavioralLink: '',
   actionPlanStatus: 'pending' as 'pending' | 'completed',
   aiSuggestedDistortions: [] as CognitiveDistortion[],
+  acceptedReframeId: null as string | null,
+  dismissedReframeIds: [] as string[],
+  rationalResponseSource: 'user_original' as 'accepted_ai' | 'edited_ai' | 'user_original',
 };
 
 export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps) {
@@ -47,6 +51,9 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     behavioralLink: initialData.behavioralLink || '',
     actionPlanStatus: initialData.actionPlanStatus || 'pending',
     aiSuggestedDistortions: initialData.aiSuggestedDistortions || [],
+    acceptedReframeId: initialData.acceptedReframeId || null,
+    dismissedReframeIds: initialData.dismissedReframeIds || [],
+    rationalResponseSource: initialData.rationalResponseSource || 'user_original',
   } : draftData);
 
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
@@ -93,7 +100,28 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
   const selectReframe = (reframe: RationalReframe) => {
     setFormData(prev => ({
       ...prev,
-      rationalResponse: reframe.content
+      rationalResponse: reframe.content,
+      acceptedReframeId: reframe.id || null,
+      rationalResponseSource: 'accepted_ai',
+    }));
+  };
+
+  const editReframe = (reframe: RationalReframe) => {
+    setFormData(prev => ({
+      ...prev,
+      rationalResponse: reframe.content,
+      acceptedReframeId: reframe.id || null,
+      rationalResponseSource: 'edited_ai',
+    }));
+  };
+
+  const dismissReframe = (reframeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      acceptedReframeId: prev.acceptedReframeId === reframeId ? null : prev.acceptedReframeId,
+      dismissedReframeIds: (prev.dismissedReframeIds || []).includes(reframeId)
+        ? (prev.dismissedReframeIds || [])
+        : [...(prev.dismissedReframeIds || []), reframeId],
     }));
   };
 
@@ -293,28 +321,15 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               <div className="space-y-5">
                 <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">4. Rational Challenge</label>
                 
-                {/* AI Reframing Carousel */}
                 {analysis?.reframes && analysis.reframes.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500 flex items-center gap-2">
-                      <Sparkles size={12} /> AI Suggested Reframes (HITL)
-                    </p>
-                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                      {analysis.reframes.map((ref, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectReframe(ref)}
-                          className="shrink-0 w-[280px] p-5 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 hover:border-amber-500 transition-all text-left space-y-2 group shadow-sm"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">{ref.perspective}</span>
-                            <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                          <p className="text-xs font-bold text-foreground line-clamp-3 italic">&ldquo;{ref.content}&rdquo;</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <AISuggestionPanel
+                    reframes={analysis.reframes}
+                    acceptedReframeId={formData.acceptedReframeId}
+                    dismissedReframeIds={formData.dismissedReframeIds || []}
+                    onAccept={selectReframe}
+                    onEdit={editReframe}
+                    onDismiss={dismissReframe}
+                  />
                 )}
 
                 <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">
@@ -324,7 +339,11 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   id="rational-textarea"
                   className="w-full min-h-[180px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.rationalResponse}
-                  onChange={e => setFormData({...formData, rationalResponse: e.target.value})}
+                  onChange={e => setFormData({
+                    ...formData,
+                    rationalResponse: e.target.value,
+                    rationalResponseSource: formData.acceptedReframeId ? 'edited_ai' : 'user_original',
+                  })}
                   placeholder="e.g., While this promotion didn't happen, my performance reviews have been consistently high..."
                 />
               </div>

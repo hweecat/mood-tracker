@@ -39,6 +39,7 @@ export interface DistortionSuggestion {
 }
 
 export interface RationalReframe {
+  id?: string;
   perspective: string;
   content: string;
 }
@@ -63,6 +64,9 @@ export interface CBTLog {
   actionPlanStatus?: 'pending' | 'completed';
   // HITL Metadata
   aiSuggestedDistortions?: CognitiveDistortion[];
+  acceptedReframeId?: string | null;
+  dismissedReframeIds?: string[];
+  rationalResponseSource?: 'accepted_ai' | 'edited_ai' | 'user_original';
   aiAnalysis?: CBTAnalysisResponse | null;
 }
 

@@ -20,7 +20,9 @@ vi.mock('lucide-react', () => ({
   X: () => <span data-testid="icon-x" />,
   RotateCcw: () => <span data-testid="icon-rotate" />,
   ArrowRight: () => <span data-testid="icon-arrow-right" />,
+  Check: () => <span data-testid="icon-check" />,
   CheckCircle2: () => <span data-testid="icon-check" />,
+  Pencil: () => <span data-testid="icon-pencil" />,
   Smile: () => <span data-testid="icon-smile" />,
   Frown: () => <span data-testid="icon-frown" />,
   Meh: () => <span data-testid="icon-meh" />,
@@ -31,9 +33,9 @@ const MOCK_ANALYSIS = {
     { distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' }
   ],
   reframes: [
-    { perspective: 'Compassionate', content: 'Reframe 1' },
-    { perspective: 'Logical', content: 'Reframe 2' },
-    { perspective: 'Evidence-based', content: 'Reframe 3' }
+    { id: 'reframe-1', perspective: 'Compassionate', content: 'Reframe 1' },
+    { id: 'reframe-2', perspective: 'Logical', content: 'Reframe 2' },
+    { id: 'reframe-3', perspective: 'Evidence-based', content: 'Reframe 3' }
   ],
   prompt_version: '1.0.0'
 };
@@ -158,9 +160,9 @@ describe('CBTLogForm Flow & Integration', () => {
     // Check reframes
     expect(await screen.findByText(/Reframe 1/i)).toBeInTheDocument();
     
-    // Select it
+    // Accept it
     await act(async () => {
-      fireEvent.click(screen.getByText(/Reframe 1/i));
+      fireEvent.click(screen.getByRole('button', { name: /accept compassionate reframe/i }));
     });
     
     const responseTextArea = screen.getByPlaceholderText(/While this promotion didn't happen/i);
