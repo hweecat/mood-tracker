@@ -1,0 +1,8 @@
+[
+  {
+    "id": "synthetic-cbt-bench-distortion-1",
+    "situation": "A colleague did not reply to a meeting note before lunch.",
+    "automatic_thought": "They must think my idea was useless and I always mess these things up.",
+    "distortions": ["mind reading", "overgeneralization"]
+  }
+]
