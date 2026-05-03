@@ -4,15 +4,15 @@ import httpx
 import pytest
 
 from app.schemas.cbt import CBTAnalysisRequest
-from app.services.llm_provider import LLMParseError
+from app.services.llm_provider import LLMParseError, LLMProviderError, LLMTimeoutError
 from app.services.ollama_client import OllamaClient
 
 
 @pytest.fixture
 def cbt_request():
     return CBTAnalysisRequest(
-        situation="My friend did not reply",
-        automatic_thought="They hate me",
+        situation="My friend at jane@example.com did not reply",
+        automatic_thought="They hate me and my number is 555-123-4567",
     )
 
 
@@ -47,6 +47,8 @@ async def test_ollama_client_posts_to_local_generate_endpoint(cbt_request):
     assert args[0] == "http://localhost:11434/api/generate"
     assert kwargs["json"]["model"] == "llama3.1"
     assert kwargs["json"]["stream"] is False
+    assert "jane@example.com" not in kwargs["json"]["prompt"]
+    assert "555-123-4567" not in kwargs["json"]["prompt"]
     assert kwargs["timeout"] == 5
 
 
@@ -65,4 +67,32 @@ async def test_ollama_client_parse_failure_raises_typed_error(cbt_request):
     )
 
     with pytest.raises(LLMParseError):
+        await client.analyze_cbt(cbt_request)
+
+
+@pytest.mark.anyio
+async def test_ollama_client_timeout_raises_typed_error(cbt_request):
+    http_client = AsyncMock(spec=httpx.AsyncClient)
+    http_client.post.side_effect = httpx.TimeoutException("slow provider")
+    client = OllamaClient(
+        base_url="http://localhost:11434",
+        model="llama3.1",
+        http_client=http_client,
+    )
+
+    with pytest.raises(LLMTimeoutError):
+        await client.analyze_cbt(cbt_request)
+
+
+@pytest.mark.anyio
+async def test_ollama_client_connect_error_raises_provider_error(cbt_request):
+    http_client = AsyncMock(spec=httpx.AsyncClient)
+    http_client.post.side_effect = httpx.ConnectError("unreachable")
+    client = OllamaClient(
+        base_url="http://localhost:11434",
+        model="llama3.1",
+        http_client=http_client,
+    )
+
+    with pytest.raises(LLMProviderError):
         await client.analyze_cbt(cbt_request)

@@ -4,7 +4,7 @@ import pytest
 import logging
 from httpx import AsyncClient, ASGITransport
 from fastapi import status
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from app.main import app
 
 
@@ -58,6 +58,7 @@ class TestCBTAnalyzeEndpoint:
             "prompt_version": "1.0.0",
             "provider": "openai",
             "model": "gpt-5.5",
+            "analysis_id": "audit-1",
             "ai_analysis_id": "audit-1",
         }
 
@@ -105,9 +106,24 @@ class TestCBTAnalyzeEndpoint:
         assert "promptVersion" in data # Pydantic converts to camelCase
         assert data["provider"] == "openai"
         assert data["model"] == "gpt-5.5"
+        assert data["analysisId"] == "audit-1"
         assert data["aiAnalysisId"] == "audit-1"
         assert isinstance(data["suggestions"], list)
         assert isinstance(data["reframes"], list)
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_passes_current_user_to_ai_client(self, mock_get_client, async_client, valid_request, mock_ai_response):
+        """Audit rows need user_id so later CBT feedback can link to the returned analysis id."""
+        mock_client = Mock()
+        mock_client.analyze_cbt = AsyncMock(return_value=mock_ai_response)
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_200_OK
+        mock_client.analyze_cbt.assert_awaited_once()
+        _, kwargs = mock_client.analyze_cbt.await_args
+        assert kwargs["user_id"] == "1"
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):

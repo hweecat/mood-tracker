@@ -15,6 +15,7 @@ from app.services.llm_provider import (
     LLMResult,
     LLMTimeoutError,
     LLMSafetyBlocked,
+    minimize_cbt_request_for_provider,
 )
 from app.services.ollama_client import OllamaClient
 from app.services.openai_client import OpenAIClient
@@ -25,7 +26,11 @@ class AIClientProtocol(ABC):
     """Abstract protocol for AI clients."""
 
     @abstractmethod
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
         """Analyze CBT entry for distortions and generate reframes."""
         pass
 
@@ -37,7 +42,11 @@ class AIClientProtocol(ABC):
 class TextBlobClient(AIClientProtocol):
     """TextBlob-based AI client (Phase 1 implementation)."""
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
         """TextBlob doesn't support CBT analysis - return empty response."""
         logger.warning("CBT analysis requested on TextBlob client (not supported)")
         return CBTAnalysisResponse(suggestions=[], reframes=[])
@@ -81,8 +90,12 @@ class GeminiAdapter(AIClientProtocol):
     def __init__(self):
         self.client = GeminiClient()
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
-        return await self.client.analyze_cbt(request)
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
+        return await self.client.analyze_cbt(request, user_id=user_id)
 
     async def analyze_mood(self, text: str) -> Optional[dict]:
         # Currently, we still use TextBlob for mood analysis as it's faster and sufficient.
@@ -99,14 +112,15 @@ class GeminiLLMProvider:
 
     async def analyze_cbt(self, request: CBTAnalysisRequest) -> LLMResult:
         start = time.time()
+        minimized_request = minimize_cbt_request_for_provider(request)
         try:
             distortions, _ = await self.client._detect_distortions_with_retry(
-                request.situation,
-                request.automatic_thought,
+                minimized_request.situation,
+                minimized_request.automatic_thought,
             )
             reframes, reframe_prompt_version = await self.client._generate_reframes_with_retry(
-                request.situation,
-                request.automatic_thought,
+                minimized_request.situation,
+                minimized_request.automatic_thought,
                 [item.distortion for item in distortions],
             )
         except SafetyException as exc:
@@ -139,8 +153,12 @@ class ProviderOrchestratorAdapter(AIClientProtocol):
         self.orchestrator = orchestrator
         self.mood_client = TextBlobClient()
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
-        return await self.orchestrator.analyze_cbt(request)
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
+        return await self.orchestrator.analyze_cbt(request, user_id=user_id)
 
     async def analyze_mood(self, text: str) -> Optional[dict]:
         return await self.mood_client.analyze_mood(text)
@@ -155,14 +173,13 @@ def get_ai_client() -> AIClientProtocol:
     """
     config = get_ai_config()
 
-    if config.enable_gemini:
-        providers = _build_cbt_providers(config)
-        if providers:
-            logger.info(
-                "Using provider fallback AI client",
-                extra={"providers": [provider.provider for provider in providers]},
-            )
-            return ProviderOrchestratorAdapter(LLMOrchestrator(providers=providers))
+    providers = _build_cbt_providers(config)
+    if providers:
+        logger.info(
+            "Using provider fallback AI client",
+            extra={"providers": [provider.provider for provider in providers]},
+        )
+        return ProviderOrchestratorAdapter(LLMOrchestrator(providers=providers))
 
     logger.info("Using TextBlob AI client")
     return TextBlobClient()
@@ -172,6 +189,8 @@ def _build_cbt_providers(config) -> list:
     providers = []
     for item in config.cbt_model_chain:
         if item.provider == "gemini":
+            if not config.enable_gemini:
+                continue
             if _gemini_available:
                 providers.append(GeminiLLMProvider(item.model))
             else:

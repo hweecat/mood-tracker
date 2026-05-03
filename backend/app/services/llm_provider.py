@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 from typing import Any, Protocol
 
 from app.schemas.cbt import CBTAnalysisRequest
@@ -43,3 +44,20 @@ class LLMSafetyBlocked(LLMProviderError):
         self.message = message
         self.crisis_resources = crisis_resources or []
         super().__init__(message)
+
+
+EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+PHONE_RE = re.compile(r"\b(?:\+?\d[\d\s().-]{7,}\d)\b")
+
+
+def minimize_text_for_provider(text: str) -> str:
+    masked = EMAIL_RE.sub("[email]", text)
+    masked = PHONE_RE.sub("[phone]", masked)
+    return masked
+
+
+def minimize_cbt_request_for_provider(request: CBTAnalysisRequest) -> CBTAnalysisRequest:
+    return CBTAnalysisRequest(
+        situation=minimize_text_for_provider(request.situation),
+        automatic_thought=minimize_text_for_provider(request.automatic_thought),
+    )

@@ -60,13 +60,18 @@ async def test_orchestrator_falls_back_and_audits_each_attempt(cbt_request):
         audit_service=audit_service,
     )
 
-    response = await orchestrator.analyze_cbt(cbt_request)
+    response = await orchestrator.analyze_cbt(cbt_request, user_id="user-1")
 
     assert response.provider == "openai"
     assert response.model == "gpt-5.5"
+    assert response.analysis_id == "audit-2"
     assert response.ai_analysis_id == "audit-2"
     assert [record.provider for record in audit_service.records] == ["gemini", "openai"]
     assert [record.status for record in audit_service.records] == ["provider_error", "success"]
+    assert {record.correlation_id for record in audit_service.records} == {
+        audit_service.records[0].correlation_id
+    }
+    assert [record.user_id for record in audit_service.records] == ["user-1", "user-1"]
     assert all("automatic_thought" not in record.masked_request_payload for record in audit_service.records)
 
 
@@ -100,3 +105,37 @@ async def test_orchestrator_stops_fallback_on_safety_block(cbt_request):
 
     assert [record.provider for record in audit_service.records] == ["gemini"]
     assert audit_service.records[0].status == "safety_blocked"
+
+
+@pytest.mark.anyio
+async def test_orchestrator_falls_back_when_provider_returns_malformed_payload(cbt_request):
+    malformed = LLMResult(
+        provider="openai",
+        model="gpt-5.5",
+        raw_payload={"id": "bad"},
+        parsed_payload={"reframes": []},
+        latency_ms=2,
+    )
+    success = LLMResult(
+        provider="ollama",
+        model="llama3.1",
+        raw_payload={"id": "ok"},
+        parsed_payload={
+            "suggestions": [],
+            "reframes": [{"perspective": "Balanced", "content": "One step is enough."}],
+        },
+        latency_ms=3,
+    )
+    audit_service = FakeAuditService()
+    orchestrator = LLMOrchestrator(
+        providers=[
+            FakeProvider("openai", "gpt-5.5", malformed),
+            FakeProvider("ollama", "llama3.1", success),
+        ],
+        audit_service=audit_service,
+    )
+
+    response = await orchestrator.analyze_cbt(cbt_request)
+
+    assert response.provider == "ollama"
+    assert [record.status for record in audit_service.records] == ["parse_error", "success"]
