@@ -123,7 +123,7 @@ class TestGeminiClient:
                 # Check the call arguments of _log_audit
                 args, kwargs = mock_audit.call_args
                 assert kwargs["prompt_version_id"] == "v1.2.3"
-                assert kwargs["success"] is True
+                assert kwargs["status"] == "success"
                 assert kwargs["latency_ms"] >= 0
                 assert "request_id" in kwargs
 

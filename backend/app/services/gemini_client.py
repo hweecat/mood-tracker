@@ -18,7 +18,8 @@ from app.schemas.cbt import (
 from app.services.safety_handler import SafetyHandler
 from app.services.prompt_manager import PromptManager
 from app.core.logging import get_logger
-from app.db.session import get_db
+from app.schemas.ai_audit import AIAuditLogCreate
+from app.services import ai_audit_service
 
 logger = get_logger(__name__)
 
@@ -77,11 +78,12 @@ class GeminiClient:
 
             # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
             self._log_audit(
+                request=request,
                 request_id=request_id,
                 prompt_version_id=prompt_version,
                 safety_tier="negligible", # Will be updated if exceptions occur
                 latency_ms=latency_ms,
-                success=success
+                status="success"
             )
 
             return response
@@ -89,25 +91,53 @@ class GeminiClient:
         except SafetyException:
             latency_ms = int((time.time() - start_time) * 1000)
             self._log_audit(
+                request=request,
                 request_id=request_id,
                 prompt_version_id=prompt_version,
                 safety_tier="high",
                 latency_ms=latency_ms,
-                success=False
+                status="safety_blocked",
+                error_code="SafetyException",
+            )
+            raise
+        except ParseException:
+            latency_ms = int((time.time() - start_time) * 1000)
+            self._log_audit(
+                request=request,
+                request_id=request_id,
+                prompt_version_id=prompt_version,
+                safety_tier="error",
+                latency_ms=latency_ms,
+                status="parse_error",
+                error_code="ParseException",
+            )
+            raise
+        except asyncio.TimeoutError:
+            latency_ms = int((time.time() - start_time) * 1000)
+            self._log_audit(
+                request=request,
+                request_id=request_id,
+                prompt_version_id=prompt_version,
+                safety_tier="error",
+                latency_ms=latency_ms,
+                status="timeout",
+                error_code="TimeoutError",
             )
             raise
         except Exception as e:
             latency_ms = int((time.time() - start_time) * 1000)
             logger.error(
                 "CBT analysis failed",
-                extra={"request_id": request_id, "error": str(e), "latency_ms": latency_ms}
+                extra={"request_id": request_id, "error_type": type(e).__name__, "latency_ms": latency_ms}
             )
             self._log_audit(
+                request=request,
                 request_id=request_id,
                 prompt_version_id=prompt_version,
                 safety_tier="error",
                 latency_ms=latency_ms,
-                success=False
+                status="provider_error",
+                error_code=type(e).__name__,
             )
             raise
 
@@ -187,7 +217,7 @@ class GeminiClient:
 
         # Parse JSON response
         try:
-            logger.debug("Gemini response content", extra={"content": response.text})
+            logger.debug("Gemini response received", extra={"response_length": len(response.text)})
             data = json.loads(response.text)
             suggestions = []
             for item in data.get("distortions", []):
@@ -206,7 +236,7 @@ class GeminiClient:
             
             return suggestions, version_id
         except (json.JSONDecodeError, KeyError, TypeError) as e:
-            logger.error("Failed to parse Gemini response", extra={"error": str(e), "content": response.text})
+            logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
             raise ParseException("Invalid AI response format")
 
     async def _generate_reframes(
@@ -253,7 +283,7 @@ class GeminiClient:
             ]
             return reframes, version_id
         except (json.JSONDecodeError, KeyError, TypeError) as e:
-            logger.error("Failed to parse Gemini response", extra={"error": str(e), "content": response.text})
+            logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
             raise ParseException("Invalid AI response format")
 
     def _extract_safety_ratings(self, response) -> Dict[HarmCategory, HarmProbability]:
@@ -270,36 +300,33 @@ class GeminiClient:
 
     def _log_audit(
         self,
+        request: CBTAnalysisRequest,
         request_id: str,
         prompt_version_id: str,
         safety_tier: str,
         latency_ms: int,
-        success: bool
+        status: str,
+        error_code: str | None = None,
     ):
-        """Log AI audit entry (PII-free)."""
-        db_gen = get_db()
-        try:
-            db = next(db_gen)
-            cursor = db.cursor()
-            cursor.execute(
-                """
-                INSERT INTO ai_audit_logs (
-                    id, request_id, prompt_version_id, safety_tier,
-                    latency_ms, success, created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (str(uuid.uuid4()), request_id, prompt_version_id, safety_tier, latency_ms, 1 if success else 0, int(time.time()))
-            )
-            db.commit()
-            logger.info("AI audit log created", extra={"request_id": request_id, "latency_ms": latency_ms})
-        except Exception as e:
-            logger.error("Failed to create AI audit log", extra={"error": str(e)})
-        finally:
-            try:
-                next(db_gen)
-            except StopIteration:
-                pass
+        """Record a PII-minimized AI audit entry."""
+        audit_in = AIAuditLogCreate(
+            correlation_id=request_id,
+            entry_type="standalone_analysis",
+            operation="generate_reframes",
+            provider="gemini",
+            model=self.config.gemini_model,
+            prompt_version_id=prompt_version_id,
+            masked_request_payload={
+                "automatic_thought_length": len(request.automatic_thought),
+                "situation_length": len(request.situation),
+            },
+            safety_tier=safety_tier,
+            latency_ms=latency_ms,
+            status=status,
+            error_code=error_code,
+            schema_version=1,
+        )
+        ai_audit_service.record_ai_audit_log(audit_in)
 
 
 class SafetyException(Exception):
