@@ -66,6 +66,17 @@ cd ..\frontend; npm test
 
 Use the subset that applies to the workstream, then run the broader suite before merge.
 
+## Baseline Status
+
+Captured on 2026-05-03 from orchestration commit `3f649b0`.
+
+| Surface | Command | Status | Notes |
+| --- | --- | --- | --- |
+| Backend | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest` from `.worktrees/audit-observability/backend` | Pass | 42 passed, 56 warnings. Without a dummy `GEMINI_API_KEY`, 8 existing Gemini tests fail because `AIConfig.gemini_api_key` is required during `PromptManager` initialization. |
+| Backend sibling worktrees | Same command in parallel | Inconclusive | Parallel `uv` environment creation in OneDrive timed out. Workers should run the same command serially in their own worktree before feature edits. |
+| Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
+| Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
+
 ## Orchestrator Responsibilities
 
 - Keep this roadmap current as streams merge or requirements change.
@@ -109,4 +120,3 @@ The development phase is complete when all of these are true:
 - Cactus paper summary: https://huggingface.co/papers/2407.03103
 - OpenAI models documentation: https://developers.openai.com/api/docs/models
 - OpenAI Structured Outputs documentation: https://platform.openai.com/docs/guides/structured-outputs
-
