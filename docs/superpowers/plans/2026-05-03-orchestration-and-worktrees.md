@@ -28,19 +28,19 @@
 
 ### Task 1: Make Project-Local Worktrees Safe
 
-- [ ] Write the intended `.gitignore` change first.
+- [x] Write the intended `.gitignore` change first.
 
 ```gitignore
 .worktrees/
 ```
 
-- [ ] Run `git check-ignore -v .worktrees`.
-- [ ] Expected after the patch: output identifies `.gitignore` as the source rule.
-- [ ] Commit with `chore: ignore local worktrees`.
+- [x] Run `git check-ignore -v .worktrees`.
+- [x] Expected after the patch: output identifies `.gitignore` as the source rule.
+- [x] Commit planning/worktree hygiene on orchestration branch.
 
 ### Task 2: Create Worktrees
 
-- [ ] Create worktrees after Task 1 lands.
+- [x] Create worktrees after Task 1 lands.
 
 ```powershell
 git worktree add .worktrees/audit-observability -b codex/audit-observability
@@ -51,19 +51,19 @@ git worktree add .worktrees/batch-evals -b codex/batch-evals
 git worktree add .worktrees/mobile-usability -b codex/mobile-usability
 ```
 
-- [ ] Run `git worktree list`.
-- [ ] Confirm every worktree path and branch is present.
+- [x] Run `git worktree list`.
+- [x] Confirm every worktree path and branch is present.
 
 ### Task 3: Capture Baseline Test Status
 
-- [ ] In backend-owned worktrees, run:
+- [x] In backend-owned worktrees, run:
 
 ```powershell
 cd backend
 pytest
 ```
 
-- [ ] In frontend-owned worktrees, run:
+- [x] In frontend-owned worktrees, run:
 
 ```powershell
 cd frontend
@@ -77,13 +77,13 @@ cd frontend
 npx playwright test e2e/visual/vrt_cbt_flow.spec.ts
 ```
 
-- [ ] If baseline tests fail, record the exact command, exit code, and failure summary in `docs/roadmap/ai-cbt-enhancements-roadmap.md` before assigning feature work.
+- [x] If baseline tests fail, record the exact command, exit code, and failure summary in `docs/roadmap/ai-cbt-enhancements-roadmap.md` before assigning feature work.
 
 ### Task 4: Dispatch Subagents
 
-- [ ] Send each subagent only its plan file and relevant context.
-- [ ] Require the worker to report one of: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
-- [ ] Include this instruction in every worker prompt:
+- [x] Send each subagent only its plan file and relevant context.
+- [x] Require the worker to report one of: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
+- [x] Include this instruction in every worker prompt:
 
 ```text
 You are not alone in the codebase. Work only inside your assigned worktree and write scope. Do not revert edits made by others. Follow TDD: write the failing test, verify it fails for the intended reason, implement the smallest change, verify it passes, then refactor.
@@ -91,10 +91,10 @@ You are not alone in the codebase. Work only inside your assigned worktree and w
 
 ### Task 5: Review Each Stream
 
-- [ ] Spec compliance review: compare the diff to the workstream plan and master design spec.
-- [ ] Code quality review: inspect maintainability, test design, privacy risks, schema drift, and error handling.
-- [ ] Verification review: rerun the workstream's stated test commands fresh.
-- [ ] Privacy review: search for raw sensitive strings in logs/tests and inspect logger extras.
+- [x] Spec compliance review: compare the diff to the workstream plan and master design spec for audit and batch streams.
+- [x] Code quality review: inspect maintainability, test design, privacy risks, schema drift, and error handling for audit and batch streams.
+- [x] Verification review: rerun the workstream's stated test commands fresh for audit and batch streams.
+- [x] Privacy review: search for raw sensitive strings in logs/tests and inspect logger extras for audit and batch streams.
 - [ ] Only merge after all review findings are resolved.
 
 ### Task 6: Integrate In Order
@@ -115,4 +115,3 @@ You are not alone in the codebase. Work only inside your assigned worktree and w
 - Every subagent receives a disjoint write scope and TDD instructions.
 - Every stream passes spec, quality, verification, and privacy review before merge.
 - The roadmap stays current after each merge.
-

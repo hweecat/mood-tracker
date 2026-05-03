@@ -77,6 +77,20 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 | Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
 | Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
 
+## Implementation Status
+
+Updated on 2026-05-03 by the main orchestrator.
+
+| Workstream | Branch | Status | Verification | Notes |
+| --- | --- | --- | --- | --- |
+| Orchestration docs/worktrees | `codex-ai-cbt-orchestration` | Complete | Backend baseline: `42 passed`; `git worktree list` verified during setup | Planning docs committed in `3f649b0` and baseline status committed in `c223da4`. |
+| Audit and observability | `codex/audit-observability` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider` from backend: `58 passed, 75 warnings` | Latest commit `749cff1` returns `aiAnalysisId`, records reframe prompt metadata, validates feedback audit ownership, deletes feedback rows with CBT logs, and avoids raw provider exception text in CBT AI logs. |
+| Batch evals | `codex/batch-evals` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider evals/tests -v`: `18 passed` | Latest commit `bc1ac0c` adds offline eval adapters/runner/CLI with explicit dataset types, provenance metadata, privacy docs, and gitignored eval output artifacts. |
+| Provider fallbacks | `codex/llm-provider-fallbacks` | In progress | Pending worker report | Fast-forwarded to audit commit `749cff1`; worker `Hubble` dispatched with TDD instructions. |
+| Async analysis | `codex/async-analysis` | In progress | Pending worker report | Fast-forwarded to audit commit `749cff1`; worker `Chandrasekhar` dispatched with TDD instructions. |
+| CBT quality/action plans | `codex/cbt-quality-action-plans` | Pending | Not started | Wait for provider metadata and audit ID contract to stabilize before dispatch. |
+| Mobile usability | `codex/mobile-usability` | Blocked | Frontend tests not runnable | Worker stopped without edits because `node`, `npm`, and frontend dependencies are unavailable in the current environment. |
+
 ## Orchestrator Responsibilities
 
 - Keep this roadmap current as streams merge or requirements change.
