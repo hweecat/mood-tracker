@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
@@ -10,6 +10,7 @@ import { RotateCcw, Info, X, Sparkles, Brain, CheckCircle2 } from 'lucide-react'
 import { CBT_DISTORTIONS } from '@/lib/cbt-content';
 import { CBTStepShell } from './cbt/CBTStepShell';
 import { AISuggestionPanel } from './cbt/AISuggestionPanel';
+import { ActionPlanPicker } from './cbt/ActionPlanPicker';
 
 const DISTORTIONS = CBT_DISTORTIONS.map(d => d.name) as CognitiveDistortion[];
 
@@ -32,6 +33,8 @@ const DEFAULT_FORM_DATA = {
   acceptedReframeId: null as string | null,
   dismissedReframeIds: [] as string[],
   rationalResponseSource: 'user_original' as 'accepted_ai' | 'edited_ai' | 'user_original',
+  acceptedActionPlanId: null as string | null,
+  actionPlanSource: 'user_original' as 'accepted_ai' | 'edited_ai' | 'user_original',
 };
 
 export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps) {
@@ -54,6 +57,8 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     acceptedReframeId: initialData.acceptedReframeId || null,
     dismissedReframeIds: initialData.dismissedReframeIds || [],
     rationalResponseSource: initialData.rationalResponseSource || 'user_original',
+    acceptedActionPlanId: initialData.acceptedActionPlanId || null,
+    actionPlanSource: initialData.actionPlanSource || 'user_original',
   } : draftData);
 
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
@@ -122,6 +127,26 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       dismissedReframeIds: (prev.dismissedReframeIds || []).includes(reframeId)
         ? (prev.dismissedReframeIds || [])
         : [...(prev.dismissedReframeIds || []), reframeId],
+    }));
+  };
+
+  const acceptActionPlan = (plan: ActionPlanSuggestion, actionText: string) => {
+    setFormData(prev => ({
+      ...prev,
+      behavioralLink: actionText,
+      actionPlanStatus: 'pending',
+      acceptedActionPlanId: plan.id || null,
+      actionPlanSource: 'accepted_ai',
+    }));
+  };
+
+  const editActionPlan = (plan: ActionPlanSuggestion, actionText: string) => {
+    setFormData(prev => ({
+      ...prev,
+      behavioralLink: actionText,
+      actionPlanStatus: 'pending',
+      acceptedActionPlanId: plan.id || null,
+      actionPlanSource: 'edited_ai',
     }));
   };
 
@@ -363,12 +388,25 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-600 pl-4 block">5. Actionable Plan</label>
+                {analysis?.actionPlans && analysis.actionPlans.length > 0 && (
+                  <ActionPlanPicker
+                    actionPlans={analysis.actionPlans}
+                    acceptedActionPlanId={formData.acceptedActionPlanId}
+                    onAccept={acceptActionPlan}
+                    onEdit={editActionPlan}
+                  />
+                )}
                 <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward?</p>
                 <textarea
                   id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.behavioralLink}
-                  onChange={e => setFormData({...formData, behavioralLink: e.target.value, actionPlanStatus: 'pending'})}
+                  onChange={e => setFormData({
+                    ...formData,
+                    behavioralLink: e.target.value,
+                    actionPlanStatus: 'pending',
+                    actionPlanSource: formData.acceptedActionPlanId ? 'edited_ai' : 'user_original',
+                  })}
                   placeholder="e.g., I will schedule a meeting with my manager to ask for feedback."
                 />
               </div>

@@ -37,6 +37,15 @@ const MOCK_ANALYSIS = {
     { id: 'reframe-2', perspective: 'Logical', content: 'Reframe 2' },
     { id: 'reframe-3', perspective: 'Evidence-based', content: 'Reframe 3' }
   ],
+  actionPlans: [
+    {
+      id: 'plan-1',
+      title: 'Ask for feedback',
+      rationale: 'A small conversation can turn uncertainty into specifics.',
+      steps: ['Write down two questions', 'Book a short manager check-in'],
+      timeframe: 'today'
+    }
+  ],
   prompt_version: '1.0.0'
 };
 
@@ -187,5 +196,60 @@ describe('CBTLogForm Flow & Integration', () => {
     });
 
     expect(await screen.findByText('API failure')).toBeInTheDocument();
+  });
+
+  it('accepts an AI action plan into the final plan text', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /accept ask for feedback action plan/i }));
+
+    expect(screen.getByLabelText(/actionable plan/i)).toHaveValue('Write down two questions\nBook a short manager check-in');
+  });
+
+  it('edits an AI action plan before submit', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /edit ask for feedback action plan/i }));
+    fireEvent.change(screen.getByLabelText(/edit ask for feedback action plan/i), {
+      target: { value: 'I will write three questions before booking the check-in.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save ask for feedback action plan edit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /finalize entry/i }));
+
+    expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      behavioralLink: 'I will write three questions before booking the check-in.',
+      acceptedActionPlanId: 'plan-1',
+      actionPlanSource: 'edited_ai',
+    }));
   });
 });

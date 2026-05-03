@@ -44,9 +44,18 @@ export interface RationalReframe {
   content: string;
 }
 
+export interface ActionPlanSuggestion {
+  id?: string;
+  title: string;
+  rationale?: string;
+  steps: string[];
+  timeframe?: string;
+}
+
 export interface CBTAnalysisResponse {
   suggestions: DistortionSuggestion[];
   reframes: RationalReframe[];
+  actionPlans?: ActionPlanSuggestion[];
   promptVersion?: string;
 }
 
@@ -67,6 +76,8 @@ export interface CBTLog {
   acceptedReframeId?: string | null;
   dismissedReframeIds?: string[];
   rationalResponseSource?: 'accepted_ai' | 'edited_ai' | 'user_original';
+  acceptedActionPlanId?: string | null;
+  actionPlanSource?: 'accepted_ai' | 'edited_ai' | 'user_original';
   aiAnalysis?: CBTAnalysisResponse | null;
 }
 
