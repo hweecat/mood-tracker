@@ -5,7 +5,13 @@ from typing import Any
 import httpx
 
 from app.schemas.cbt import CBTAnalysisRequest
-from app.services.llm_provider import LLMParseError, LLMProviderError, LLMResult
+from app.services.llm_provider import (
+    LLMParseError,
+    LLMProviderError,
+    LLMResult,
+    LLMTimeoutError,
+    minimize_cbt_request_for_provider,
+)
 
 
 CBT_OUTPUT_SCHEMA: dict[str, Any] = {
@@ -63,20 +69,23 @@ class OpenAIClient:
 
     async def analyze_cbt(self, request: CBTAnalysisRequest) -> LLMResult:
         start = time.time()
-        response = await self.http_client.post(
-            "https://api.openai.com/v1/responses",
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={
-                "model": self.model,
-                "input": self._build_prompt(request),
-                "text": {"format": CBT_OUTPUT_SCHEMA},
-            },
-            timeout=self.timeout,
-        )
+        minimized_request = minimize_cbt_request_for_provider(request)
         try:
+            response = await self.http_client.post(
+                "https://api.openai.com/v1/responses",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={
+                    "model": self.model,
+                    "input": self._build_prompt(minimized_request),
+                    "text": {"format": CBT_OUTPUT_SCHEMA},
+                },
+                timeout=self.timeout,
+            )
             response.raise_for_status()
             payload = response.json()
             parsed = self._extract_structured_output(payload)
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError("OpenAI provider request timed out") from exc
         except (httpx.HTTPError, KeyError, TypeError) as exc:
             raise LLMProviderError("OpenAI provider request failed") from exc
         except (json.JSONDecodeError, ValueError) as exc:
