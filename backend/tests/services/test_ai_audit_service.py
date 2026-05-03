@@ -25,6 +25,7 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
              patch.object(client, "_generate_reframes_with_retry") as mock_reframe, \
              patch("app.services.gemini_client.ai_audit_service.record_ai_audit_log") as mock_record:
 
+            mock_record.return_value = "audit-reframe-1"
             mock_detect.return_value = (
                 [
                     DistortionSuggestion(
@@ -44,7 +45,7 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
                 "cbt-reframe-v1",
             )
 
-            await client.analyze_cbt(
+            result = await client.analyze_cbt(
                 CBTAnalysisRequest(
                     situation="A private situation",
                     automatic_thought="A private automatic thought",
@@ -52,10 +53,11 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
             )
 
     audit_in = mock_record.call_args.args[0]
+    assert result.ai_analysis_id == "audit-reframe-1"
     assert audit_in.provider == "gemini"
     assert audit_in.model == "gemini-1.5-flash"
     assert audit_in.operation == "generate_reframes"
-    assert audit_in.prompt_version_id == "cbt-detect-v1"
+    assert audit_in.prompt_version_id == "cbt-reframe-v1"
     assert audit_in.status == "success"
     assert audit_in.safety_tier == "negligible"
     assert audit_in.latency_ms >= 0

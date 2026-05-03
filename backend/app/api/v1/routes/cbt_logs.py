@@ -94,7 +94,7 @@ async def analyze_cbt(
             detail="Analysis timed out. Please try again."
         )
     except Exception as e:
-        logger.error("AI analysis failed", extra={"error": str(e)})
+        logger.error("AI analysis failed", extra={"error_type": type(e).__name__})
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Analysis service unavailable"

@@ -2,6 +2,7 @@
 
 import pytest
 import json
+import logging
 from unittest.mock import Mock, patch, AsyncMock
 from app.services.gemini_client import GeminiClient, SafetyException, ParseException
 from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse, DistortionSuggestion, RationalReframe
@@ -152,6 +153,35 @@ class TestGeminiClient:
                 with pytest.raises(ParseException):
                     await client._detect_distortions_with_retry("s", "t")
                 assert mock_detect.call_count == 1
+
+    @pytest.mark.anyio
+    async def test_retry_logs_exception_type_without_raw_provider_error(self, caplog):
+        """Retry logs should not persist raw provider exceptions because they can contain PII."""
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
+             patch('app.services.gemini_client.genai.configure'), \
+             patch('app.services.gemini_client.genai.GenerativeModel'):
+
+            mock_config.return_value.ai_max_retries = 1
+            client = GeminiClient()
+
+            with patch.object(client, '_detect_distortions') as mock_detect, \
+                 patch('asyncio.sleep', new_callable=AsyncMock):
+
+                mock_detect.side_effect = [
+                    RuntimeError("provider echoed jane@example.com in an error"),
+                    ([], "v1"),
+                ]
+
+                with caplog.at_level(logging.WARNING):
+                    await client._detect_distortions_with_retry("situation", "thought")
+
+        retry_records = [
+            record for record in caplog.records
+            if record.message == "Distortion detection failed, retrying"
+        ]
+        assert len(retry_records) == 1
+        assert retry_records[0].error_type == "RuntimeError"
+        assert "jane@example.com" not in str(retry_records[0].__dict__)
 
     @pytest.mark.anyio
     async def test_detect_distortions_safety_high_triggers_exception(self):

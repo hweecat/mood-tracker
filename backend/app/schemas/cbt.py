@@ -32,6 +32,7 @@ class CBTAnalysisResponse(TunedBaseModel):
     suggestions: List[DistortionSuggestion]
     reframes: List[RationalReframe]
     prompt_version: Optional[str] = None
+    ai_analysis_id: Optional[str] = None
 
 # --- Core CBT Log Schemas ---
 

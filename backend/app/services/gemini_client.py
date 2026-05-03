@@ -49,6 +49,7 @@ class GeminiClient:
         request_id = str(uuid.uuid4())
         latency_ms = 0
         prompt_version = "unknown"
+        reframe_prompt_version = "unknown"
         success = False
 
         try:
@@ -61,7 +62,7 @@ class GeminiClient:
 
             # 2. Generate reframes
             distortion_names = [d.distortion for d in distortions]
-            reframes, _ = await self._generate_reframes_with_retry(
+            reframes, reframe_prompt_version = await self._generate_reframes_with_retry(
                 request.situation,
                 request.automatic_thought,
                 distortion_names
@@ -70,20 +71,23 @@ class GeminiClient:
             latency_ms = int((time.time() - start_time) * 1000)
             success = True
 
-            response = CBTAnalysisResponse(
-                suggestions=distortions,
-                reframes=reframes,
-                prompt_version=prompt_version
-            )
-
             # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
-            self._log_audit(
+            audit_log_id = self._log_audit(
                 request=request,
                 request_id=request_id,
-                prompt_version_id=prompt_version,
+                prompt_version_id=reframe_prompt_version,
                 safety_tier="negligible", # Will be updated if exceptions occur
                 latency_ms=latency_ms,
                 status="success"
+            )
+            if not isinstance(audit_log_id, str):
+                audit_log_id = None
+
+            response = CBTAnalysisResponse(
+                suggestions=distortions,
+                reframes=reframes,
+                prompt_version=prompt_version,
+                ai_analysis_id=audit_log_id,
             )
 
             return response
@@ -158,7 +162,7 @@ class GeminiClient:
                     raise
                 logger.warning(
                     "Distortion detection failed, retrying",
-                    extra={"attempt": attempt + 1, "error": str(e)}
+                    extra={"attempt": attempt + 1, "error_type": type(e).__name__}
                 )
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
@@ -179,7 +183,7 @@ class GeminiClient:
                     raise
                 logger.warning(
                     "Reframe generation failed, retrying",
-                    extra={"attempt": attempt + 1, "error": str(e)}
+                    extra={"attempt": attempt + 1, "error_type": type(e).__name__}
                 )
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
@@ -307,7 +311,7 @@ class GeminiClient:
         latency_ms: int,
         status: str,
         error_code: str | None = None,
-    ):
+    ) -> str | None:
         """Record a PII-minimized AI audit entry."""
         audit_in = AIAuditLogCreate(
             correlation_id=request_id,
@@ -326,7 +330,7 @@ class GeminiClient:
             error_code=error_code,
             schema_version=1,
         )
-        ai_audit_service.record_ai_audit_log(audit_in)
+        return ai_audit_service.record_ai_audit_log(audit_in)
 
 
 class SafetyException(Exception):
