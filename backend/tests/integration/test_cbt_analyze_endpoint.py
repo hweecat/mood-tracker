@@ -39,6 +39,7 @@ class TestCBTAnalyzeEndpoint:
         return {
             "suggestions": [
                 {
+                    "id": "suggestion-1",
                     "distortion": "all-or-nothing thinking",
                     "reasoning": "The thought uses absolute terms like 'never' despite evidence to the contrary"
                 }
@@ -163,6 +164,24 @@ class TestCBTAnalyzeEndpoint:
         assert data["actionPlans"][0]["id"] == "plan-1"
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_passes_user_id_to_ai_client(self, mock_get_client, async_client, valid_request, mock_ai_response):
+        """Test /analyze attaches the authenticated user id to AI audit creation."""
+        captured = {}
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            captured["user_id"] = kwargs.get("user_id")
+            return mock_ai_response
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert captured["user_id"] == "1"
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles SafetyException correctly."""
         from app.services.gemini_client import SafetyException
@@ -268,7 +287,7 @@ class TestCBTAnalyzeEndpoint:
         """Test /analyze endpoint returns suggestions with expected fields."""
         mock_ai_response = {
             "suggestions": [
-                {"distortion": "overgeneralization", "reasoning": "Using words like always/never"}
+                {"id": "suggestion-1", "distortion": "overgeneralization", "reasoning": "Using words like always/never"}
             ],
             "reframes": [],
             "promptVersion": "1.0.0"

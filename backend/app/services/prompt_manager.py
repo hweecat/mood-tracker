@@ -50,6 +50,8 @@ Generate exactly 3 rational reframes, each from a different perspective:
 
 Then generate 1 to 3 optional self-help action plans. Each plan should be concrete, small, and framed as one small next step the user can choose, edit, or ignore.
 
+If the content suggests crisis or self-harm, do not generate ordinary action plans; keep the response on the crisis safety path.
+
 Return ONLY a valid JSON object with this structure:
 {{
   "reframes": [

@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from app.schemas.cbt import CBTAnalysisRequest
+from app.services.crisis_safety import raise_if_crisis_intent
 from app.services.llm_provider import LLMParseError, LLMProviderError, LLMResult
 
 
@@ -21,10 +22,11 @@ CBT_OUTPUT_SCHEMA: dict[str, Any] = {
                     "type": "object",
                     "additionalProperties": True,
                     "properties": {
+                        "id": {"type": "string"},
                         "distortion": {"type": "string"},
                         "reasoning": {"type": "string"},
                     },
-                    "required": ["distortion", "reasoning"],
+                    "required": ["id", "distortion", "reasoning"],
                 },
             },
             "reframes": {
@@ -37,7 +39,7 @@ CBT_OUTPUT_SCHEMA: dict[str, Any] = {
                         "content": {"type": "string"},
                         "id": {"type": "string"},
                     },
-                    "required": ["perspective", "content"],
+                    "required": ["id", "perspective", "content"],
                 },
             },
             "action_plans": {
@@ -80,6 +82,7 @@ class OpenAIClient:
         self.timeout = timeout
 
     async def analyze_cbt(self, request: CBTAnalysisRequest) -> LLMResult:
+        raise_if_crisis_intent(request)
         start = time.time()
         response = await self.http_client.post(
             "https://api.openai.com/v1/responses",
@@ -119,7 +122,10 @@ class OpenAIClient:
         return (
             "Analyze this CBT journal entry. Return JSON with suggestions, reframes, "
             "and 1 to 3 optional action_plans. Keep reframes validating, non-diagnostic, "
-            "and agency-preserving; each action plan should be one small next step. "
+            "and agency-preserving; include stable ids for each item, and make each "
+            "action plan one small next step. If the content suggests crisis or "
+            "self-harm, do not generate ordinary action plans; keep the response "
+            "on the crisis safety path. "
             f"Situation: {request.situation}\n"
             f"Automatic thought: {request.automatic_thought}"
         )

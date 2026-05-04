@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from app.schemas.cbt import CBTAnalysisRequest
-from app.services.llm_provider import LLMParseError
+from app.services.llm_provider import LLMParseError, LLMSafetyBlocked
 from app.services.openai_client import OpenAIClient
 
 
@@ -58,6 +58,36 @@ async def test_openai_client_uses_responses_api_with_structured_output(cbt_reque
     assert kwargs["json"]["text"]["format"]["type"] == "json_schema"
     assert kwargs["headers"]["Authorization"] == "Bearer secret-key"
     assert kwargs["timeout"] == 9
+
+
+def test_openai_prompt_keeps_crisis_content_on_safety_path(cbt_request):
+    client = OpenAIClient(api_key="secret-key", model="gpt-5.5")
+
+    prompt = client._build_prompt(cbt_request)
+
+    assert "crisis or self-harm" in prompt
+    assert "safety path" in prompt
+
+
+@pytest.mark.anyio
+async def test_openai_client_blocks_crisis_input_before_model_call():
+    http_client = AsyncMock(spec=httpx.AsyncClient)
+    client = OpenAIClient(
+        api_key="secret-key",
+        model="gpt-5.5",
+        http_client=http_client,
+    )
+
+    with pytest.raises(LLMSafetyBlocked) as exc_info:
+        await client.analyze_cbt(
+            CBTAnalysisRequest(
+                situation="I am alone tonight",
+                automatic_thought="I want to kill myself",
+            )
+        )
+
+    assert exc_info.value.crisis_resources
+    http_client.post.assert_not_awaited()
 
 
 @pytest.mark.anyio

@@ -81,7 +81,7 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 
 | Workstream | Branch | Status | Latest Evidence | Notes |
 | --- | --- | --- | --- | --- |
-| CBT quality/action plans | `codex/cbt-quality-action-plans` | Ready for remote CI | Backend `pytest -p no:cacheprovider`: 78 passed, 80 warnings. Backend `ruff check .`: all checks passed. | Frontend hook/type changes are included, but local frontend tests are blocked because Node package managers are unavailable in this shell/worktree. No rebase or merge performed. |
+| CBT quality/action plans | `codex/cbt-quality-action-plans` | Review fixes ready for remote CI | Backend `pytest -p no:cacheprovider`: 88 passed, 81 warnings. Backend `ruff check .`: all checks passed. Prior pushed commit passed GitHub CI run 85, including frontend, backend, and E2E jobs. | Follow-up fixes address audit `user_id` linkage, duplicate AI response IDs, crisis prompt guardrails, provider safety preflight, and stricter frontend response typing. Local frontend tests remain blocked because Node package managers are unavailable in this shell/worktree. No rebase or merge performed. |
 
 ## Orchestrator Responsibilities
 

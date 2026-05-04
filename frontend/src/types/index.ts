@@ -33,14 +33,14 @@ export interface MoodEntry {
 }
 
 export interface DistortionSuggestion {
-  id?: string;
+  id: string;
   distortion: CognitiveDistortion;
   reasoning: string;
   confidence?: number;
 }
 
 export interface RationalReframe {
-  id?: string;
+  id: string;
   perspective: string;
   content: string;
 }
@@ -54,14 +54,14 @@ export interface CBTActionPlan {
 }
 
 export interface CBTAnalysisResponse {
-  analysisId?: string;
+  analysisId: string | null;
   suggestions: DistortionSuggestion[];
   reframes: RationalReframe[];
-  actionPlans?: CBTActionPlan[];
-  promptVersion?: string;
-  aiAnalysisId?: string;
-  provider?: string;
-  model?: string;
+  actionPlans: CBTActionPlan[];
+  promptVersion?: string | null;
+  aiAnalysisId?: string | null;
+  provider: string | null;
+  model: string | null;
 }
 
 export interface CBTLog {

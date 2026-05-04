@@ -7,6 +7,7 @@ import time
 from typing import List, Tuple, Dict
 from google import generativeai as genai
 from google.generativeai.types import GenerationConfig, HarmCategory, HarmProbability
+from pydantic import ValidationError
 from app.core.ai_config import get_ai_config
 from app.core.constants import COGNITIVE_DISTORTIONS
 from app.schemas.cbt import (
@@ -74,7 +75,21 @@ class GeminiClient:
             )
 
             latency_ms = int((time.time() - start_time) * 1000)
-            # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
+            prompt_version = reframe_prompt_version
+
+            try:
+                response = CBTAnalysisResponse(
+                    suggestions=distortions,
+                    reframes=reframes,
+                    action_plans=action_plans,
+                    prompt_version=reframe_prompt_version,
+                    provider="gemini",
+                    model=self.model_name,
+                )
+            except ValidationError as exc:
+                raise ParseException("Invalid AI response format") from exc
+
+            # 3. Log audit (PII-free) only after response contract validation succeeds.
             audit_log_id = self._log_audit(
                 request=request,
                 request_id=request_id,
@@ -96,16 +111,8 @@ class GeminiClient:
             if not isinstance(audit_log_id, str):
                 audit_log_id = None
 
-            response = CBTAnalysisResponse(
-                suggestions=distortions,
-                reframes=reframes,
-                action_plans=action_plans,
-                prompt_version=reframe_prompt_version,
-                analysis_id=audit_log_id,
-                ai_analysis_id=audit_log_id,
-                provider="gemini",
-                model=self.model_name,
-            )
+            response.analysis_id = audit_log_id
+            response.ai_analysis_id = audit_log_id
 
             return response
 
@@ -405,6 +412,7 @@ class GeminiClient:
     def _log_audit(
         self,
         request: CBTAnalysisRequest,
+        user_id: str | None,
         request_id: str,
         prompt_version_id: str,
         safety_tier: str,

@@ -32,6 +32,7 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
             mock_detect.return_value = (
                 [
                     DistortionSuggestion(
+                        id="suggestion-1",
                         distortion="All-or-Nothing Thinking",
                         reasoning="The thought uses absolute language.",
                     )
@@ -41,6 +42,7 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
             mock_reframe.return_value = (
                 [
                     RationalReframe(
+                        id="reframe-1",
                         perspective="Compassionate",
                         content="One difficult moment does not define you.",
                     )
@@ -72,6 +74,7 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
     assert result.provider == "gemini"
     assert result.model == "gemini-1.5-flash"
     assert result.action_plans[0].id == "plan-1"
+    assert audit_in.user_id == "user-1"
     assert audit_in.provider == "gemini"
     assert audit_in.model == "gemini-1.5-flash"
     assert audit_in.operation == "generate_reframes"

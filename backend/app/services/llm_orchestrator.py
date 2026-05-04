@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Mapping
 
 from pydantic import ValidationError
 
@@ -22,7 +23,11 @@ class LLMOrchestrator:
         self.providers = providers
         self.audit_service = audit_service
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
         last_error: Exception | None = None
         for provider in self.providers:
             correlation_id = str(uuid.uuid4())
@@ -31,6 +36,7 @@ class LLMOrchestrator:
             except LLMSafetyBlocked as exc:
                 self._record_attempt(
                     request=request,
+                    user_id=user_id,
                     provider=provider.provider,
                     model=provider.model,
                     correlation_id=correlation_id,
@@ -44,6 +50,7 @@ class LLMOrchestrator:
                 last_error = exc
                 self._record_attempt(
                     request=request,
+                    user_id=user_id,
                     provider=provider.provider,
                     model=provider.model,
                     correlation_id=correlation_id,
@@ -56,6 +63,7 @@ class LLMOrchestrator:
                 last_error = exc
                 self._record_attempt(
                     request=request,
+                    user_id=user_id,
                     provider=provider.provider,
                     model=provider.model,
                     correlation_id=correlation_id,
@@ -68,6 +76,7 @@ class LLMOrchestrator:
                 last_error = exc
                 self._record_attempt(
                     request=request,
+                    user_id=user_id,
                     provider=provider.provider,
                     model=provider.model,
                     correlation_id=correlation_id,
@@ -83,6 +92,7 @@ class LLMOrchestrator:
                     last_error = exc
                     self._record_attempt(
                         request=request,
+                        user_id=user_id,
                         provider=result.provider,
                         model=result.model,
                         correlation_id=correlation_id,
@@ -95,6 +105,7 @@ class LLMOrchestrator:
 
                 audit_id = self._record_attempt(
                     request=request,
+                    user_id=user_id,
                     provider=result.provider,
                     model=result.model,
                     correlation_id=correlation_id,
@@ -115,6 +126,7 @@ class LLMOrchestrator:
     def _record_attempt(
         self,
         request: CBTAnalysisRequest,
+        user_id: str | None,
         provider: str,
         model: str,
         correlation_id: str,
@@ -127,6 +139,7 @@ class LLMOrchestrator:
     ) -> str | None:
         audit_in = AIAuditLogCreate(
             correlation_id=correlation_id,
+            user_id=user_id,
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider=provider,
@@ -149,6 +162,8 @@ class LLMOrchestrator:
     def _to_response(self, result: LLMResult, audit_id: str | None) -> CBTAnalysisResponse:
         payload = result.parsed_payload
         try:
+            if not isinstance(payload, Mapping):
+                raise TypeError("Provider response root must be an object")
             return CBTAnalysisResponse(
                 suggestions=self._ensure_stable_ids(payload.get("suggestions") or [], "suggestion"),
                 reframes=self._ensure_stable_ids(payload.get("reframes") or [], "reframe"),

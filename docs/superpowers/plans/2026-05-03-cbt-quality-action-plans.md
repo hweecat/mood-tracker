@@ -38,9 +38,10 @@
 
 ## Status
 
-- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 78 passed, 80 warnings.
-- Focused action-plan parser verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py -q`: 6 passed.
-- Focused contract/prompt verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py -q`: 18 passed, 20 warnings.
+- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 88 passed, 81 warnings.
+- Focused action-plan parser verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py -q`: 9 passed.
+- Focused review-regression verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_llm_orchestrator.py tests/services/test_gemini_client.py tests/services/test_ai_audit_service.py -q`: 42 passed, 27 warnings.
+- Focused provider safety verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py tests/services/test_ollama_client.py -q`: 8 passed.
 - Backend lint verified with `uv run --with ruff ruff check .`: all checks passed.
 - Frontend type/test changes are present, but local frontend verification is blocked because `npm`, `npx`, `pnpm`, `yarn`, and `corepack` are unavailable and `frontend/node_modules` is absent in this worktree.
 
@@ -87,6 +88,8 @@ def test_cbt_analysis_response_accepts_action_plans():
   - `do not minimize`
   - `optional`
   - `one small next step`
+  - `crisis or self-harm`
+  - `safety path`
 - [x] Run the test and verify failure.
 - [x] Add prompt version text for empathetic reframing and action planning.
 - [x] Keep wording concise to control latency and cost.

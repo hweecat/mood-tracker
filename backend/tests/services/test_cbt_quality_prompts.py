@@ -13,3 +13,5 @@ async def test_reframing_prompt_requires_empathy_agency_and_optional_action_plan
     assert "do not minimize" in prompt
     assert "optional" in prompt
     assert "one small next step" in prompt
+    assert "crisis or self-harm" in prompt
+    assert "safety path" in prompt

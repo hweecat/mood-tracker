@@ -45,11 +45,11 @@ class TestGeminiClient:
                  patch.object(client, '_log_audit') as mock_audit:
 
                 mock_detect.return_value = (
-                    [DistortionSuggestion(distortion="All-or-Nothing Thinking", reasoning="Test reasoning")],
+                    [DistortionSuggestion(id="suggestion-1", distortion="All-or-Nothing Thinking", reasoning="Test reasoning")],
                     "v1.0"
                 )
                 mock_reframe.return_value = (
-                    [RationalReframe(perspective="Compassionate", content="Test reframe")],
+                    [RationalReframe(id="reframe-1", perspective="Compassionate", content="Test reframe")],
                     [
                         CBTActionPlan(
                             id="plan-1",
@@ -187,6 +187,46 @@ class TestGeminiClient:
                 assert kwargs["status"] == "success"
                 assert kwargs["latency_ms"] >= 0
                 assert "request_id" in kwargs
+
+    @pytest.mark.anyio
+    async def test_analyze_cbt_validates_response_before_success_audit(self):
+        """Invalid generated action-plan counts should not create a success audit first."""
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
+             patch('app.services.gemini_client.genai.configure'), \
+             patch('app.services.gemini_client.genai.GenerativeModel'):
+
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
+            client = GeminiClient()
+
+            plan = CBTActionPlan(
+                id="plan-1",
+                title="Take one step",
+                rationale="A small step can reduce avoidance.",
+                steps=["Write one sentence about what happened."],
+                timeframe="today",
+            )
+            with patch.object(client, '_detect_distortions_with_retry') as mock_detect, \
+                 patch.object(client, '_generate_reframes_and_action_plans_with_retry') as mock_reframe, \
+                 patch.object(client, '_log_audit') as mock_audit:
+
+                mock_detect.return_value = ([], "v1.0")
+                mock_reframe.return_value = (
+                    [],
+                    [
+                        plan,
+                        plan.model_copy(update={"id": "plan-2"}),
+                        plan.model_copy(update={"id": "plan-3"}),
+                        plan.model_copy(update={"id": "plan-4"}),
+                    ],
+                    "v1.0",
+                )
+
+                request = CBTAnalysisRequest(situation="s", automatic_thought="t")
+                with pytest.raises(ParseException):
+                    await client.analyze_cbt(request)
+
+        statuses = [call.kwargs["status"] for call in mock_audit.call_args_list]
+        assert statuses == ["parse_error"]
 
     @pytest.mark.anyio
     async def test_detect_distortions_with_retry_logic(self):

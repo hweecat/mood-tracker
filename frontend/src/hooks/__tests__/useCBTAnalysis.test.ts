@@ -15,8 +15,9 @@ vi.mock('next-auth/react', () => ({
 
 // Mock responses
 const MOCK_SUCCESS_RESPONSE = {
+  analysisId: 'audit-1',
   suggestions: [
-    { distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
+    { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
   ],
   reframes: [
     { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
@@ -30,7 +31,10 @@ const MOCK_SUCCESS_RESPONSE = {
       timeframe: 'today',
     }
   ],
-  prompt_version: '1.0.0'
+  promptVersion: '1.0.0',
+  aiAnalysisId: 'audit-1',
+  provider: 'openai',
+  model: 'gpt-5.5',
 };
 
 describe('useCBTAnalysis Hook', () => {
@@ -59,24 +63,27 @@ describe('useCBTAnalysis Hook', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.analysis).toEqual(MOCK_SUCCESS_RESPONSE);
-    expect(result.current.analysis?.actionPlans?.[0].id).toBe('plan-1');
+    expect(result.current.analysis?.actionPlans[0].id).toBe('plan-1');
     expect(result.current.error).toBeNull();
   });
 
-  it('allows analysis responses without action plans', () => {
-    const responseWithoutActionPlans: CBTAnalysisResponse = {
+  it('types the required analysis response contract', () => {
+    const response: CBTAnalysisResponse = {
+      analysisId: 'audit-1',
       suggestions: [
-        { distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
+        { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
       ],
       reframes: [
         { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
       ],
+      actionPlans: [],
       provider: 'openai',
       model: 'gpt-5.5',
       aiAnalysisId: 'audit-1',
     };
 
-    expect(responseWithoutActionPlans.actionPlans).toBeUndefined();
+    expect(response.actionPlans).toEqual([]);
+    expect(response.analysisId).toBe('audit-1');
   });
 
   it('handles validation error (empty inputs)', async () => {

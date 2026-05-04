@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.schemas.cbt import CBTActionPlan, CBTAnalysisRequest, CBTAnalysisResponse
 from app.services.llm_orchestrator import LLMOrchestrator
@@ -56,6 +57,23 @@ def test_cbt_analysis_response_accepts_action_plans():
 
     assert response.action_plans[0].title == "Send one message"
     assert response.model_dump(by_alias=True)["actionPlans"][0]["id"] == "plan-1"
+
+
+def test_cbt_analysis_response_rejects_duplicate_ids():
+    plan = CBTActionPlan(
+        id="plan-1",
+        title="Send one message",
+        rationale="A small outreach step can reduce avoidance.",
+        steps=["Text one trusted friend and ask for a short check-in."],
+        timeframe="today",
+    )
+
+    with pytest.raises(ValidationError, match="Duplicate action plan id"):
+        CBTAnalysisResponse(
+            suggestions=[],
+            reframes=[],
+            action_plans=[plan, plan.model_copy()],
+        )
 
 
 @pytest.mark.anyio
@@ -187,6 +205,32 @@ async def test_orchestrator_rejects_non_object_action_plan_items(cbt_request):
                     "suggestions": [],
                     "reframes": [],
                     "action_plans": ["not-an-object"],
+                }
+            )
+        ],
+        audit_service=FakeAuditService(),
+    )
+
+    with pytest.raises(LLMParseError):
+        await orchestrator.analyze_cbt(request=cbt_request)
+
+
+@pytest.mark.anyio
+async def test_orchestrator_rejects_duplicate_provider_ids(cbt_request):
+    plan = {
+        "id": "plan-1",
+        "title": "Send one message",
+        "rationale": "A small outreach step can reduce avoidance.",
+        "steps": ["Text one trusted friend and ask for a short check-in."],
+        "timeframe": "today",
+    }
+    orchestrator = LLMOrchestrator(
+        providers=[
+            FakeProvider(
+                {
+                    "suggestions": [],
+                    "reframes": [],
+                    "action_plans": [plan, plan.copy()],
                 }
             )
         ],
