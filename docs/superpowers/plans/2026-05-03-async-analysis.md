@@ -44,7 +44,7 @@
 
 ### Task 1: Add Analysis Repository Tests
 
-- [ ] Write failing tests in `backend/tests/repositories/test_analysis_repository.py`.
+- [x] Write failing tests in `backend/tests/repositories/test_analysis_repository.py`.
 
 ```python
 import sqlite3
@@ -78,35 +78,41 @@ def test_analysis_job_lifecycle_persists_status_and_result():
     assert "negative sentiment trend" in row["result_payload"]
 ```
 
-- [ ] Run `cd backend; pytest tests/repositories/test_analysis_repository.py -v`.
-- [ ] Implement repository functions.
+- [x] Run `cd backend; pytest tests/repositories/test_analysis_repository.py -v`.
+- [x] Implement repository functions.
 
 ### Task 2: Add Migrations And DB Init
 
-- [ ] Add Sqitch migration for `analysis_jobs` or `entry_analyses`.
-- [ ] Include indexes for `user_id`, `entry_type`, `entry_id`, and `created_at`.
-- [ ] Update `backend/app/db/session.py` local init to include the same table.
-- [ ] Add schema inspection tests.
+- [x] Add Sqitch migration for `analysis_jobs` or `entry_analyses`.
+- [x] Include indexes for `user_id`, `entry_type`, `entry_id`, and `created_at`.
+- [x] Update `backend/app/db/session.py` local init to include the same table.
+- [x] Add schema inspection tests.
 
 ### Task 3: Schedule Mood Analysis After Insert
 
-- [ ] Write failing integration test that patches `BackgroundTasks.add_task` or an injected scheduler and asserts mood POST schedules analysis after repository insert.
-- [ ] Refactor `create_mood_entry()` so it persists immediately and does not call `analyze_mood_note()` inline.
-- [ ] Add a background service that performs mood enrichment and stores result payload.
-- [ ] Preserve response compatibility by returning `aiAnalysis=None` or current persisted result if already available.
+- [x] Write failing integration test that patches `BackgroundTasks.add_task` or an injected scheduler and asserts mood POST schedules analysis after repository insert.
+- [x] Refactor `create_mood_entry()` so it persists immediately and does not call `analyze_mood_note()` inline.
+- [x] Add a background service that performs mood enrichment and stores result payload.
+- [x] Preserve response compatibility by returning `aiAnalysis=None` or current persisted result if already available.
 
 ### Task 4: Schedule CBT Longitudinal Analysis After Insert
 
-- [ ] Write failing integration test that POSTs a CBT log and asserts a longitudinal analysis job is queued.
-- [ ] Implement `journal_analysis.py` to summarize patterns from recent mood and CBT records for the same user.
-- [ ] Keep the first analysis deterministic and cheap: counts, top distortions, mood delta, and candidate interventions.
-- [ ] Store result payload compactly.
+- [x] Write failing integration test that POSTs a CBT log and asserts a longitudinal analysis job is queued.
+- [x] Implement `journal_analysis.py` to summarize patterns from recent mood and CBT records for the same user.
+- [x] Keep the first analysis deterministic and cheap: counts, top distortions, mood delta, and candidate interventions.
+- [x] Store result payload compactly.
 
 ### Task 5: Retrieval Endpoint
 
-- [ ] Add `GET /api/v1/analyses/` or a nested endpoint that returns analysis jobs/results filtered by entry.
-- [ ] Write integration tests for authenticated user scoping.
-- [ ] Ensure users cannot retrieve another user's analysis jobs.
+- [x] Add `GET /api/v1/analyses/` or a nested endpoint that returns analysis jobs/results filtered by entry.
+- [x] Write integration tests for authenticated user scoping.
+- [x] Ensure users cannot retrieve another user's analysis jobs.
+
+## Validation Status
+
+- [x] PR opened: https://github.com/hweecat/mood-tracker/pull/8.
+- [x] GitHub Actions CI passed for head `5f3fa92579405e58ad0c808df2950989278e32c6` (run `25299977193`).
+- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
 
 ## Acceptance Criteria
 
@@ -115,4 +121,3 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 - Analysis failure does not roll back source entry creation.
 - Retrieval endpoint is user-scoped.
 - Existing mood/CBT tests remain compatible.
-

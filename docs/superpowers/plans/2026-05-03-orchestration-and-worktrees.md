@@ -91,11 +91,11 @@ You are not alone in the codebase. Work only inside your assigned worktree and w
 
 ### Task 5: Review Each Stream
 
-- [x] Spec compliance review: compare the diff to the workstream plan and master design spec for audit and batch streams.
-- [x] Code quality review: inspect maintainability, test design, privacy risks, schema drift, and error handling for audit and batch streams.
-- [x] Verification review: rerun the workstream's stated test commands fresh for audit and batch streams.
-- [x] Privacy review: search for raw sensitive strings in logs/tests and inspect logger extras for audit and batch streams.
-- [ ] Only merge after all review findings are resolved.
+- [x] Spec compliance review: compare the diff to the workstream plan and master design spec for audit, provider fallback, CBT quality/action plans, async analysis, and batch streams.
+- [x] Code quality review: inspect maintainability, test design, privacy risks, schema drift, and error handling for audit, provider fallback, CBT quality/action plans, async analysis, and batch streams.
+- [x] Verification review: confirm fresh local verification where available and GitHub Actions CI for audit, provider fallback, CBT quality/action plans, async analysis, and batch streams.
+- [x] Privacy review: search for raw sensitive strings in logs/tests and inspect logger extras for audit, provider fallback, CBT quality/action plans, async analysis, and batch streams.
+- [x] Only merge after all review findings are resolved for non-mobile streams.
 
 ### Task 6: Integrate In Order
 
@@ -106,6 +106,15 @@ You are not alone in the codebase. Work only inside your assigned worktree and w
 - [ ] Rebase or update `codex/batch-evals`, then merge it.
 - [ ] Rebase or update `codex/mobile-usability`, then merge it.
 - [ ] Run final backend, frontend, eval, and Playwright checks from the integrated branch.
+
+## Integration Readiness Status
+
+- [x] `codex/audit-observability`: PR #7 ready, mergeable, CI green.
+- [x] `codex/llm-provider-fallbacks`: PR #5 ready, mergeable, CI green.
+- [x] `codex/cbt-quality-action-plans`: PR #6 mergeable and CI green, but GitHub still reports it as draft; mark ready before merge.
+- [x] `codex/async-analysis`: PR #8 ready, mergeable, CI green.
+- [x] `codex/batch-evals`: PR #9 ready, mergeable, CI green.
+- [ ] `codex/mobile-usability`: deferred by integration scope.
 
 ## Acceptance Criteria
 
