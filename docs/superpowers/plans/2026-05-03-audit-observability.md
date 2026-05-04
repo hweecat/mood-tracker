@@ -44,7 +44,7 @@
 
 ### Task 1: Reproduce the Audit Schema Mismatch
 
-- [ ] Write failing repository test in `backend/tests/repositories/test_ai_audit_repository.py`.
+- [x] Write failing repository test in `backend/tests/repositories/test_ai_audit_repository.py`.
 
 ```python
 import sqlite3
@@ -104,51 +104,59 @@ def test_create_ai_audit_log_persists_provider_metadata():
     assert row["status"] == "success"
 ```
 
-- [ ] Run `cd backend; pytest tests/repositories/test_ai_audit_repository.py -v`.
-- [ ] Verify it fails because `app.repositories.ai_audit` does not exist.
+- [x] Run `cd backend; pytest tests/repositories/test_ai_audit_repository.py -v`.
+- [x] Verify it fails because `app.repositories.ai_audit` does not exist.
 
 ### Task 2: Implement Audit Schema And Repository
 
-- [ ] Create `backend/app/schemas/ai_audit.py` with `AIAuditLogCreate` and `AIFeedbackEventCreate`.
-- [ ] Create `backend/app/repositories/ai_audit.py` with `create_ai_audit_log()` and `create_ai_feedback_event()`.
-- [ ] Serialize JSON payload fields with `json.dumps(..., sort_keys=True)`.
-- [ ] Run the repository tests and verify they pass.
+- [x] Create `backend/app/schemas/ai_audit.py` with `AIAuditLogCreate` and `AIFeedbackEventCreate`.
+- [x] Create `backend/app/repositories/ai_audit.py` with `create_ai_audit_log()` and `create_ai_feedback_event()`.
+- [x] Serialize JSON payload fields with `json.dumps(..., sort_keys=True)`.
+- [x] Run the repository tests and verify they pass.
 
 ### Task 3: Add Feedback Capture Regression Tests
 
-- [ ] Write failing test for feedback persistence in `backend/tests/repositories/test_ai_audit_repository.py`.
-- [ ] Include accepted distortions, ignored reframes, `user_rational_response`, accepted action plan, and `source="edited_ai"`.
-- [ ] Run the test and verify it fails before implementation.
-- [ ] Implement `ai_feedback_events` repository insert.
-- [ ] Verify the test passes.
+- [x] Write failing test for feedback persistence in `backend/tests/repositories/test_ai_audit_repository.py`.
+- [x] Include accepted distortions, ignored reframes, `user_rational_response`, accepted action plan, and `source="edited_ai"`.
+- [x] Run the test and verify it fails before implementation.
+- [x] Implement `ai_feedback_events` repository insert.
+- [x] Verify the test passes.
 
 ### Task 4: Align Migrations And DB Init
 
-- [ ] Add a Sqitch migration that creates missing canonical columns and `ai_feedback_events`.
-- [ ] Update verify migration to select all new required columns.
-- [ ] Update revert migration to cleanly undo the new change.
-- [ ] Update `backend/app/db/session.py` so local code-driven DB initialization creates the same tables for dev/test.
-- [ ] Add migration shape tests that inspect `PRAGMA table_info(ai_audit_logs)` and `PRAGMA table_info(ai_feedback_events)`.
+- [x] Add a Sqitch migration that creates missing canonical columns and `ai_feedback_events`.
+- [x] Update verify migration to select all new required columns.
+- [x] Update revert migration to cleanly undo the new change.
+- [x] Update `backend/app/db/session.py` so local code-driven DB initialization creates the same tables for dev/test.
+- [x] Add migration shape tests that inspect `PRAGMA table_info(ai_audit_logs)` and `PRAGMA table_info(ai_feedback_events)`.
 
 ### Task 5: Replace Inline Gemini Audit Insert
 
-- [ ] Write failing service test that patches a fake DB and asserts `GeminiClient.analyze_cbt()` records provider metadata through `ai_audit_service`.
-- [ ] Replace `GeminiClient._log_audit()` with the shared audit service.
-- [ ] Ensure failure paths record `timeout`, `provider_error`, `parse_error`, or `safety_blocked` status without raw prompt text in logger extras.
-- [ ] Run `cd backend; pytest tests/services/test_ai_audit_service.py tests/services/test_gemini_client.py -v`.
+- [x] Write failing service test that patches a fake DB and asserts `GeminiClient.analyze_cbt()` records provider metadata through `ai_audit_service`.
+- [x] Replace `GeminiClient._log_audit()` with the shared audit service.
+- [x] Ensure failure paths record `timeout`, `provider_error`, `parse_error`, or `safety_blocked` status without raw prompt text in logger extras.
+- [x] Run `cd backend; pytest tests/services/test_ai_audit_service.py tests/services/test_gemini_client.py -v`.
 
 ### Task 6: Capture User Accepted/User Edited CBT Outcomes
 
-- [ ] Extend `CBTLogCreate` with optional `ai_analysis_id`, `accepted_reframe_id`, `ignored_reframe_ids`, `accepted_action_plan_id`, and `feedback_source`.
-- [ ] Write failing integration test in `backend/tests/integration/test_cbt_logs_feedback_capture.py` that posts a CBT log and verifies one `ai_feedback_events` row is inserted.
-- [ ] Implement feedback capture in `create_cbt_log()` or an adjacent service called by the route.
-- [ ] Preserve existing clients by making new fields optional.
+- [x] Extend `CBTLogCreate` with optional `ai_analysis_id`, `accepted_reframe_id`, `ignored_reframe_ids`, `accepted_action_plan_id`, and `feedback_source`.
+- [x] Write failing integration test in `backend/tests/integration/test_cbt_logs_feedback_capture.py` that posts a CBT log and verifies one `ai_feedback_events` row is inserted.
+- [x] Implement feedback capture in `create_cbt_log()` or an adjacent service called by the route.
+- [x] Preserve existing clients by making new fields optional.
 
 ### Task 7: Privacy Regression
 
-- [ ] Add a log-capture test that submits text such as `My email is jane@example.com and I feel hopeless` and asserts `jane@example.com` is not present in captured log records.
-- [ ] Ensure repository tests allow sensitive content only in designed application-data fields, not logger extras.
-- [ ] Run `cd backend; pytest tests/repositories tests/services tests/integration/test_cbt_logs_feedback_capture.py -v`.
+- [x] Add a log-capture test that submits text such as `My email is jane@example.com and I feel hopeless` and asserts `jane@example.com` is not present in captured log records.
+- [x] Ensure repository tests allow sensitive content only in designed application-data fields, not logger extras.
+- [x] Run `cd backend; pytest tests/repositories tests/services tests/integration/test_cbt_logs_feedback_capture.py -v`.
+
+## Validation Status
+
+- [x] PR opened: https://github.com/hweecat/mood-tracker/pull/7.
+- [x] Local audit-focused verification after lint fix: `uv run --with ruff ruff check .` passed.
+- [x] Local audit-focused verification after lint fix: `uv run --with pytest pytest tests\services\test_gemini_client.py tests\services\test_ai_audit_service.py` passed with CI-equivalent Gemini env vars (`14 passed`).
+- [x] GitHub Actions CI passed for head `86c712f905d04cbef56b532fde379654061178dd` (run `25300237020`).
+- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
 
 ## Acceptance Criteria
 
@@ -157,4 +165,3 @@ def test_create_ai_audit_log_persists_provider_metadata():
 - Gemini audit no longer inserts columns that do not exist.
 - No raw sensitive test strings appear in captured logs.
 - `migrations/verify/*` covers the new schema.
-
