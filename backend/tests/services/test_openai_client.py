@@ -69,6 +69,22 @@ def test_openai_prompt_keeps_crisis_content_on_safety_path(cbt_request):
     assert "safety path" in prompt
 
 
+def test_openai_prompt_masks_direct_identifiers_before_provider_call():
+    client = OpenAIClient(api_key="secret-key", model="gpt-5.5")
+
+    prompt = client._build_prompt(
+        CBTAnalysisRequest(
+            situation="My email is jane@example.com and my phone is 415-555-0100",
+            automatic_thought="Everyone will contact jane@example.com about this.",
+        )
+    )
+
+    assert "jane@example.com" not in prompt
+    assert "415-555-0100" not in prompt
+    assert "[EMAIL]" in prompt
+    assert "[PHONE]" in prompt
+
+
 @pytest.mark.anyio
 async def test_openai_client_blocks_crisis_input_before_model_call():
     http_client = AsyncMock(spec=httpx.AsyncClient)

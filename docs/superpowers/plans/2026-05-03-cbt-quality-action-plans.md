@@ -38,10 +38,11 @@
 
 ## Status
 
-- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 88 passed, 81 warnings.
+- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 91 passed, 81 warnings.
 - Focused action-plan parser verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py -q`: 9 passed.
 - Focused review-regression verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_llm_orchestrator.py tests/services/test_gemini_client.py tests/services/test_ai_audit_service.py -q`: 42 passed, 27 warnings.
 - Focused provider safety verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py tests/services/test_ollama_client.py -q`: 8 passed.
+- Focused provider PII masking verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py::test_openai_prompt_masks_direct_identifiers_before_provider_call tests/services/test_ollama_client.py::test_ollama_prompt_masks_direct_identifiers_before_provider_call tests/services/test_gemini_client.py::TestGeminiClient::test_generate_reframes_and_action_plans_masks_direct_identifiers -q`: 3 passed.
 - Backend lint verified with `uv run --with ruff ruff check .`: all checks passed.
 - Frontend type/test changes are present, but local frontend verification is blocked because `npm`, `npx`, `pnpm`, `yarn`, and `corepack` are unavailable and `frontend/node_modules` is absent in this worktree.
 

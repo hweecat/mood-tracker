@@ -6,6 +6,7 @@ import httpx
 from app.schemas.cbt import CBTAnalysisRequest
 from app.services.crisis_safety import raise_if_crisis_intent
 from app.services.llm_provider import LLMParseError, LLMProviderError, LLMResult
+from app.services.pii_masking import mask_provider_text
 
 
 class OllamaClient:
@@ -55,6 +56,8 @@ class OllamaClient:
         )
 
     def _build_prompt(self, request: CBTAnalysisRequest) -> str:
+        situation = mask_provider_text(request.situation)
+        automatic_thought = mask_provider_text(request.automatic_thought)
         return (
             "Analyze this CBT journal entry. Return JSON with suggestions, reframes, "
             "and 1 to 3 optional action_plans. Keep reframes validating, non-diagnostic, "
@@ -62,6 +65,6 @@ class OllamaClient:
             "action plan one small next step. If the content suggests crisis or "
             "self-harm, do not generate ordinary action plans; keep the response "
             "on the crisis safety path. "
-            f"Situation: {request.situation}\n"
-            f"Automatic thought: {request.automatic_thought}"
+            f"Situation: {situation}\n"
+            f"Automatic thought: {automatic_thought}"
         )

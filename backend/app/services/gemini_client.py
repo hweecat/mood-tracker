@@ -22,6 +22,7 @@ from app.services.prompt_manager import PromptManager
 from app.core.logging import get_logger
 from app.schemas.ai_audit import AIAuditLogCreate
 from app.services import ai_audit_service
+from app.services.pii_masking import mask_provider_text
 
 logger = get_logger(__name__)
 
@@ -248,8 +249,8 @@ class GeminiClient:
         """Detect cognitive distortions using Gemini."""
         prompt_template, version_id = await self.prompt_manager.get_distortion_prompt()
         prompt = prompt_template.format(
-            situation=situation,
-            automatic_thought=automatic_thought
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought)
         )
 
         # Configure generation for JSON output
@@ -306,8 +307,8 @@ class GeminiClient:
         """Generate rational reframes using Gemini."""
         prompt_template, version_id = await self.prompt_manager.get_reframing_prompt()
         prompt = prompt_template.format(
-            situation=situation,
-            automatic_thought=automatic_thought,
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought),
             distortions=", ".join(distortions)
         )
 
@@ -354,8 +355,8 @@ class GeminiClient:
         """Generate rational reframes and optional action plans using Gemini."""
         prompt_template, version_id = await self.prompt_manager.get_reframing_prompt()
         prompt = prompt_template.format(
-            situation=situation,
-            automatic_thought=automatic_thought,
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought),
             distortions=", ".join(distortions)
         )
 

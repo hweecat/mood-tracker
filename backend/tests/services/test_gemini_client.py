@@ -162,6 +162,57 @@ class TestGeminiClient:
         assert action_plans[0].id == "plan-1"
 
     @pytest.mark.anyio
+    async def test_generate_reframes_and_action_plans_masks_direct_identifiers(self):
+        """Gemini provider prompts should mask direct identifiers before model calls."""
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
+             patch('app.services.gemini_client.genai.configure'), \
+             patch('app.services.gemini_client.genai.GenerativeModel'):
+
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
+            mock_config.return_value.gemini_temperature = 0.7
+            client = GeminiClient()
+
+            mock_response = Mock()
+            mock_response.text = json.dumps({
+                "reframes": [
+                    {
+                        "id": "reframe-1",
+                        "perspective": "Compassionate",
+                        "content": "It makes sense this feels difficult.",
+                    }
+                ],
+                "action_plans": [
+                    {
+                        "id": "plan-1",
+                        "title": "Write one line",
+                        "rationale": "A small note can reduce avoidance.",
+                        "steps": ["Write one sentence without sending it yet."],
+                        "timeframe": "today",
+                    }
+                ],
+            })
+            mock_candidate = Mock()
+            mock_candidate.safety_ratings = []
+            mock_response.candidates = [mock_candidate]
+            client.prompt_manager.get_reframing_prompt = AsyncMock(
+                return_value=("{situation} {automatic_thought} {distortions}", "default")
+            )
+
+            with patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
+                mock_to_thread.return_value = mock_response
+                await client._generate_reframes_and_action_plans(
+                    "My email is jane@example.com and my phone is 415-555-0100",
+                    "Everyone will contact jane@example.com about this.",
+                    ["All-or-Nothing Thinking"],
+                )
+
+        prompt = mock_to_thread.call_args.args[1]
+        assert "jane@example.com" not in prompt
+        assert "415-555-0100" not in prompt
+        assert "[EMAIL]" in prompt
+        assert "[PHONE]" in prompt
+
+    @pytest.mark.anyio
     async def test_analyze_cbt_logs_accurate_metadata(self):
         """Test that audit logs capture correct metadata."""
         with patch('app.services.gemini_client.get_ai_config') as mock_config, \
