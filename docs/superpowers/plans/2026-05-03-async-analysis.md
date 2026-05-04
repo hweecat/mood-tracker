@@ -14,7 +14,7 @@
 
 - Path: `.worktrees/async-analysis`
 - Branch: `codex/async-analysis`
-- Depends on: audit contracts from `codex/audit-observability`; integrated provider/audit user-id fixes from `codex/llm-provider-fallbacks` during review.
+- Depends on: audit contracts from `codex/audit-observability`.
 
 ## File Ownership
 
@@ -108,20 +108,11 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 - [x] Write integration tests for authenticated user scoping.
 - [x] Ensure users cannot retrieve another user's analysis jobs.
 
-## Review Hardening Completed
+## Validation Status
 
-- Job status now follows the design contract: `queued`, `running`, `succeeded`, `failed`.
-- Background execution marks a job `running` before analysis and uses a fresh SQLite connection.
-- Public analysis retrieval omits `user_id`; user scoping remains enforced server-side.
-- Mood and CBT deletes clean up matching analysis rows to avoid orphaned sensitive summaries.
-- The analysis table migration and local DB init include contract checks for entry type, analysis type, and status.
-- The provider fallback branch was merged so CBT analysis audit rows receive the current user id before users submit accepted/edited CBT responses.
-
-## Review Verification
-
-- Focused async slice: `16 passed, 16 warnings`.
-- Integrated backend lint: `uv run --with ruff ruff check .` -> all checks passed.
-- Integrated backend tests: `uv run --with pytest pytest -p no:cacheprovider` -> `93 passed, 94 warnings`.
+- [x] PR opened: https://github.com/hweecat/mood-tracker/pull/8.
+- [x] GitHub Actions CI passed for head `5f3fa92579405e58ad0c808df2950989278e32c6` (run `25299977193`).
+- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
 
 ## Acceptance Criteria
 
@@ -130,4 +121,3 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 - Analysis failure does not roll back source entry creation.
 - Retrieval endpoint is user-scoped.
 - Existing mood/CBT tests remain compatible.
-
