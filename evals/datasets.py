@@ -131,9 +131,9 @@ def load_internal_feedback_examples(
     )
 
     for index, record in enumerate(records):
-        feedback = record.get("feedback_event", {})
-        audit = record.get("audit_log", {})
-        response_payload = audit.get("response_payload", {})
+        feedback = _as_mapping(record.get("feedback_event"))
+        audit = _as_mapping(record.get("audit_log"))
+        response_payload = _as_mapping(audit.get("response_payload"))
         generated_reframe = _first_text_item(response_payload.get("reframes"), "content")
         generated_action_plan = _first_text_item(response_payload.get("actionPlans"), "title")
         accepted_reframe = feedback.get("accepted_reframe_payload") or {}
@@ -253,6 +253,12 @@ def _first_present(record: dict[str, Any], *keys: str) -> Any:
             return value
     return ""
 
+
+
+def _as_mapping(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {}
 
 def _as_list(value: Any) -> list[str]:
     if value is None:

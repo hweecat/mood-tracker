@@ -125,3 +125,17 @@ def test_public_loaders_accept_source_metadata_for_real_upstream_data(tmp_path):
     assert cactus_examples[0].provenance["is_synthetic_fixture"] is False
     assert cactus_examples[0].provenance["human_authored"] is True
     assert "fixture_path" not in cactus_examples[0].provenance
+
+
+def test_load_internal_feedback_handles_null_nested_records(tmp_path):
+    export_path = tmp_path / "ai_feedback_events_with_nulls.jsonl"
+    export_path.write_text("""{"feedback_event": null, "audit_log": null}
+{"feedback_event": 7, "audit_log": "bad"}
+""", encoding="utf-8")
+
+    examples = load_internal_feedback_examples(export_path)
+
+    assert len(examples) == 2
+    assert examples[0].input["generated_response_payload"] == {}
+    assert examples[0].reference["accepted_response"] == ""
+    assert examples[1].metadata["provider"] is None
