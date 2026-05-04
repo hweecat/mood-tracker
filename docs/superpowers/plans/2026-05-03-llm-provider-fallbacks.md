@@ -46,7 +46,7 @@
 
 ### Task 1: Parse Provider Chain
 
-- [ ] Write failing tests in `backend/tests/services/test_llm_provider_config.py`.
+- [x] Write failing tests in `backend/tests/services/test_llm_provider_config.py`.
 
 ```python
 from app.core.ai_config import parse_model_chain
@@ -67,49 +67,55 @@ def test_parse_model_chain_rejects_unknown_provider():
         raise AssertionError("Expected ValueError")
 ```
 
-- [ ] Run `cd backend; pytest tests/services/test_llm_provider_config.py -v`.
-- [ ] Implement `ProviderModel` and `parse_model_chain()` in `backend/app/core/ai_config.py`.
-- [ ] Add settings for `ai_cbt_model_chain`, `openai_api_key`, `ollama_base_url`, and provider timeouts.
+- [x] Run `cd backend; pytest tests/services/test_llm_provider_config.py -v`.
+- [x] Implement `ProviderModel` and `parse_model_chain()` in `backend/app/core/ai_config.py`.
+- [x] Add settings for `ai_cbt_model_chain`, `openai_api_key`, `ollama_base_url`, and provider timeouts.
 
 ### Task 2: Define Provider Protocol
 
-- [ ] Create `backend/app/services/llm_provider.py` with `LLMProvider`, `LLMResult`, and typed exceptions: `LLMProviderError`, `LLMTimeoutError`, `LLMParseError`, `LLMSafetyBlocked`.
-- [ ] Update tests to import and assert these types.
-- [ ] Ensure provider result includes `provider`, `model`, `raw_payload`, `parsed_payload`, `latency_ms`, and optional `safety_ratings`.
+- [x] Create `backend/app/services/llm_provider.py` with `LLMProvider`, `LLMResult`, and typed exceptions: `LLMProviderError`, `LLMTimeoutError`, `LLMParseError`, `LLMSafetyBlocked`.
+- [x] Update tests to import and assert these types.
+- [x] Ensure provider result includes `provider`, `model`, `raw_payload`, `parsed_payload`, `latency_ms`, and optional `safety_ratings`.
 
 ### Task 3: Add Fallback Orchestrator
 
-- [ ] Write failing orchestrator test with fake providers: first provider raises `LLMProviderError`, second provider succeeds.
-- [ ] Assert the orchestrator returns the second provider result and records both attempts through the audit service.
-- [ ] Implement `backend/app/services/llm_orchestrator.py`.
-- [ ] Add a test that `LLMSafetyBlocked` stops fallback and is re-raised.
+- [x] Write failing orchestrator test with fake providers: first provider raises `LLMProviderError`, second provider succeeds.
+- [x] Assert the orchestrator returns the second provider result and records both attempts through the audit service.
+- [x] Implement `backend/app/services/llm_orchestrator.py`.
+- [x] Add a test that `LLMSafetyBlocked` stops fallback and is re-raised.
 
 ### Task 4: Wrap Existing Gemini Client
 
-- [ ] Write failing test proving Gemini adapter returns `LLMResult(provider="gemini", model=configured_model)`.
-- [ ] Refactor Gemini-specific request execution behind the provider protocol.
-- [ ] Keep existing safety handling and parse validation behavior.
-- [ ] Run existing Gemini tests to catch regressions.
+- [x] Write failing test proving Gemini adapter returns `LLMResult(provider="gemini", model=configured_model)`.
+- [x] Refactor Gemini-specific request execution behind the provider protocol.
+- [x] Keep existing safety handling and parse validation behavior.
+- [x] Run existing Gemini tests to catch regressions.
 
 ### Task 5: Add OpenAI Provider
 
-- [ ] Write failing tests in `backend/tests/services/test_openai_client.py` using a mocked `httpx.AsyncClient`.
-- [ ] Test that request JSON includes configured model, structured output format, and no raw provider key in logs.
-- [ ] Implement `OpenAIClient` with injected HTTP client for testability.
-- [ ] Normalize structured output parse failures to `LLMParseError`.
+- [x] Write failing tests in `backend/tests/services/test_openai_client.py` using a mocked `httpx.AsyncClient`.
+- [x] Test that request JSON includes configured model, structured output format, and no raw provider key in logs.
+- [x] Implement `OpenAIClient` with injected HTTP client for testability.
+- [x] Normalize structured output parse failures to `LLMParseError`.
 
 ### Task 6: Add Ollama Provider
 
-- [ ] Write failing tests in `backend/tests/services/test_ollama_client.py` using a mocked local HTTP response.
-- [ ] Implement `OllamaClient` against `${OLLAMA_BASE_URL}/api/generate` or configured endpoint.
-- [ ] Normalize Ollama JSON response text into the same internal parsed payload shape.
-- [ ] Do not require Ollama to be running in CI tests.
+- [x] Write failing tests in `backend/tests/services/test_ollama_client.py` using a mocked local HTTP response.
+- [x] Implement `OllamaClient` against `${OLLAMA_BASE_URL}/api/generate` or configured endpoint.
+- [x] Normalize Ollama JSON response text into the same internal parsed payload shape.
+- [x] Do not require Ollama to be running in CI tests.
 
 ### Task 7: Replace Factory Usage In CBT Endpoint
 
-- [ ] Update `get_ai_client()` or introduce `get_llm_orchestrator()` so route code does not branch by provider.
-- [ ] Update `backend/tests/integration/test_cbt_analyze_endpoint.py` to assert provider/model metadata appears in response.
-- [ ] Preserve `TextBlobClient` for mood analysis fallback only.
+- [x] Update `get_ai_client()` or introduce `get_llm_orchestrator()` so route code does not branch by provider.
+- [x] Update `backend/tests/integration/test_cbt_analyze_endpoint.py` to assert provider/model metadata appears in response.
+- [x] Preserve `TextBlobClient` for mood analysis fallback only.
+
+## Validation Status
+
+- [x] PR opened: https://github.com/hweecat/mood-tracker/pull/5.
+- [x] GitHub Actions CI passed for head `81cc1fadec3f75c23f2805a916d58975eae7058f` (run `25285205456`).
+- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
 
 ## Acceptance Criteria
 
@@ -118,4 +124,3 @@ def test_parse_model_chain_rejects_unknown_provider():
 - Gemini/OpenAI/Ollama providers are unit-tested without real network calls.
 - `/api/v1/cbt-logs/analyze` remains stable and includes provider metadata.
 - No provider-specific API key or raw prompt is logged.
-
