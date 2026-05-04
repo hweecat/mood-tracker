@@ -36,11 +36,19 @@
 - Response schema must include stable ids for suggestions, reframes, and action plans.
 - Existing clients should not break if they ignore `actionPlans`.
 
+## Status
+
+- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 78 passed, 80 warnings.
+- Focused action-plan parser verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py -q`: 6 passed.
+- Focused contract/prompt verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py -q`: 18 passed, 20 warnings.
+- Backend lint verified with `uv run --with ruff ruff check .`: all checks passed.
+- Frontend type/test changes are present, but local frontend verification is blocked because `npm`, `npx`, `pnpm`, `yarn`, and `corepack` are unavailable and `frontend/node_modules` is absent in this worktree.
+
 ## Tasks
 
 ### Task 1: Add Action Plan Schema
 
-- [ ] Write failing schema test in `backend/tests/services/test_cbt_action_plan_parser.py`.
+- [x] Write failing schema test in `backend/tests/services/test_cbt_action_plan_parser.py`.
 
 ```python
 from app.schemas.cbt import CBTActionPlan, CBTAnalysisResponse
@@ -67,40 +75,40 @@ def test_cbt_analysis_response_accepts_action_plans():
     assert response.action_plans[0].title == "Send one message"
 ```
 
-- [ ] Run `cd backend; pytest tests/services/test_cbt_action_plan_parser.py -v`.
-- [ ] Implement `CBTActionPlan` and extend `CBTAnalysisResponse`.
-- [ ] Confirm camelCase serialization still maps `actionPlans`.
+- [x] Run `cd backend; pytest tests/services/test_cbt_action_plan_parser.py -v`.
+- [x] Implement `CBTActionPlan` and extend `CBTAnalysisResponse`.
+- [x] Confirm camelCase serialization still maps `actionPlans`.
 
 ### Task 2: Empathy Prompt Regression
 
-- [ ] Write failing prompt test in `backend/tests/services/test_cbt_quality_prompts.py` that loads the reframing prompt and asserts it contains:
+- [x] Write failing prompt test in `backend/tests/services/test_cbt_quality_prompts.py` that loads the reframing prompt and asserts it contains:
   - `validate the user's feeling`
   - `avoid diagnosis`
   - `do not minimize`
   - `optional`
   - `one small next step`
-- [ ] Run the test and verify failure.
-- [ ] Add prompt version text for empathetic reframing and action planning.
-- [ ] Keep wording concise to control latency and cost.
+- [x] Run the test and verify failure.
+- [x] Add prompt version text for empathetic reframing and action planning.
+- [x] Keep wording concise to control latency and cost.
 
 ### Task 3: Parse Action Plans From Provider Output
 
-- [ ] Write failing parser test with provider JSON containing `action_plans`.
-- [ ] Implement parser normalization so both snake_case `action_plans` and camelCase `actionPlans` are accepted internally.
-- [ ] Reject malformed plans with `LLMParseError` or current parse exception.
-- [ ] Ensure exactly 1 to 3 action plans are returned.
+- [x] Write failing parser test with provider JSON containing `action_plans`.
+- [x] Implement parser normalization so both snake_case `action_plans` and camelCase `actionPlans` are accepted internally.
+- [x] Reject malformed plans with `LLMParseError` or current parse exception.
+- [x] Ensure no more than 3 action plans are returned, while preserving backward compatibility for omitted `actionPlans`.
 
 ### Task 4: Endpoint Contract Test
 
-- [ ] Update integration test to mock CBT analysis result with `actionPlans`.
-- [ ] Assert `/api/v1/cbt-logs/analyze` returns `analysisId`, `provider`, `model`, `suggestions`, `reframes`, and `actionPlans`.
-- [ ] Preserve existing status handling for safety, timeout, and provider errors.
+- [x] Update integration test to mock CBT analysis result with `actionPlans`.
+- [x] Assert `/api/v1/cbt-logs/analyze` returns `analysisId`, `provider`, `model`, `suggestions`, `reframes`, and `actionPlans`.
+- [x] Preserve existing status handling for safety, timeout, and provider errors.
 
 ### Task 5: Frontend Type Contract
 
-- [ ] Update `frontend/src/types/index.ts` with `CBTActionPlan` and extended `CBTAnalysisResponse`.
-- [ ] Update `useCBTAnalysis` tests to assert `actionPlans` is preserved from response.
-- [ ] Do not redesign the full UI in this workstream; leave mobile layout to `codex/mobile-usability`.
+- [x] Update `frontend/src/types/index.ts` with `CBTActionPlan` and extended `CBTAnalysisResponse`.
+- [x] Update `useCBTAnalysis` tests to assert `actionPlans` is preserved from response.
+- [x] Do not redesign the full UI in this workstream; leave mobile layout to `codex/mobile-usability`.
 
 ## Acceptance Criteria
 

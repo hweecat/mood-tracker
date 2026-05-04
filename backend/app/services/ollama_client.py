@@ -1,6 +1,5 @@
 import json
 import time
-from typing import Any
 
 import httpx
 
@@ -55,7 +54,9 @@ class OllamaClient:
 
     def _build_prompt(self, request: CBTAnalysisRequest) -> str:
         return (
-            "Analyze this CBT journal entry. Return JSON with suggestions and reframes. "
+            "Analyze this CBT journal entry. Return JSON with suggestions, reframes, "
+            "and 1 to 3 optional action_plans. Keep reframes validating, non-diagnostic, "
+            "and agency-preserving; each action plan should be one small next step. "
             f"Situation: {request.situation}\n"
             f"Automatic thought: {request.automatic_thought}"
         )

@@ -45,19 +45,32 @@ class TestCBTAnalyzeEndpoint:
             ],
             "reframes": [
                 {
+                    "id": "reframe-1",
                     "perspective": "Compassionate",
                     "content": "One test doesn't define your intelligence. You've succeeded before."
                 },
                 {
+                    "id": "reframe-2",
                     "perspective": "Logical",
                     "content": "This is one test among many. You can improve with practice."
                 },
                 {
+                    "id": "reframe-3",
                     "perspective": "Evidence-based",
                     "content": "You've gotten good grades before. This test doesn't change that."
                 }
             ],
+            "actionPlans": [
+                {
+                    "id": "plan-1",
+                    "title": "Review one problem",
+                    "rationale": "A small review step can turn the setback into useful information.",
+                    "steps": ["Choose one missed question and identify the first confusing step."],
+                    "timeframe": "today"
+                }
+            ],
             "prompt_version": "1.0.0",
+            "analysis_id": "audit-1",
             "provider": "openai",
             "model": "gpt-5.5",
             "ai_analysis_id": "audit-1",
@@ -140,11 +153,14 @@ class TestCBTAnalyzeEndpoint:
         assert "suggestions" in data
         assert "reframes" in data
         assert "promptVersion" in data # Pydantic converts to camelCase
+        assert "actionPlans" in data
         assert data["provider"] == "openai"
         assert data["model"] == "gpt-5.5"
+        assert data["analysisId"] == "audit-1"
         assert data["aiAnalysisId"] == "audit-1"
         assert isinstance(data["suggestions"], list)
         assert isinstance(data["reframes"], list)
+        assert data["actionPlans"][0]["id"] == "plan-1"
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):
@@ -276,7 +292,7 @@ class TestCBTAnalyzeEndpoint:
         mock_ai_response = {
             "suggestions": [],
             "reframes": [
-                {"perspective": "Compassionate", "content": "A kind response"}
+                {"id": "reframe-1", "perspective": "Compassionate", "content": "A kind response"}
             ],
             "promptVersion": "1.0.0"
         }

@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCBTAnalysis } from '../useCBTAnalysis';
+import type { CBTAnalysisResponse } from '@/types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 vi.mock('next-auth/react', () => ({
@@ -18,7 +19,16 @@ const MOCK_SUCCESS_RESPONSE = {
     { distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
   ],
   reframes: [
-    { perspective: 'Compassionate', content: 'Test reframe' }
+    { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
+  ],
+  actionPlans: [
+    {
+      id: 'plan-1',
+      title: 'Take one step',
+      rationale: 'Small steps can reduce avoidance.',
+      steps: ['Write one sentence about what happened.'],
+      timeframe: 'today',
+    }
   ],
   prompt_version: '1.0.0'
 };
@@ -49,7 +59,24 @@ describe('useCBTAnalysis Hook', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.analysis).toEqual(MOCK_SUCCESS_RESPONSE);
+    expect(result.current.analysis?.actionPlans?.[0].id).toBe('plan-1');
     expect(result.current.error).toBeNull();
+  });
+
+  it('allows analysis responses without action plans', () => {
+    const responseWithoutActionPlans: CBTAnalysisResponse = {
+      suggestions: [
+        { distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
+      ],
+      reframes: [
+        { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
+      ],
+      provider: 'openai',
+      model: 'gpt-5.5',
+      aiAnalysisId: 'audit-1',
+    };
+
+    expect(responseWithoutActionPlans.actionPlans).toBeUndefined();
   });
 
   it('handles validation error (empty inputs)', async () => {

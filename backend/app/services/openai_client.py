@@ -35,8 +35,26 @@ CBT_OUTPUT_SCHEMA: dict[str, Any] = {
                     "properties": {
                         "perspective": {"type": "string"},
                         "content": {"type": "string"},
+                        "id": {"type": "string"},
                     },
                     "required": ["perspective", "content"],
+                },
+            },
+            "action_plans": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": True,
+                    "properties": {
+                        "id": {"type": "string"},
+                        "title": {"type": "string"},
+                        "rationale": {"type": "string"},
+                        "steps": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                        "timeframe": {"type": "string"},
+                    },
+                    "required": ["id", "title", "rationale", "steps", "timeframe"],
                 },
             },
             "prompt_version": {"type": "string"},
@@ -99,7 +117,9 @@ class OpenAIClient:
 
     def _build_prompt(self, request: CBTAnalysisRequest) -> str:
         return (
-            "Analyze this CBT journal entry. Return JSON with suggestions and reframes. "
+            "Analyze this CBT journal entry. Return JSON with suggestions, reframes, "
+            "and 1 to 3 optional action_plans. Keep reframes validating, non-diagnostic, "
+            "and agency-preserving; each action plan should be one small next step. "
             f"Situation: {request.situation}\n"
             f"Automatic thought: {request.automatic_thought}"
         )

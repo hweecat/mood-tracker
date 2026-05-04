@@ -1,4 +1,5 @@
 from typing import Any, List, Optional
+from pydantic import Field
 from app.schemas.base import TunedBaseModel
 
 # --- Phase 2: AI Analysis & HITL Schemas ---
@@ -7,6 +8,7 @@ class DistortionSuggestion(TunedBaseModel):
     """
     An AI-suggested distortion that the user can review and select.
     """
+    id: Optional[str] = None
     distortion: str
     reasoning: str
     confidence: Optional[float] = None # AI's confidence in this suggestion
@@ -15,8 +17,20 @@ class RationalReframe(TunedBaseModel):
     """
     An AI-generated healthier alternative to an automatic thought.
     """
+    id: Optional[str] = None
     perspective: str # e.g., "Compassionate", "Logical", "Evidence-based"
     content: str
+
+
+class CBTActionPlan(TunedBaseModel):
+    """
+    An optional, concrete self-help step the user can accept or edit.
+    """
+    id: str
+    title: str
+    rationale: str
+    steps: List[str] = Field(min_length=1)
+    timeframe: str
 
 class CBTAnalysisRequest(TunedBaseModel):
     """
@@ -32,6 +46,8 @@ class CBTAnalysisResponse(TunedBaseModel):
     """
     suggestions: List[DistortionSuggestion]
     reframes: List[RationalReframe]
+    action_plans: List[CBTActionPlan] = Field(default_factory=list, max_length=3)
+    analysis_id: Optional[str] = None
     prompt_version: Optional[str] = None
     ai_analysis_id: Optional[str] = None
     provider: Optional[str] = None

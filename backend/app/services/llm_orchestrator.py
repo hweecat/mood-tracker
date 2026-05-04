@@ -1,5 +1,7 @@
 import uuid
 
+from pydantic import ValidationError
+
 from app.schemas.ai_audit import AIAuditLogCreate
 from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse
 from app.services import ai_audit_service as default_audit_service
@@ -75,6 +77,22 @@ class LLMOrchestrator:
                     error_code=type(exc).__name__,
                 )
             else:
+                try:
+                    response = self._to_response(result, audit_id=None)
+                except LLMParseError as exc:
+                    last_error = exc
+                    self._record_attempt(
+                        request=request,
+                        provider=result.provider,
+                        model=result.model,
+                        correlation_id=correlation_id,
+                        status="parse_error",
+                        safety_tier="error",
+                        latency_ms=result.latency_ms,
+                        error_code=type(exc).__name__,
+                    )
+                    continue
+
                 audit_id = self._record_attempt(
                     request=request,
                     provider=result.provider,
@@ -86,7 +104,9 @@ class LLMOrchestrator:
                     safety_ratings=result.safety_ratings,
                     prompt_version_id=result.parsed_payload.get("prompt_version"),
                 )
-                return self._to_response(result, audit_id)
+                response.analysis_id = audit_id
+                response.ai_analysis_id = audit_id
+                return response
 
         if last_error:
             raise last_error
@@ -127,11 +147,32 @@ class LLMOrchestrator:
         return audit_id if isinstance(audit_id, str) else None
 
     def _to_response(self, result: LLMResult, audit_id: str | None) -> CBTAnalysisResponse:
-        return CBTAnalysisResponse(
-            suggestions=result.parsed_payload.get("suggestions", []),
-            reframes=result.parsed_payload.get("reframes", []),
-            prompt_version=result.parsed_payload.get("prompt_version"),
-            ai_analysis_id=audit_id,
-            provider=result.provider,
-            model=result.model,
-        )
+        payload = result.parsed_payload
+        try:
+            return CBTAnalysisResponse(
+                suggestions=self._ensure_stable_ids(payload.get("suggestions") or [], "suggestion"),
+                reframes=self._ensure_stable_ids(payload.get("reframes") or [], "reframe"),
+                action_plans=self._ensure_stable_ids(
+                    payload.get("action_plans", payload.get("actionPlans")) or [],
+                    "plan",
+                ),
+                prompt_version=payload.get("prompt_version", payload.get("promptVersion")),
+                analysis_id=audit_id,
+                ai_analysis_id=audit_id,
+                provider=result.provider,
+                model=result.model,
+            )
+        except (TypeError, ValueError, ValidationError) as exc:
+            raise LLMParseError("Provider response did not match CBT action plan schema") from exc
+
+    def _ensure_stable_ids(self, items: list, prefix: str) -> list[dict]:
+        normalized = []
+        for index, item in enumerate(items, start=1):
+            if hasattr(item, "model_dump"):
+                data = item.model_dump()
+            else:
+                data = dict(item)
+            if not data.get("id"):
+                data["id"] = f"{prefix}-{index}"
+            normalized.append(data)
+        return normalized

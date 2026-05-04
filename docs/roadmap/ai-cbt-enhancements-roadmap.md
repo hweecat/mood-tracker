@@ -77,6 +77,12 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 | Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
 | Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
 
+## Workstream Progress
+
+| Workstream | Branch | Status | Latest Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| CBT quality/action plans | `codex/cbt-quality-action-plans` | Ready for remote CI | Backend `pytest -p no:cacheprovider`: 78 passed, 80 warnings. Backend `ruff check .`: all checks passed. | Frontend hook/type changes are included, but local frontend tests are blocked because Node package managers are unavailable in this shell/worktree. No rebase or merge performed. |
+
 ## Orchestrator Responsibilities
 
 - Keep this roadmap current as streams merge or requirements change.

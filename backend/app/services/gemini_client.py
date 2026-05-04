@@ -12,6 +12,7 @@ from app.core.constants import COGNITIVE_DISTORTIONS
 from app.schemas.cbt import (
     CBTAnalysisRequest,
     CBTAnalysisResponse,
+    CBTActionPlan,
     DistortionSuggestion,
     RationalReframe
 )
@@ -64,9 +65,9 @@ class GeminiClient:
             )
             prompt_version = version_id
 
-            # 2. Generate reframes
+            # 2. Generate reframes and optional action plans
             distortion_names = [d.distortion for d in distortions]
-            reframes, reframe_prompt_version = await self._generate_reframes_with_retry(
+            reframes, action_plans, reframe_prompt_version = await self._generate_reframes_and_action_plans_with_retry(
                 request.situation,
                 request.automatic_thought,
                 distortion_names
@@ -98,8 +99,12 @@ class GeminiClient:
             response = CBTAnalysisResponse(
                 suggestions=distortions,
                 reframes=reframes,
-                prompt_version=prompt_version,
+                action_plans=action_plans,
+                prompt_version=reframe_prompt_version,
+                analysis_id=audit_log_id,
                 ai_analysis_id=audit_log_id,
+                provider="gemini",
+                model=self.model_name,
             )
 
             return response
@@ -203,6 +208,31 @@ class GeminiClient:
                 )
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
+    async def _generate_reframes_and_action_plans_with_retry(
+        self,
+        situation: str,
+        automatic_thought: str,
+        distortions: List[str]
+    ) -> Tuple[List[RationalReframe], List[CBTActionPlan], str]:
+        """Generate reframes and action plans with retry logic."""
+        for attempt in range(self.config.ai_max_retries + 1):
+            try:
+                return await self._generate_reframes_and_action_plans(
+                    situation,
+                    automatic_thought,
+                    distortions,
+                )
+            except (ParseException, SafetyException):
+                raise
+            except Exception as e:
+                if attempt == self.config.ai_max_retries:
+                    raise
+                logger.warning(
+                    "Reframe/action-plan generation failed, retrying",
+                    extra={"attempt": attempt + 1, "error_type": type(e).__name__}
+                )
+                await asyncio.sleep(2 ** attempt)
+
     async def _detect_distortions(
         self,
         situation: str,
@@ -245,6 +275,7 @@ class GeminiClient:
                 # Filter to ensure only predefined distortions are returned
                 if distortion_name in COGNITIVE_DISTORTIONS:
                     suggestions.append(DistortionSuggestion(
+                        id=item.get("id") or f"suggestion-{len(suggestions) + 1}",
                         distortion=distortion_name,
                         reasoning=item.get("reasoning", "No reasoning provided")
                     ))
@@ -296,13 +327,66 @@ class GeminiClient:
             data = json.loads(response.text)
             reframes = [
                 RationalReframe(
+                    id=item.get("id") or f"reframe-{index}",
                     perspective=item["perspective"],
                     content=item["content"]
                 )
-                for item in data.get("reframes", [])
+                for index, item in enumerate(data.get("reframes", []), start=1)
             ]
             return reframes, version_id
         except (json.JSONDecodeError, KeyError, TypeError) as e:
+            logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
+            raise ParseException("Invalid AI response format")
+
+    async def _generate_reframes_and_action_plans(
+        self,
+        situation: str,
+        automatic_thought: str,
+        distortions: List[str]
+    ) -> Tuple[List[RationalReframe], List[CBTActionPlan], str]:
+        """Generate rational reframes and optional action plans using Gemini."""
+        prompt_template, version_id = await self.prompt_manager.get_reframing_prompt()
+        prompt = prompt_template.format(
+            situation=situation,
+            automatic_thought=automatic_thought,
+            distortions=", ".join(distortions)
+        )
+
+        generation_config = GenerationConfig(
+            temperature=self.config.gemini_temperature,
+            response_mime_type="application/json"
+        )
+
+        response = await asyncio.to_thread(
+            self.model.generate_content,
+            prompt,
+            generation_config=generation_config
+        )
+
+        safety_ratings = self._extract_safety_ratings(response)
+        safety_result = self.safety_handler.evaluate(safety_ratings)
+
+        if safety_result.trigger_crisis:
+            raise SafetyException(safety_result.message, safety_result.crisis_resources)
+
+        try:
+            data = json.loads(response.text)
+            reframes = [
+                RationalReframe(
+                    id=item.get("id") or f"reframe-{index}",
+                    perspective=item["perspective"],
+                    content=item["content"]
+                )
+                for index, item in enumerate(data.get("reframes", []), start=1)
+            ]
+            action_plans = []
+            for index, item in enumerate(data.get("action_plans", data.get("actionPlans", [])), start=1):
+                plan_data = dict(item)
+                if not plan_data.get("id"):
+                    plan_data["id"] = f"plan-{index}"
+                action_plans.append(CBTActionPlan.model_validate(plan_data))
+            return reframes, action_plans, version_id
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
             logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
             raise ParseException("Invalid AI response format")
 

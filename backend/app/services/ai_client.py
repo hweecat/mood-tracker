@@ -104,7 +104,7 @@ class GeminiLLMProvider:
                 request.situation,
                 request.automatic_thought,
             )
-            reframes, reframe_prompt_version = await self.client._generate_reframes_with_retry(
+            reframes, action_plans, reframe_prompt_version = await self.client._generate_reframes_and_action_plans_with_retry(
                 request.situation,
                 request.automatic_thought,
                 [item.distortion for item in distortions],
@@ -128,6 +128,7 @@ class GeminiLLMProvider:
             parsed_payload={
                 "suggestions": [item.model_dump() for item in distortions],
                 "reframes": [item.model_dump() for item in reframes],
+                "action_plans": [item.model_dump() for item in action_plans],
                 "prompt_version": reframe_prompt_version,
             },
             latency_ms=int((time.time() - start) * 1000),

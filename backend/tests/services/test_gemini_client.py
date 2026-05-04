@@ -5,7 +5,7 @@ import json
 import logging
 from unittest.mock import Mock, patch, AsyncMock
 from app.services.gemini_client import GeminiClient, SafetyException, ParseException
-from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse, DistortionSuggestion, RationalReframe
+from app.schemas.cbt import CBTActionPlan, CBTAnalysisRequest, CBTAnalysisResponse, DistortionSuggestion, RationalReframe
 from google.generativeai.types import HarmProbability
 
 
@@ -32,15 +32,16 @@ class TestGeminiClient:
     @pytest.mark.anyio
     async def test_analyze_cbt_success(self):
         """Test successful CBT analysis returns suggestions and reframes."""
-        with patch('app.services.gemini_client.get_ai_config'), \
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
              patch('app.services.gemini_client.genai.configure'), \
              patch('app.services.gemini_client.genai.GenerativeModel'):
 
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
             client = GeminiClient()
 
             # Mock the private methods
             with patch.object(client, '_detect_distortions_with_retry') as mock_detect, \
-                 patch.object(client, '_generate_reframes_with_retry') as mock_reframe, \
+                 patch.object(client, '_generate_reframes_and_action_plans_with_retry') as mock_reframe, \
                  patch.object(client, '_log_audit') as mock_audit:
 
                 mock_detect.return_value = (
@@ -49,6 +50,15 @@ class TestGeminiClient:
                 )
                 mock_reframe.return_value = (
                     [RationalReframe(perspective="Compassionate", content="Test reframe")],
+                    [
+                        CBTActionPlan(
+                            id="plan-1",
+                            title="Take one step",
+                            rationale="A small step can reduce avoidance.",
+                            steps=["Write one sentence about what happened."],
+                            timeframe="today",
+                        )
+                    ],
                     "v1.0"
                 )
 
@@ -61,6 +71,8 @@ class TestGeminiClient:
                 assert isinstance(result, CBTAnalysisResponse)
                 assert len(result.suggestions) == 1
                 assert len(result.reframes) == 1
+                assert result.action_plans[0].id == "plan-1"
+                assert result.provider == "gemini"
                 assert result.prompt_version == "v1.0"
                 mock_audit.assert_called_once()
 
@@ -69,10 +81,11 @@ class TestGeminiClient:
         """Test that distortions not in COGNITIVE_DISTORTIONS are filtered or handled."""
         from app.core.constants import COGNITIVE_DISTORTIONS
         
-        with patch('app.services.gemini_client.get_ai_config'), \
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
              patch('app.services.gemini_client.genai.configure'), \
              patch('app.services.gemini_client.genai.GenerativeModel'):
 
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
             client = GeminiClient()
             
             # Mock Gemini response with one valid and one invalid distortion
@@ -99,24 +112,71 @@ class TestGeminiClient:
                 
                 distortion_names = [s.distortion for s in suggestions]
                 assert valid_distortion in distortion_names
+                assert suggestions[0].id == "suggestion-1"
                 # Behavioral Requirement: Only valid distortions allowed
                 assert "Unknown Distortion" not in distortion_names
 
     @pytest.mark.anyio
-    async def test_analyze_cbt_logs_accurate_metadata(self):
-        """Test that audit logs capture correct metadata."""
-        with patch('app.services.gemini_client.get_ai_config'), \
+    async def test_generate_reframes_and_action_plans_assigns_stable_ids(self):
+        """Gemini parser should fill stable IDs when model JSON omits them."""
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
              patch('app.services.gemini_client.genai.configure'), \
              patch('app.services.gemini_client.genai.GenerativeModel'):
 
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
+            mock_config.return_value.gemini_temperature = 0.7
+            client = GeminiClient()
+
+            mock_response = Mock()
+            mock_response.text = json.dumps({
+                "reframes": [
+                    {
+                        "perspective": "Compassionate",
+                        "content": "It makes sense this feels difficult.",
+                    }
+                ],
+                "action_plans": [
+                    {
+                        "title": "Write one line",
+                        "rationale": "A small note can reduce avoidance.",
+                        "steps": ["Write one sentence without sending it yet."],
+                        "timeframe": "today",
+                    }
+                ],
+            })
+            mock_candidate = Mock()
+            mock_candidate.safety_ratings = []
+            mock_response.candidates = [mock_candidate]
+            client.prompt_manager.get_reframing_prompt = AsyncMock(
+                return_value=("{situation} {automatic_thought} {distortions}", "default")
+            )
+
+            with patch('asyncio.to_thread', return_value=mock_response):
+                reframes, action_plans, _ = await client._generate_reframes_and_action_plans(
+                    "situation",
+                    "thought",
+                    ["All-or-Nothing Thinking"],
+                )
+
+        assert reframes[0].id == "reframe-1"
+        assert action_plans[0].id == "plan-1"
+
+    @pytest.mark.anyio
+    async def test_analyze_cbt_logs_accurate_metadata(self):
+        """Test that audit logs capture correct metadata."""
+        with patch('app.services.gemini_client.get_ai_config') as mock_config, \
+             patch('app.services.gemini_client.genai.configure'), \
+             patch('app.services.gemini_client.genai.GenerativeModel'):
+
+            mock_config.return_value.gemini_model = "gemini-1.5-flash"
             client = GeminiClient()
 
             with patch.object(client, '_detect_distortions_with_retry') as mock_detect, \
-                 patch.object(client, '_generate_reframes_with_retry') as mock_reframe, \
+                 patch.object(client, '_generate_reframes_and_action_plans_with_retry') as mock_reframe, \
                  patch.object(client, '_log_audit') as mock_audit:
 
                 mock_detect.return_value = ([], "v1.2.3")
-                mock_reframe.return_value = ([], "v1.2.3")
+                mock_reframe.return_value = ([], [], "v1.2.3")
 
                 request = CBTAnalysisRequest(situation="s", automatic_thought="t")
                 await client.analyze_cbt(request)
