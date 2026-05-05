@@ -221,6 +221,30 @@ class TestCBTAnalyzeEndpoint:
         # The specific message check is proving brittle in this environment.
         assert response.json().get("detail") is not None
 
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_maps_provider_timeout_to_gateway_timeout(
+        self,
+        mock_get_client,
+        async_client,
+        valid_request,
+    ):
+        """Provider timeout errors should surface as HTTP 504 responses."""
+        from app.services.llm_provider import LLMTimeoutError
+
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            raise LLMTimeoutError("upstream provider timed out")
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_504_GATEWAY_TIMEOUT
+        assert response.json().get("detail") is not None
+
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_general_error(self, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles general exceptions correctly."""
