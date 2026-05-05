@@ -22,6 +22,21 @@ from app.services.openai_client import OpenAIClient
 
 logger = get_logger(__name__)
 
+
+_cached_ai_client = None
+_cached_chain_key: tuple | None = None
+
+
+def _get_chain_cache_key(config) -> tuple:
+    return (
+        tuple((item.provider, item.model) for item in config.cbt_model_chain),
+        bool(config.enable_gemini),
+        bool(_gemini_available),
+        bool(config.openai_api_key),
+        config.ollama_base_url,
+        config.ai_provider_timeout,
+    )
+
 class AIClientProtocol(ABC):
     """Abstract protocol for AI clients."""
 
@@ -171,7 +186,13 @@ def get_ai_client() -> AIClientProtocol:
     Returns:
         AIClientProtocol: The configured AI client
     """
+    global _cached_ai_client, _cached_chain_key
+
     config = get_ai_config()
+    cache_key = _get_chain_cache_key(config)
+
+    if _cached_ai_client is not None and _cached_chain_key == cache_key:
+        return _cached_ai_client
 
     providers = _build_cbt_providers(config)
     if providers:
@@ -179,10 +200,13 @@ def get_ai_client() -> AIClientProtocol:
             "Using provider fallback AI client",
             extra={"providers": [provider.provider for provider in providers]},
         )
-        return ProviderOrchestratorAdapter(LLMOrchestrator(providers=providers))
+        _cached_ai_client = ProviderOrchestratorAdapter(LLMOrchestrator(providers=providers))
+    else:
+        logger.info("Using TextBlob AI client")
+        _cached_ai_client = TextBlobClient()
 
-    logger.info("Using TextBlob AI client")
-    return TextBlobClient()
+    _cached_chain_key = cache_key
+    return _cached_ai_client
 
 
 def _build_cbt_providers(config) -> list:
