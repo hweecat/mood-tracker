@@ -113,6 +113,8 @@ python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl 
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/9.
 - [x] GitHub Actions CI passed for head `bc1ac0c3d974c804605407bee62e99b9f5f9aaf8` (run `25299979604`).
 - [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [x] PR review follow-up: internal feedback loader coerces `null` or non-object nested `feedback_event`, `audit_log`, and response payload values to empty mappings before dereferencing.
+- [x] PR review follow-up: committed fixture detection uses repo-root-relative checks so external exports under similarly named paths are not misclassified as synthetic fixtures.
 
 ## Acceptance Criteria
 
@@ -121,3 +123,5 @@ python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl 
 - Fixtures cover CBT-Bench, Cactus, and internal feedback formats.
 - Report includes metrics, provenance, provider/model, and prompt version metadata.
 - Dataset license notes are documented.
+- Internal feedback exports with malformed nested records do not abort the full eval run.
+- Synthetic fixture and human-authored provenance are derived from repo-root-relative fixture paths or explicit overrides, not substring-style path heuristics.

@@ -38,11 +38,19 @@ Every normalized example includes dataset name, source URL or internal export
 source, split/file metadata, transformation version, fixture path for committed
 fixtures, synthetic fixture flag, human-authored flag, and license.
 
-Committed fixtures are inferred as synthetic and non-human-authored. Internal
-exports outside `evals/fixtures/` default to non-synthetic and human-authored,
-because they may contain real user-authored CBT content. Loader callers can pass
-`provenance_overrides` to correct source file, split, synthetic fixture, or
-human-authored metadata for redacted fixtures and real upstream datasets.
+Committed fixtures are inferred as synthetic and non-human-authored only when
+the resolved path is inside this repository's `evals/fixtures/` directory.
+Internal exports outside that repo-root-relative fixture path default to
+non-synthetic and human-authored, because they may contain real user-authored CBT
+content. Loader callers can pass `provenance_overrides` to correct source file,
+split, synthetic fixture, or human-authored metadata for redacted fixtures and
+real upstream datasets.
+
+The internal feedback loader is defensive against partially populated exports.
+Rows with `feedback_event`, `audit_log`, or nested response payload values set to
+`null` or another non-object value are normalized through empty mappings instead
+of aborting the whole eval run. This keeps batch processing resilient while
+preserving per-example provenance and defaulted metadata for review.
 
 ## Metrics
 
