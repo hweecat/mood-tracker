@@ -116,6 +116,10 @@ def test_parse_model_chain_rejects_unknown_provider():
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/5.
 - [x] GitHub Actions CI passed for head `81cc1fadec3f75c23f2805a916d58975eae7058f` (run `25285205456`).
 - [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [x] PR review follow-up: map provider `LLMTimeoutError` to HTTP 504 instead of generic 503.
+- [x] PR review follow-up: add safe `error_type`/`error_class` logging metadata without raw exception text.
+- [ ] PR review follow-up: merge provider-client caching from PR #10 after its cache-key review is resolved.
+- [ ] PR #10 review follow-up: cache invalidation must distinguish rotated non-empty OpenAI keys without logging the key.
 
 ## Acceptance Criteria
 
@@ -124,3 +128,5 @@ def test_parse_model_chain_rejects_unknown_provider():
 - Gemini/OpenAI/Ollama providers are unit-tested without real network calls.
 - `/api/v1/cbt-logs/analyze` remains stable and includes provider metadata.
 - No provider-specific API key or raw prompt is logged.
+- Provider timeouts return timeout-specific API behavior and remain distinguishable from generic provider errors.
+- Provider-client reuse avoids per-request HTTP client pool churn, with safe cache invalidation on provider chain, endpoint, timeout, and credential changes.
