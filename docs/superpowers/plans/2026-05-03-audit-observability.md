@@ -157,11 +157,14 @@ def test_create_ai_audit_log_persists_provider_metadata():
 - [x] Local audit-focused verification after lint fix: `uv run --with pytest pytest tests\services\test_gemini_client.py tests\services\test_ai_audit_service.py` passed with CI-equivalent Gemini env vars (`14 passed`).
 - [x] GitHub Actions CI passed for head `86c712f905d04cbef56b532fde379654061178dd` (run `25300237020`).
 - [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [ ] PR review follow-up: ensure every CBT analysis audit row is persisted with authenticated `user_id` before returning `aiAnalysisId`.
+- [ ] Integration note: provider fallback work adds a user-aware `analyze_cbt(..., user_id=current_user.id)` path; preserve that behavior when rebasing/merging audit and provider branches.
 
 ## Acceptance Criteria
 
 - Audit and feedback repository tests pass.
 - CBT log integration test proves user/model feedback is persisted.
 - Gemini audit no longer inserts columns that do not exist.
+- Analyze-then-save feedback linkage is user-scoped: returned analysis ids only link to audit rows owned by the current user.
 - No raw sensitive test strings appear in captured logs.
 - `migrations/verify/*` covers the new schema.
