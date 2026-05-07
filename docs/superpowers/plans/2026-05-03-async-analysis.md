@@ -113,11 +113,15 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/8.
 - [x] GitHub Actions CI passed for head `5f3fa92579405e58ad0c808df2950989278e32c6` (run `25299977193`).
 - [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [ ] PR review follow-up: preserve mood `aiAnalysis` for existing `/moods` consumers after async analysis succeeds.
+- [ ] PR review follow-up: make CBT log insert and feedback-event persistence atomic so feedback failures do not leave a committed CBT row while the client receives an error.
 
 ## Acceptance Criteria
 
 - Mood and CBT inserts return without waiting for analysis.
 - Analysis job lifecycle is persisted and test-covered.
 - Analysis failure does not roll back source entry creation.
+- Completed mood analysis remains visible through the existing mood retrieval contract or a documented compatible replacement path.
+- CBT create plus feedback capture has single-transaction semantics from the client's perspective.
 - Retrieval endpoint is user-scoped.
 - Existing mood/CBT tests remain compatible.

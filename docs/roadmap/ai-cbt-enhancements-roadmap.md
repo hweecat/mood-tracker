@@ -79,15 +79,15 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 
 ## Implementation Status
 
-Updated on 2026-05-03 by the main orchestrator.
+Updated on 2026-05-07 by the main orchestrator after PR review follow-ups.
 
 | Workstream | Branch | Status | Verification | Notes |
 | --- | --- | --- | --- | --- |
 | Orchestration docs/worktrees | `codex-ai-cbt-orchestration` | Complete | Backend baseline: `42 passed`; `git worktree list` verified during setup | Planning docs committed in `3f649b0` and baseline status committed in `c223da4`. |
-| Audit and observability | `codex/audit-observability` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider` from backend: `58 passed, 75 warnings` | Latest commit `749cff1` returns `aiAnalysisId`, records reframe prompt metadata, validates feedback audit ownership, deletes feedback rows with CBT logs, and avoids raw provider exception text in CBT AI logs. |
-| Batch evals | `codex/batch-evals` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider evals/tests -v`: `18 passed` | Latest commit `bc1ac0c` adds offline eval adapters/runner/CLI with explicit dataset types, provenance metadata, privacy docs, and gitignored eval output artifacts. |
-| Provider fallbacks | `codex/llm-provider-fallbacks` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider` from backend: `70 passed, 79 warnings` | Latest commit `bab9094` adds provider chain parsing, Gemini/OpenAI/Ollama provider adapters, fallback orchestration, provider/model response metadata, safety-stop behavior, and typed provider tests with mocked SDK/HTTP calls. |
-| Async analysis | `codex/async-analysis` | Implemented, verified, awaiting integration review | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider` from backend: `68 passed, 82 warnings` | Latest commit `13c5503` adds analysis job persistence, async scheduling after mood/CBT inserts, deterministic compact result generation, user-scoped retrieval, and Sqitch/local DB schema support. |
+| Audit and observability | `codex/audit-observability` | Implemented, verified, review follow-up identified | GitHub Actions green on PR #7; local audit-focused suite previously passed with CI-equivalent Gemini env vars | PR review requires CBT analysis audit rows to carry authenticated `user_id` so returned analysis ids can link to same-user feedback rows. Provider branch has the user-aware analysis call path; integration order must preserve it. |
+| Batch evals | `codex/batch-evals` | Implemented, verified, review follow-ups incorporated | GitHub Actions green on PR #9 after fast-forward to `a51c62a` | Latest pulled changes harden internal feedback loading for `null` or non-object nested records and switch committed-fixture detection to repo-root-relative provenance checks. |
+| Provider fallbacks | `codex/llm-provider-fallbacks` | Implemented, verified, one scalability follow-up open | GitHub Actions green on PR #5 after fast-forward to `60a8dc6` | Latest pulled changes map provider `LLMTimeoutError` to HTTP 504 and log safe error class metadata. PR #10 adds provider-client caching; its review requires cache invalidation when the actual OpenAI key changes, without logging the key. |
+| Async analysis | `codex/async-analysis` | Implemented, verified, review follow-ups identified | GitHub Actions green on PR #8; branch at `c108c9e` | PR review requires preserving mood `aiAnalysis` for existing `/moods` consumers after async completion, and making CBT log plus feedback-event persistence atomic to avoid partial-success retries. |
 | CBT quality/action plans | `codex/cbt-quality-action-plans` | In progress | Pending worker report | Provider branch `bab9094` is ready to merge into this worktree before dispatch. |
 | Mobile usability | `codex/mobile-usability` | Blocked | Frontend tests not runnable | Worker stopped without edits because `node`, `npm`, and frontend dependencies are unavailable in the current environment. |
 
@@ -107,7 +107,10 @@ Updated on 2026-05-03 by the main orchestrator.
 - Keep audit data structured and PII-minimized, with explicit fields for provider, model, prompt version, request id, latency, status, safety tier, and schema version.
 - External provider calls must receive masked/minimized payloads unless the user has explicitly opted into a local-only or external-provider mode.
 - Provider wrappers must be tested with mocks and must not require real API keys in unit tests.
+- Provider fallback timeout classification must distinguish provider timeouts from generic provider errors, and logs may include safe error type/class metadata but not raw provider exception text.
+- Long-lived provider clients may be cached for scalability, but cache invalidation must account for connection-relevant configuration and credential rotation without exposing secrets in logs or reports.
 - Public dataset ingestion must record dataset name, split/file, license, source URL, transformation version, and whether examples are synthetic or human-authored.
+- Public and internal eval ingestion must be defensive against partially populated rows; malformed nested records should default safely or be reported per-example rather than aborting the full batch.
 - AI outputs must be non-diagnostic, non-prescriptive, and framed as suggestions. Crisis-related handling must point users to appropriate crisis resources instead of continuing ordinary journaling advice.
 
 ## Acceptance Criteria

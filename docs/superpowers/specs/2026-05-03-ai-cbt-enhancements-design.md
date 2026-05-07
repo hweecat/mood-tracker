@@ -74,6 +74,8 @@ flowchart LR
 - `source` (`accepted_ai`, `edited_ai`, `user_original`)
 - `created_at`
 
+Review refinement: CBT analysis audit rows must be associated with the authenticated `user_id` before the analysis id is returned to the client. Feedback capture validates by both `audit_log_id` and `user_id`, so missing audit ownership breaks the analyze-then-save feedback join and weakens downstream eval observability.
+
 ### CBT analysis response
 
 The response should remain structured and HITL-friendly.
@@ -129,6 +131,13 @@ Routes call `LLMOrchestrator.analyze_cbt(request)`. The orchestrator:
 6. Records one audit row per provider attempt.
 7. Returns provider metadata for the successful attempt.
 
+PR review refinements:
+
+- Provider-level timeouts such as `LLMTimeoutError` must map to HTTP 504, matching the user-facing retry semantics already used for request-level timeouts.
+- Generic provider failures should log structured debugging metadata such as `error_type` and fully qualified `error_class`, but should not log raw exception text when it may contain prompts, provider payloads, or user-authored journal content.
+- Provider clients should not be rebuilt for every CBT analysis request. Long-lived provider stacks may be cached when the provider chain and connection-relevant configuration are unchanged.
+- Provider cache keys must refresh when credential material changes. Do not key only on whether an OpenAI key is present; use a safe credential fingerprint or equivalent non-logging comparison so key rotation does not keep stale clients alive.
+
 ## Async Analysis Design
 
 Writes must commit first. After a successful mood or CBT insert:
@@ -139,6 +148,11 @@ Writes must commit first. After a successful mood or CBT insert:
 4. The UI can retrieve current analysis summaries without blocking the original write.
 
 The SQLite implementation should use a focused service boundary that can later be replaced by a queue worker without changing route contracts.
+
+PR review refinements:
+
+- The async mood pipeline must preserve the existing `/moods` contract. Either write the completed mood analysis back to `mood_entries.ai_analysis` or update the mood retrieval path to include the latest succeeded analysis job, so existing frontend sentiment indicators do not disappear after async scheduling.
+- CBT log creation and feedback-event capture should be atomic from the client's perspective. If feedback persistence fails, the CBT row should not be committed as a partial success that the client may retry and duplicate.
 
 ## Batch Evals Design
 
@@ -158,6 +172,11 @@ It produces:
 - dataset provenance and license notes.
 
 No eval command should require a running FastAPI server. Provider calls must be mockable and optionally disabled for CI.
+
+PR review refinements:
+
+- Internal feedback loaders must tolerate partially populated exports. Treat `feedback_event`, `audit_log`, and nested response payloads that are `null` or non-object values as empty mappings instead of crashing the whole batch run.
+- Synthetic fixture detection must be repo-root-relative or explicitly flagged. Do not classify arbitrary external paths containing `evals/fixtures` as committed synthetic fixtures, because that corrupts provenance and human-authored metadata.
 
 ## Mobile UX Design
 
@@ -180,6 +199,7 @@ The mobile journaling flow should prioritize:
 - External provider settings must be explicit and documented.
 - Ollama/local mode may process raw text locally, but logs still must avoid raw journal text.
 - Support export/delete paths for user-owned content used in eval examples.
+- Provider-client cache diagnostics must not log raw credential values or raw prompt content.
 
 ## Definition Of Done
 
@@ -191,4 +211,3 @@ The mobile journaling flow should prioritize:
 - Asynchronous analysis does not block inserts.
 - Mobile UX is verified with automated and visual checks.
 - The final merged branch passes backend, frontend, eval, and privacy regression checks.
-
