@@ -111,10 +111,14 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 ## Validation Status
 
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/8.
-- [x] GitHub Actions CI passed for head `5f3fa92579405e58ad0c808df2950989278e32c6` (run `25299977193`).
-- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
-- [ ] PR review follow-up: preserve mood `aiAnalysis` for existing `/moods` consumers after async analysis succeeds.
-- [ ] PR review follow-up: make CBT log insert and feedback-event persistence atomic so feedback failures do not leave a committed CBT row while the client receives an error.
+- [x] GitHub Actions CI passed for current head `2ab39c196c6c86922bd096f1d7a7eb2162b35d8a` (run `25492089771`).
+- [x] 2026-05-10 re-verification: focused async repository/service/integration suite passed with `18 passed, 22 warnings`; focused audit/analyze integration suite passed with `18 passed, 21 warnings`.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
+- [x] PR review follow-up: preserve mood `aiAnalysis` for existing `/moods` consumers after async analysis succeeds.
+- [x] PR review follow-up: make CBT log insert and feedback-event persistence atomic so feedback failures do not leave a committed CBT row while the client receives an error.
+- [x] Verification follow-up: define and test duplicate async-analysis scheduling/idempotency behavior.
+- [x] 2026-05-19 re-verification: focused async suite `tests/repositories/test_analysis_repository.py tests/services/test_analysis_jobs.py tests/integration/test_async_analysis_scheduling.py tests/repositories/test_ai_audit_repository.py tests/integration/test_cbt_logs_feedback_capture.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_ai_audit_service.py` passed with `49 passed, 53 warnings`.
+- [ ] Frontend follow-up: fetch and display `/api/v1/analyses/` results, or explicitly document the backend-only scope for the first merge.
 
 ## Acceptance Criteria
 

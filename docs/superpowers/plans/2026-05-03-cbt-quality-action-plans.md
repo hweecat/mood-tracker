@@ -107,7 +107,13 @@ def test_cbt_analysis_response_accepts_action_plans():
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/6.
 - [x] GitHub Actions CI passed for head `1dfe1c80dd6fa832fed1d055d0d548ba375f35a0` (run `25298850294`).
 - [x] Worktree plan and roadmap were updated with worker verification evidence.
-- [ ] PR is still reported as draft by GitHub as of orchestration review on 2026-05-04; it must be marked ready before merge.
+- [x] 2026-05-10 re-verification: focused backend action-plan/prompt/analyze/feedback suite passed with `25 passed, 27 warnings`; Gemini masking test passes with dummy `GEMINI_API_KEY`, but fails without it due test harness configuration.
+- [x] Follow-up: update `docs/api_spec_cbt_v2.md` so `/api/v1/cbt-logs/analyze` documents `analysisId`, `provider`, `model`, stable ids, and `actionPlans`.
+- [x] Follow-up: make Gemini masking/provider tests independent of a real `GEMINI_API_KEY` through fixtures or dependency injection.
+- [x] Coordination follow-up: verify mobile-usability surfaces action plans and submits accepted action-plan metadata before checking the roadmap UI acceptance criterion.
+- [x] 2026-05-19 review follow-up: stale `PromptManager` tests no longer patch the removed provider config dependency; CBT quality focused suite passed with `53 passed, 36 warnings`.
+- [x] 2026-05-19 coordination verification: `codex/mobile-usability` surfaces action plans, submits accepted action-plan metadata, and passed TypeScript, full Vitest, and Playwright viewport checks.
+- [ ] PR is still reported as draft by GitHub as of 2026-05-10; it must be marked ready before merge.
 
 ## Acceptance Criteria
 

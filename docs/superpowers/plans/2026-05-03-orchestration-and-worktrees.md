@@ -109,12 +109,18 @@ You are not alone in the codebase. Work only inside your assigned worktree and w
 
 ## Integration Readiness Status
 
-- [x] `codex/audit-observability`: PR #7 ready, mergeable, CI green.
-- [x] `codex/llm-provider-fallbacks`: PR #5 ready, mergeable, CI green.
-- [x] `codex/cbt-quality-action-plans`: PR #6 mergeable and CI green, but GitHub still reports it as draft; mark ready before merge.
-- [x] `codex/async-analysis`: PR #8 ready, mergeable, CI green.
-- [x] `codex/batch-evals`: PR #9 ready, mergeable, CI green.
-- [ ] `codex/mobile-usability`: deferred by integration scope.
+- [x] `codex/audit-observability`: PR #7 ready, mergeable, current head `53399ba`, CI run `25492073370` green; authenticated audit-row `user_id` linkage remains an integration follow-up.
+- [x] `codex/llm-provider-fallbacks`: PR #5 ready, mergeable, current head `26c2188`, CI run `25492058106` green; direct Gemini adapter result-shape test and provider-client caching remain open.
+- [ ] `codex/cbt-quality-action-plans`: PR #6 mergeable and CI green at head `1dfe1c8`, but GitHub still reports it as draft; mark ready before merge and resolve docs/UI follow-ups through mobile integration.
+- [x] `codex/async-analysis`: PR #8 ready, mergeable, current head `2ab39c1`, CI run `25492089771` green; mood compatibility and CBT feedback atomicity remain open.
+- [x] `codex/batch-evals`: PR #9 ready, mergeable, current head `66e3b7b`, CI run `25492104837` green; repo-root-relative fixture detection and accepted-payload hardening remain open.
+- [ ] `codex/mobile-usability`: partially implemented but plan tasks remain unchecked; browser/Vitest/Playwright verification is blocked in this sandbox and branch is not merge-ready.
+
+## 2026-05-10 Re-Verification Notes
+
+- Browser-use was attempted first, but the Node-backed browser runtime failed with `Access is denied` even for a trivial `nodeRepl.write()` probe. Plan review continued through local file inspection, GitHub connector checks, and subagent test evidence.
+- `git check-ignore -v .worktrees/audit-observability` confirms the feature worktree paths are ignored. Bare `git check-ignore -v .worktrees` no longer reports because legacy tracked entries exist under `.worktrees/gemini`, `.worktrees/pii`, and `.worktrees/ui`.
+- Keep follow-up tasks unchecked until they are implemented and freshly verified; do not rely on earlier green CI alone for roadmap acceptance criteria that mention frontend UX, atomicity, provider-client caching, or privacy hardening.
 
 ## Acceptance Criteria
 
