@@ -37,6 +37,74 @@ def test_create_analysis_job_queues_job_and_supports_running_transition():
     assert running["status"] == "running"
 
 
+def test_create_analysis_job_reuses_active_job_for_same_entry_and_type():
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    _create_analysis_jobs_table(db)
+
+    first_job_id = create_analysis_job(
+        db,
+        user_id="user-1",
+        entry_type="mood_entry",
+        entry_id="mood-1",
+        analysis_type="mood_enrichment",
+    )
+    duplicate_job_id = create_analysis_job(
+        db,
+        user_id="user-1",
+        entry_type="mood_entry",
+        entry_id="mood-1",
+        analysis_type="mood_enrichment",
+    )
+
+    rows = db.execute(
+        """
+        SELECT id FROM analysis_jobs
+        WHERE user_id = ? AND entry_type = ? AND entry_id = ? AND analysis_type = ?
+        """,
+        ("user-1", "mood_entry", "mood-1", "mood_enrichment"),
+    ).fetchall()
+    assert duplicate_job_id == first_job_id
+    assert [row["id"] for row in rows] == [first_job_id]
+
+
+def test_create_analysis_job_allows_retry_after_failed_job_without_hiding_failure():
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    _create_analysis_jobs_table(db)
+
+    failed_job_id = create_analysis_job(
+        db,
+        user_id="user-1",
+        entry_type="cbt_log",
+        entry_id="cbt-1",
+        analysis_type="longitudinal_cbt",
+    )
+    mark_analysis_job_failed(db, failed_job_id, "analysis_unavailable")
+
+    retry_job_id = create_analysis_job(
+        db,
+        user_id="user-1",
+        entry_type="cbt_log",
+        entry_id="cbt-1",
+        analysis_type="longitudinal_cbt",
+    )
+
+    rows = db.execute(
+        """
+        SELECT id, status, error_code FROM analysis_jobs
+        WHERE user_id = ? AND entry_type = ? AND entry_id = ? AND analysis_type = ?
+        ORDER BY created_at ASC
+        """,
+        ("user-1", "cbt_log", "cbt-1", "longitudinal_cbt"),
+    ).fetchall()
+    assert retry_job_id != failed_job_id
+    assert [(row["id"], row["status"], row["error_code"]) for row in rows] == [
+        (failed_job_id, "failed", "analysis_unavailable"),
+        (retry_job_id, "queued", None),
+    ]
+
+
 def test_analysis_job_lifecycle_persists_status_and_result():
     db = sqlite3.connect(":memory:")
     db.row_factory = sqlite3.Row
@@ -61,6 +129,46 @@ def test_analysis_job_lifecycle_persists_status_and_result():
     ).fetchone()
     assert row["status"] == "succeeded"
     assert json.loads(row["result_payload"]) == {"summary": "negative sentiment trend"}
+
+
+def test_successful_analysis_payload_filters_raw_source_text_fields():
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    _create_analysis_jobs_table(db)
+
+    job_id = create_analysis_job(
+        db,
+        user_id="user-1",
+        entry_type="mood_entry",
+        entry_id="mood-1",
+        analysis_type="mood_enrichment",
+    )
+    mark_analysis_job_succeeded(
+        db,
+        job_id,
+        {
+            "summary": "Mood entry analyzed.",
+            "note": "My email is jane@example.com",
+            "automatic_thought": "Everyone hates me",
+            "mood": {"rating": 2, "has_note": True},
+            "nested": {"situation": "Private classroom conflict"},
+        },
+    )
+
+    row = db.execute(
+        "SELECT result_payload FROM analysis_jobs WHERE id = ?",
+        (job_id,),
+    ).fetchone()
+    payload = json.loads(row["result_payload"])
+    payload_text = json.dumps(payload)
+    assert payload == {
+        "summary": "Mood entry analyzed.",
+        "mood": {"rating": 2, "has_note": True},
+        "nested": {},
+    }
+    assert "jane@example.com" not in payload_text
+    assert "Everyone hates me" not in payload_text
+    assert "Private classroom conflict" not in payload_text
 
 
 def test_failed_analysis_persists_compact_error_without_result():

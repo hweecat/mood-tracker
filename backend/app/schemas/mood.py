@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 from app.schemas.base import TunedBaseModel
 
 class MoodAnalysisPublic(TunedBaseModel):
@@ -20,4 +20,4 @@ class MoodCreate(MoodBase):
 class MoodPublic(MoodBase):
     id: str
     user_id: str
-    ai_analysis: Optional[MoodAnalysisPublic] = None
+    ai_analysis: Optional[dict[str, Any]] = None

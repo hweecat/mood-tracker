@@ -34,30 +34,34 @@ def get_cbt_logs(db: Connection, user_id: str) -> List[dict]:
 def create_cbt_log(db: Connection, user_id: str, log_in: CBTLogCreate) -> dict:
     logger.info("Creating CBT log", extra={"user_id": user_id, "log_id": log_in.id})
     cursor = db.cursor()
-    cursor.execute(
-        """
-        INSERT INTO cbt_logs (
-            id, timestamp, situation, automatic_thoughts, distortions, 
-            rational_response, mood_before, mood_after, behavioral_link, action_plan_status, user_id
+    try:
+        cursor.execute(
+            """
+            INSERT INTO cbt_logs (
+                id, timestamp, situation, automatic_thoughts, distortions,
+                rational_response, mood_before, mood_after, behavioral_link, action_plan_status, user_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                log_in.id,
+                log_in.timestamp,
+                log_in.situation,
+                log_in.automatic_thoughts,
+                json.dumps(log_in.distortions),
+                log_in.rational_response,
+                log_in.mood_before,
+                log_in.mood_after,
+                log_in.behavioral_link,
+                log_in.action_plan_status,
+                user_id
+            )
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            log_in.id,
-            log_in.timestamp,
-            log_in.situation,
-            log_in.automatic_thoughts,
-            json.dumps(log_in.distortions),
-            log_in.rational_response,
-            log_in.mood_before,
-            log_in.mood_after,
-            log_in.behavioral_link,
-            log_in.action_plan_status,
-            user_id
-        )
-    )
-    db.commit()
-    _capture_ai_feedback_event(db, user_id=user_id, log_in=log_in)
+        _capture_ai_feedback_event(db, user_id=user_id, log_in=log_in)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     logger.info("CBT log created successfully", extra={"log_id": log_in.id})
     return {**log_in.model_dump(), "user_id": user_id}
 
@@ -127,6 +131,7 @@ def _capture_ai_feedback_event(db: Connection, user_id: str, log_in: CBTLogCreat
             user_action_plan=log_in.behavioral_link,
             source=log_in.feedback_source or "user_original",
         ),
+        commit=False,
     )
 
 

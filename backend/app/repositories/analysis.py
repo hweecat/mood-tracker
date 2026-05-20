@@ -12,6 +12,22 @@ def create_analysis_job(
     entry_id: str,
     analysis_type: str,
 ) -> str:
+    active_job = db.execute(
+        """
+        SELECT id FROM analysis_jobs
+        WHERE user_id = ?
+          AND entry_type = ?
+          AND entry_id = ?
+          AND analysis_type = ?
+          AND status IN ('queued', 'running')
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (user_id, entry_type, entry_id, analysis_type),
+    ).fetchone()
+    if active_job is not None:
+        return active_job["id"]
+
     now = int(time.time())
     job_id = str(uuid.uuid4())
     db.execute(
@@ -95,6 +111,8 @@ def mark_analysis_job_succeeded(
     job_id: str,
     result_payload: dict[str, Any],
 ) -> None:
+    compact_payload = compact_analysis_payload(result_payload)
+    serialized_payload = json.dumps(compact_payload, sort_keys=True)
     db.execute(
         """
         UPDATE analysis_jobs
@@ -103,11 +121,12 @@ def mark_analysis_job_succeeded(
         """,
         (
             "succeeded",
-            json.dumps(result_payload, sort_keys=True),
+            serialized_payload,
             int(time.time()),
             job_id,
         ),
     )
+    _persist_completed_mood_analysis(db, job_id, serialized_payload)
     db.commit()
 
 
@@ -153,3 +172,70 @@ def _table_exists(db: Connection, table_name: str) -> bool:
         (table_name,),
     ).fetchone()
     return row is not None
+
+
+def compact_analysis_payload(payload: Any) -> Any:
+    if isinstance(payload, dict):
+        return {
+            key: compact_analysis_payload(value)
+            for key, value in payload.items()
+            if key not in _RAW_SOURCE_FIELD_KEYS
+        }
+    if isinstance(payload, list):
+        return [compact_analysis_payload(item) for item in payload]
+    return payload
+
+
+def _persist_completed_mood_analysis(
+    db: Connection,
+    job_id: str,
+    serialized_payload: str,
+) -> None:
+    if not _table_exists(db, "mood_entries") or not _column_exists(
+        db,
+        "mood_entries",
+        "ai_analysis",
+    ):
+        return
+
+    db.execute(
+        """
+        UPDATE mood_entries
+        SET ai_analysis = ?
+        WHERE id = (
+            SELECT entry_id FROM analysis_jobs
+            WHERE id = ?
+              AND entry_type = 'mood_entry'
+              AND analysis_type = 'mood_enrichment'
+        )
+        AND user_id = (
+            SELECT user_id FROM analysis_jobs
+            WHERE id = ?
+              AND entry_type = 'mood_entry'
+              AND analysis_type = 'mood_enrichment'
+        )
+        """,
+        (serialized_payload, job_id, job_id),
+    )
+
+
+def _column_exists(db: Connection, table_name: str, column_name: str) -> bool:
+    rows = db.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return any(
+        (row["name"] if isinstance(row, Row) else row[1]) == column_name
+        for row in rows
+    )
+
+
+_RAW_SOURCE_FIELD_KEYS = {
+    "note",
+    "trigger",
+    "behavior",
+    "situation",
+    "automatic_thought",
+    "automatic_thoughts",
+    "rational_response",
+    "behavioral_link",
+    "user_rational_response",
+    "user_action_plan",
+}

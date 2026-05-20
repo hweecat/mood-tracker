@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 from app.repositories.analysis import create_analysis_job, get_analysis_job
@@ -81,6 +82,61 @@ def test_run_analysis_job_uses_fresh_connection_after_source_commit(tmp_path):
     assert "mood" in row["result_payload"]
 
 
+def test_run_mood_analysis_persists_completed_result_on_mood_entry(tmp_path):
+    db_path = tmp_path / "data" / "mood-tracker.db"
+    db_path.parent.mkdir()
+    request_db = sqlite3.connect(db_path)
+    request_db.row_factory = sqlite3.Row
+    _create_schema(request_db)
+    request_db.execute(
+        """
+        INSERT INTO mood_entries (
+            id, rating, emotions, note, timestamp, user_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "mood-visible-1",
+            2,
+            '["sad"]',
+            "My email is jane@example.com and I feel low",
+            1710000000,
+            "user-1",
+        ),
+    )
+    job_id = create_analysis_job(
+        request_db,
+        user_id="user-1",
+        entry_type="mood_entry",
+        entry_id="mood-visible-1",
+        analysis_type="mood_enrichment",
+    )
+    request_db.close()
+
+    analysis_jobs.run_analysis_job(job_id, database_path=str(db_path))
+
+    verification_db = sqlite3.connect(db_path)
+    verification_db.row_factory = sqlite3.Row
+    try:
+        row = verification_db.execute(
+            "SELECT ai_analysis FROM mood_entries WHERE id = ?",
+            ("mood-visible-1",),
+        ).fetchone()
+    finally:
+        verification_db.close()
+    payload = json.loads(row["ai_analysis"])
+    payload_text = json.dumps(payload)
+    assert payload["mood"] == {
+        "emotion_count": 1,
+        "has_behavior": False,
+        "has_note": True,
+        "has_trigger": False,
+        "rating": 2,
+    }
+    assert "jane@example.com" not in payload_text
+    assert "I feel low" not in payload_text
+
+
 def test_run_analysis_job_failure_does_not_remove_source_entry(tmp_path):
     db_path = tmp_path / "data" / "mood-tracker.db"
     db_path.parent.mkdir()
@@ -143,7 +199,8 @@ def _create_schema(db: sqlite3.Connection) -> None:
             timestamp INTEGER NOT NULL,
             trigger TEXT,
             behavior TEXT,
-            user_id TEXT NOT NULL
+            user_id TEXT NOT NULL,
+            ai_analysis TEXT
         );
         CREATE TABLE cbt_logs (
             id TEXT PRIMARY KEY,

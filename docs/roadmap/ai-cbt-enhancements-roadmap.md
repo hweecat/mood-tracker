@@ -81,8 +81,8 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 
 | Worktree | Branch | Status | Latest verification |
 | --- | --- | --- | --- |
-| `.worktrees/llm-provider-fallbacks` | `codex/llm-provider-fallbacks` | Draft PR opened; CI passing; merged into async-analysis for dependency alignment | GitHub CI run #84 passed frontend, backend, and e2e checks on commit `81cc1fa`. |
-| `.worktrees/async-analysis` | `codex/async-analysis` | Review hardening complete for backend async job lifecycle, retrieval privacy, source-delete cleanup, and provider audit linkage | `uv run --with ruff ruff check .` passed; `uv run --with pytest pytest -p no:cacheprovider` passed with `93 passed, 94 warnings`. |
+| `.worktrees/llm-provider-fallbacks` | `codex/llm-provider-fallbacks` | PR #5 ready, mergeable, current head `26c2188`, CI green | 2026-05-10 re-verification passed focused provider suite with `43 passed, 33 warnings`; direct Gemini adapter result-shape test and provider-client caching remain open. |
+| `.worktrees/async-analysis` | `codex/async-analysis` | Backend async job lifecycle implemented and verified; review follow-ups still open | 2026-05-10 re-verification passed focused async suites with `18 passed, 22 warnings` and `18 passed, 21 warnings`; mood `aiAnalysis` compatibility, CBT feedback atomicity, duplicate-scheduling idempotency, and frontend `/analyses/` display remain open. |
 
 ## Orchestrator Responsibilities
 

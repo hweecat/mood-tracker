@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 from fastapi.testclient import TestClient
@@ -173,6 +174,57 @@ def test_analysis_retrieval_is_scoped_to_current_user(tmp_path, monkeypatch):
     assert "userId" not in payload[0]
     assert "user_id" not in payload[0]
     assert payload[0]["resultPayload"] == {"summary": "mine"}
+
+
+def test_mood_get_exposes_completed_async_analysis_through_existing_contract(
+    tmp_path,
+    monkeypatch,
+):
+    db_path = _init_test_db(tmp_path, monkeypatch)
+    completed_analysis = {
+        "summary": "Mood entry analyzed.",
+        "mood": {
+            "rating": 2,
+            "emotion_count": 1,
+            "has_note": True,
+            "has_trigger": False,
+            "has_behavior": False,
+        },
+        "schema_version": 1,
+    }
+    db = sqlite3.connect(db_path)
+    try:
+        db.execute(
+            """
+            INSERT INTO mood_entries (
+                id, rating, emotions, note, timestamp, user_id, ai_analysis
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "mood-visible-1",
+                2,
+                '["sad"]',
+                "Private note",
+                1710000000,
+                "1",
+                json.dumps(completed_analysis),
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    app.dependency_overrides[moods.get_db] = _db_override(db_path)
+    try:
+        response = TestClient(app).get("/api/v1/moods/")
+    finally:
+        app.dependency_overrides.pop(moods.get_db, None)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload[0]["id"] == "mood-visible-1"
+    assert payload[0]["aiAnalysis"] == completed_analysis
 
 
 def test_deleting_mood_entry_removes_its_analysis_jobs(tmp_path, monkeypatch):

@@ -111,10 +111,15 @@ def test_analysis_job_lifecycle_persists_status_and_result():
 ## Validation Status
 
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/8.
-- [x] GitHub Actions CI passed for head `5f3fa92579405e58ad0c808df2950989278e32c6` (run `25299977193`).
-- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
-- [ ] PR review follow-up: preserve mood `aiAnalysis` for existing `/moods` consumers after async analysis succeeds.
-- [ ] PR review follow-up: make CBT log insert and feedback-event persistence atomic so feedback failures do not leave a committed CBT row while the client receives an error.
+- [x] GitHub Actions CI passed for current head `2ab39c196c6c86922bd096f1d7a7eb2162b35d8a` (run `25492089771`).
+- [x] 2026-05-10 re-verification: focused async repository/service/integration suite passed with `18 passed, 22 warnings`; focused audit/analyze integration suite passed with `18 passed, 21 warnings`.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
+- [x] 2026-05-11 RED: focused backend TDD tests failed for duplicate active jobs, raw source fields in result payloads, missing completed mood `aiAnalysis`, `/moods` response validation for async-shaped mood analysis, and CBT feedback failure leaving a committed CBT row (`5 failed, 24 passed, 28 warnings`).
+- [x] 2026-05-11 GREEN: focused async repository/service/integration suite plus audit/privacy coverage passed with `49 passed, 53 warnings`.
+- [x] PR review follow-up: preserve mood `aiAnalysis` for existing `/moods` consumers after async analysis succeeds.
+- [x] PR review follow-up: make CBT log insert and feedback-event persistence atomic so feedback failures do not leave a committed CBT row while the client receives an error.
+- [x] Verification follow-up: define and test duplicate async-analysis scheduling/idempotency behavior.
+- [ ] Frontend follow-up: fetch and display `/api/v1/analyses/` results, or explicitly document the backend-only scope for the first merge.
 
 ## Acceptance Criteria
 
