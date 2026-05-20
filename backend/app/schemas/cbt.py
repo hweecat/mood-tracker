@@ -24,6 +24,7 @@ class CBTAnalysisRequest(TunedBaseModel):
     """
     situation: str
     automatic_thought: str
+    user_id: Optional[str] = None
 
 class CBTAnalysisResponse(TunedBaseModel):
     """

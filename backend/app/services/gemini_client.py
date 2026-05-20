@@ -321,6 +321,7 @@ class GeminiClient:
     ) -> str | None:
         """Record a PII-minimized AI audit entry."""
         audit_in = AIAuditLogCreate(
+            user_id=request.user_id,
             correlation_id=request_id,
             user_id=user_id,
             entry_type="standalone_analysis",
