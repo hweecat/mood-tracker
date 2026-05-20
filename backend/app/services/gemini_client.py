@@ -323,7 +323,6 @@ class GeminiClient:
         audit_in = AIAuditLogCreate(
             user_id=request.user_id,
             correlation_id=request_id,
-            user_id=user_id,
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider="gemini",
