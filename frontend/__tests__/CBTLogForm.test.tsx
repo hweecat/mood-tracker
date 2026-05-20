@@ -61,6 +61,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: null,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
   });
@@ -104,6 +105,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: MOCK_ANALYSIS,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -184,6 +186,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: null,
       loading: false,
       error: 'API failure',
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -198,12 +201,36 @@ describe('CBTLogForm Flow & Integration', () => {
     expect(await screen.findByText('API failure')).toBeInTheDocument();
   });
 
+  it('keeps crisis resources available when AI analysis is safety-blocked', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: null,
+      loading: false,
+      error: 'Your safety is important. Please reach out for support.',
+      crisisResources: [
+        { name: '988 Lifeline', phone: '988', url: 'https://988lifeline.org' },
+      ],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A crisis moment' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
+    });
+
+    expect(await screen.findByText('Your safety is important. Please reach out for support.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /988 lifeline/i })).toHaveAttribute('href', 'tel:988');
+  });
+
   it('accepts an AI action plan into the final plan text', async () => {
     (useCBTAnalysis as Mock).mockReturnValue({
       analyze: mockAnalyze,
       analysis: MOCK_ANALYSIS,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -227,6 +254,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: MOCK_ANALYSIS,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -250,6 +278,42 @@ describe('CBTLogForm Flow & Integration', () => {
       behavioralLink: 'I will write three questions before booking the check-in.',
       acceptedActionPlanId: 'plan-1',
       actionPlanSource: 'edited_ai',
+    }));
+  });
+
+  it('submits audit-safe suggestion metadata with accepted and ignored ids', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      crisisResources: [],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /accept compassionate reframe/i }));
+    fireEvent.click(screen.getByRole('button', { name: /dismiss logical reframe/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /accept ask for feedback action plan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /finalize entry/i }));
+
+    expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      acceptedReframeId: 'reframe-1',
+      dismissedReframeIds: ['reframe-2'],
+      ignoredReframeIds: ['reframe-2'],
+      rationalResponseSource: 'accepted_ai',
+      acceptedActionPlanId: 'plan-1',
+      acceptedActionPlan: MOCK_ANALYSIS.actionPlans[0],
+      actionPlanSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
     }));
   });
 });

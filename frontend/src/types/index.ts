@@ -52,6 +52,15 @@ export interface ActionPlanSuggestion {
   timeframe?: string;
 }
 
+export interface CrisisResource {
+  name?: string;
+  phone?: string;
+  url?: string;
+  description?: string;
+}
+
+export type AIFeedbackSource = 'accepted_ai' | 'edited_ai' | 'user_original';
+
 export interface CBTAnalysisResponse {
   suggestions: DistortionSuggestion[];
   reframes: RationalReframe[];
@@ -75,9 +84,12 @@ export interface CBTLog {
   aiSuggestedDistortions?: CognitiveDistortion[];
   acceptedReframeId?: string | null;
   dismissedReframeIds?: string[];
-  rationalResponseSource?: 'accepted_ai' | 'edited_ai' | 'user_original';
+  ignoredReframeIds?: string[];
+  rationalResponseSource?: AIFeedbackSource;
   acceptedActionPlanId?: string | null;
-  actionPlanSource?: 'accepted_ai' | 'edited_ai' | 'user_original';
+  acceptedActionPlan?: ActionPlanSuggestion | null;
+  actionPlanSource?: AIFeedbackSource;
+  feedbackSource?: AIFeedbackSource;
   aiAnalysis?: CBTAnalysisResponse | null;
 }
 

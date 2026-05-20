@@ -138,7 +138,7 @@ describe('useTrackerData', () => {
         automaticThoughts: 'Old Auto', 
         distortions: [], 
         rationalResponse: 'Old Resp', 
-        moodBefore: 5, 
+        moodBefore: 5 as const,
         timestamp: 123,
         userId: '1'
     };

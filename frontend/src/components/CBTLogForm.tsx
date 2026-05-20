@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion, CrisisResource, AIFeedbackSource } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
@@ -20,6 +20,14 @@ interface CBTLogFormProps {
   onCancel?: () => void;
 }
 
+function crisisResourceHref(resource: CrisisResource) {
+  if (resource.phone) {
+    return `tel:${resource.phone.replace(/[^+\d]/g, '')}`;
+  }
+
+  return resource.url || '#';
+}
+
 const DEFAULT_FORM_DATA = {
   situation: '',
   automaticThoughts: '',
@@ -32,13 +40,16 @@ const DEFAULT_FORM_DATA = {
   aiSuggestedDistortions: [] as CognitiveDistortion[],
   acceptedReframeId: null as string | null,
   dismissedReframeIds: [] as string[],
-  rationalResponseSource: 'user_original' as 'accepted_ai' | 'edited_ai' | 'user_original',
+  ignoredReframeIds: [] as string[],
+  rationalResponseSource: 'user_original' as AIFeedbackSource,
   acceptedActionPlanId: null as string | null,
-  actionPlanSource: 'user_original' as 'accepted_ai' | 'edited_ai' | 'user_original',
+  acceptedActionPlan: null as ActionPlanSuggestion | null,
+  actionPlanSource: 'user_original' as AIFeedbackSource,
+  feedbackSource: 'user_original' as AIFeedbackSource,
 };
 
 export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps) {
-  const { analyze, analysis, loading: analysisLoading, error: analysisError, reset: resetAnalysis } = useCBTAnalysis();
+  const { analyze, analysis, loading: analysisLoading, error: analysisError, crisisResources, reset: resetAnalysis } = useCBTAnalysis();
   
   const [draftData, setDraftData] = useLocalStorage('cbt-draft-data', DEFAULT_FORM_DATA);
   const [draftStep, setDraftStep] = useLocalStorage('cbt-draft-step', 1);
@@ -56,9 +67,12 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     aiSuggestedDistortions: initialData.aiSuggestedDistortions || [],
     acceptedReframeId: initialData.acceptedReframeId || null,
     dismissedReframeIds: initialData.dismissedReframeIds || [],
+    ignoredReframeIds: initialData.ignoredReframeIds || initialData.dismissedReframeIds || [],
     rationalResponseSource: initialData.rationalResponseSource || 'user_original',
     acceptedActionPlanId: initialData.acceptedActionPlanId || null,
+    acceptedActionPlan: initialData.acceptedActionPlan || null,
     actionPlanSource: initialData.actionPlanSource || 'user_original',
+    feedbackSource: initialData.feedbackSource || initialData.actionPlanSource || initialData.rationalResponseSource || 'user_original',
   } : draftData);
 
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
@@ -108,6 +122,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       rationalResponse: reframe.content,
       acceptedReframeId: reframe.id || null,
       rationalResponseSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
     }));
   };
 
@@ -117,6 +132,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       rationalResponse: reframe.content,
       acceptedReframeId: reframe.id || null,
       rationalResponseSource: 'edited_ai',
+      feedbackSource: 'edited_ai',
     }));
   };
 
@@ -127,6 +143,9 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       dismissedReframeIds: (prev.dismissedReframeIds || []).includes(reframeId)
         ? (prev.dismissedReframeIds || [])
         : [...(prev.dismissedReframeIds || []), reframeId],
+      ignoredReframeIds: (prev.ignoredReframeIds || []).includes(reframeId)
+        ? (prev.ignoredReframeIds || [])
+        : [...(prev.ignoredReframeIds || []), reframeId],
     }));
   };
 
@@ -136,7 +155,9 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       behavioralLink: actionText,
       actionPlanStatus: 'pending',
       acceptedActionPlanId: plan.id || null,
+      acceptedActionPlan: plan,
       actionPlanSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
     }));
   };
 
@@ -146,7 +167,9 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       behavioralLink: actionText,
       actionPlanStatus: 'pending',
       acceptedActionPlanId: plan.id || null,
+      acceptedActionPlan: plan,
       actionPlanSource: 'edited_ai',
+      feedbackSource: 'edited_ai',
     }));
   };
 
@@ -281,7 +304,37 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   </>
                 )}
               </button>
-              {analysisError && <p className="text-xs font-bold text-red-600 dark:text-red-400 text-center">{analysisError}</p>}
+              {analysisError && (
+                <div
+                  role="alert"
+                  className="space-y-3 rounded-2xl border-2 border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                >
+                  <p>{analysisError}</p>
+                  {crisisResources.length > 0 && (
+                    <div className="grid gap-2" aria-label="Crisis resources">
+                      {crisisResources.map((resource, index) => (
+                        <a
+                          key={`${resource.name || resource.phone || resource.url}-${index}`}
+                          href={crisisResourceHref(resource)}
+                          className="flex min-h-11 flex-col justify-center rounded-xl border border-red-200 bg-card px-4 py-3 text-red-900 underline-offset-4 hover:underline dark:border-red-900 dark:text-red-200"
+                        >
+                          <span>{resource.name || 'Crisis resource'}</span>
+                          {(resource.phone || resource.url) && (
+                            <span className="text-xs text-red-700 dark:text-red-300">
+                              {resource.phone || resource.url}
+                            </span>
+                          )}
+                          {resource.description && (
+                            <span className="text-xs text-red-700 dark:text-red-300">
+                              {resource.description}
+                            </span>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -368,6 +421,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                     ...formData,
                     rationalResponse: e.target.value,
                     rationalResponseSource: formData.acceptedReframeId ? 'edited_ai' : 'user_original',
+                    feedbackSource: formData.acceptedReframeId ? 'edited_ai' : 'user_original',
                   })}
                   placeholder="e.g., While this promotion didn't happen, my performance reviews have been consistently high..."
                 />
@@ -406,6 +460,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                     behavioralLink: e.target.value,
                     actionPlanStatus: 'pending',
                     actionPlanSource: formData.acceptedActionPlanId ? 'edited_ai' : 'user_original',
+                    feedbackSource: formData.acceptedActionPlanId ? 'edited_ai' : 'user_original',
                   })}
                   placeholder="e.g., I will schedule a meeting with my manager to ask for feedback."
                 />

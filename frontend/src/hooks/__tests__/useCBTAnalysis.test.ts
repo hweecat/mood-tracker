@@ -64,14 +64,19 @@ describe('useCBTAnalysis Hook', () => {
     expect(result.current.analysis).toBeNull();
   });
 
-  it('handles safety exception (451)', async () => {
+  it('handles safety exception (451) with a humane message and crisis resources', async () => {
+    const crisisResources = [
+      { name: '988 Lifeline', phone: '988', url: 'https://988lifeline.org' }
+    ];
+
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: false,
       status: 451,
       json: async () => ({
         detail: {
-          message: 'Safety trigger: High harm content',
-          crisis_resources: []
+          message: 'Your safety is important. Please reach out for support.',
+          trigger: 'safety',
+          crisis_resources: crisisResources
         }
       }),
     } as Response);
@@ -83,7 +88,8 @@ describe('useCBTAnalysis Hook', () => {
     });
 
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe('[object Object]');
+    expect(result.current.error).toBe('Your safety is important. Please reach out for support.');
+    expect(result.current.crisisResources).toEqual(crisisResources);
   });
 
   it('handles timeout (504)', async () => {
