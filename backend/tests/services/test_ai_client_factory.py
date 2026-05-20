@@ -1,8 +1,10 @@
 # backend/tests/services/test_ai_client_factory.py
 
 import logging
+from types import SimpleNamespace
 from unittest.mock import patch
 import pytest
+import app.services.ai_client as ai_client_module
 from app.core.ai_config import ProviderModel
 from app.services.ai_client import (
     ProviderOrchestratorAdapter,
@@ -12,6 +14,14 @@ from app.services.ai_client import (
 
 class TestAIClientFactory:
     """Tests for the AI client factory logic (get_ai_client)."""
+
+    def setup_method(self):
+        if hasattr(ai_client_module, "_clear_provider_cache"):
+            ai_client_module._clear_provider_cache()
+
+    def teardown_method(self):
+        if hasattr(ai_client_module, "_clear_provider_cache"):
+            ai_client_module._clear_provider_cache()
 
     def test_get_ai_client_returns_provider_orchestrator_for_configured_chain(self):
         """Test factory returns provider orchestrator for CBT fallback chains."""
@@ -80,6 +90,41 @@ class TestAIClientFactory:
                 model="gpt-5.5",
                 timeout=7,
             )
+
+    def test_get_ai_client_reuses_openai_provider_until_api_key_fingerprint_changes(self):
+        """Provider cache should reuse clients but invalidate when a non-empty OpenAI key rotates."""
+        with patch('app.services.ai_client.get_ai_config') as mock_config, \
+             patch('app.services.ai_client.OpenAIClient') as mock_openai_client:
+
+            first_provider = SimpleNamespace(provider="openai", model="gpt-5.5")
+            stale_provider = SimpleNamespace(provider="openai", model="gpt-5.5")
+            rotated_provider = SimpleNamespace(provider="openai", model="gpt-5.5")
+            mock_openai_client.side_effect = [
+                first_provider,
+                stale_provider,
+                rotated_provider,
+            ]
+            mock_config.return_value.enable_gemini = False
+            mock_config.return_value.cbt_model_chain = [
+                ProviderModel(provider="openai", model="gpt-5.5")
+            ]
+            mock_config.return_value.openai_api_key = "first-openai-key"
+            mock_config.return_value.ai_provider_timeout = 7
+
+            first_client = get_ai_client()
+            second_client = get_ai_client()
+
+            mock_config.return_value.openai_api_key = "rotated-openai-key"
+            third_client = get_ai_client()
+
+            assert first_client.orchestrator.providers == [first_provider]
+            assert second_client.orchestrator.providers == [first_provider]
+            assert third_client.orchestrator.providers == [rotated_provider]
+            assert mock_openai_client.call_count == 2
+            assert [
+                call.kwargs["api_key"]
+                for call in mock_openai_client.call_args_list
+            ] == ["first-openai-key", "rotated-openai-key"]
 
     def test_get_ai_client_falls_back_when_gemini_not_available(self):
         """Test factory falls back to TextBlob if Gemini library is missing."""
