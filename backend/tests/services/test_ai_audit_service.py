@@ -15,10 +15,13 @@ def anyio_backend():
 async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_service():
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
@@ -86,10 +89,13 @@ async def test_gemini_analyze_cbt_records_failure_statuses_without_raw_request_p
 ):
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
@@ -119,10 +125,13 @@ async def test_gemini_analyze_cbt_records_failure_statuses_without_raw_request_p
 async def test_gemini_analyze_cbt_prefers_explicit_user_id_over_request_user_id_for_audit():
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
@@ -149,10 +158,13 @@ async def test_gemini_analyze_cbt_prefers_explicit_user_id_over_request_user_id_
 async def test_gemini_analyze_cbt_uses_request_user_id_when_explicit_user_id_missing():
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
