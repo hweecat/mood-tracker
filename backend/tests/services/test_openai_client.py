@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock
 
 import httpx
+import logging
 import pytest
 
 from app.schemas.cbt import CBTAnalysisRequest
@@ -81,6 +82,24 @@ async def test_openai_client_parse_failure_raises_typed_error(cbt_request):
 
 
 @pytest.mark.anyio
+async def test_openai_client_malformed_structured_output_raises_parse_error(cbt_request):
+    http_client = AsyncMock(spec=httpx.AsyncClient)
+    http_client.post.return_value = httpx.Response(
+        200,
+        json={"output": [{"content": [{"type": "output_text"}]}]},
+        request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+    )
+    client = OpenAIClient(
+        api_key="secret-key",
+        model="gpt-5.5",
+        http_client=http_client,
+    )
+
+    with pytest.raises(LLMParseError):
+        await client.analyze_cbt(cbt_request)
+
+
+@pytest.mark.anyio
 async def test_openai_client_timeout_raises_typed_error(cbt_request):
     http_client = AsyncMock(spec=httpx.AsyncClient)
     http_client.post.side_effect = httpx.TimeoutException("slow provider")
@@ -106,3 +125,28 @@ async def test_openai_client_connect_error_raises_provider_error(cbt_request):
 
     with pytest.raises(LLMProviderError):
         await client.analyze_cbt(cbt_request)
+
+
+@pytest.mark.anyio
+async def test_openai_client_failure_logs_error_type_without_api_key(cbt_request, caplog):
+    secret = "sk-test-secret-that-must-not-appear"
+    http_client = AsyncMock(spec=httpx.AsyncClient)
+    http_client.post.side_effect = httpx.ConnectError(f"provider echoed {secret}")
+    client = OpenAIClient(
+        api_key=secret,
+        model="gpt-5.5",
+        http_client=http_client,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="app.services.openai_client"):
+        with pytest.raises(LLMProviderError):
+            await client.analyze_cbt(cbt_request)
+
+    records = [
+        record for record in caplog.records
+        if record.message == "OpenAI provider request failed"
+    ]
+    assert len(records) == 1
+    assert records[0].error_type == "ConnectError"
+    assert secret not in caplog.text
+    assert secret not in str(records[0].__dict__)

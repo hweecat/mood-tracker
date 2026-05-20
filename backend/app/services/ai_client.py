@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 import asyncio
+import hashlib
 import time
 from typing import Optional
 from textblob import TextBlob
@@ -21,6 +22,29 @@ from app.services.ollama_client import OllamaClient
 from app.services.openai_client import OpenAIClient
 
 logger = get_logger(__name__)
+
+_provider_cache: dict[tuple, list] = {}
+
+
+def _secret_fingerprint(secret: str | None) -> str | None:
+    if not isinstance(secret, str) or not secret:
+        return None
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+
+
+def _provider_cache_key(config) -> tuple:
+    return (
+        tuple((item.provider, item.model) for item in config.cbt_model_chain),
+        bool(config.enable_gemini),
+        _gemini_available,
+        _secret_fingerprint(config.openai_api_key),
+        config.ollama_base_url,
+        config.ai_provider_timeout,
+    )
+
+
+def _clear_provider_cache() -> None:
+    _provider_cache.clear()
 
 class AIClientProtocol(ABC):
     """Abstract protocol for AI clients."""
@@ -186,6 +210,10 @@ def get_ai_client() -> AIClientProtocol:
 
 
 def _build_cbt_providers(config) -> list:
+    cache_key = _provider_cache_key(config)
+    if cache_key in _provider_cache:
+        return _provider_cache[cache_key]
+
     providers = []
     for item in config.cbt_model_chain:
         if item.provider == "gemini":
@@ -214,6 +242,7 @@ def _build_cbt_providers(config) -> list:
                     timeout=config.ai_provider_timeout,
                 )
             )
+    _provider_cache[cache_key] = providers
     return providers
 
 # Legacy function for backward compatibility
