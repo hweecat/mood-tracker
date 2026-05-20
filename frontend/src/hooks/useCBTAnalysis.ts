@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { CBTAnalysisResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -17,22 +16,16 @@ interface UseCBTAnalysisReturn {
 
 /**
  * Hook to handle real-time AI analysis of CBT thoughts for HITL interaction.
- * Manages API calls, state, and error handling with authentication.
+ * Manages API calls, state, and error handling.
  */
 export function useCBTAnalysis(): UseCBTAnalysisReturn {
   const [analysis, setAnalysis] = useState<CBTAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data: session, status } = useSession();
 
   const analyze = async (situation: string, automaticThought: string) => {
     if (!situation || !automaticThought) {
       setError('Situation and automatic thought are required.');
-      return;
-    }
-
-    if (status !== 'authenticated' || !session?.accessToken) {
-      setError('You must be logged in to use AI analysis.');
       return;
     }
 
@@ -45,7 +38,6 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify({
           situation,
@@ -54,9 +46,6 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please log in again.');
-        }
         const errorData = await response.json();
         throw new Error(errorData.detail || `API error: ${response.status}`);
       }
@@ -64,8 +53,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
       const data: CBTAnalysisResponse = await response.json();
       setAnalysis(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during analysis.';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred during analysis.');
       console.error('AI Analysis Error:', err);
     } finally {
       setLoading(false);

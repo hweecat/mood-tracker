@@ -4,16 +4,6 @@ import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 
 const API_V1_URL = 'http://localhost:8000/api/v1';
 
-vi.mock('next-auth/react', () => ({
-  useSession: () => ({
-    data: {
-      accessToken: 'test-access-token',
-      user: { id: '1' },
-    },
-    status: 'authenticated',
-  }),
-}));
-
 describe('useTrackerData', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -46,12 +36,8 @@ describe('useTrackerData', () => {
     expect(result.current.moodEntries).toEqual(mockMoods);
     expect(result.current.cbtLogs).toEqual(mockCBT);
     
-    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/moods/`, {
-      headers: { Authorization: 'Bearer test-access-token' },
-    });
-    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/`, {
-      headers: { Authorization: 'Bearer test-access-token' },
-    });
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/moods/`);
+    expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/`);
   });
 
   it('adds a mood entry', async () => {
@@ -79,9 +65,6 @@ describe('useTrackerData', () => {
 
     expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/moods/`, expect.objectContaining({
       method: 'POST',
-      headers: expect.objectContaining({
-        Authorization: 'Bearer test-access-token',
-      }),
       body: expect.stringContaining('"rating":8'),
     }));
 
@@ -120,9 +103,6 @@ describe('useTrackerData', () => {
 
     expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/`, expect.objectContaining({
       method: 'POST',
-      headers: expect.objectContaining({
-        Authorization: 'Bearer test-access-token',
-      }),
       body: expect.stringContaining('"situation":"Sit"'),
     }));
 
@@ -165,9 +145,6 @@ describe('useTrackerData', () => {
 
     expect(global.fetch).toHaveBeenCalledWith(`${API_V1_URL}/cbt-logs/1`, expect.objectContaining({
       method: 'PUT',
-      headers: expect.objectContaining({
-        Authorization: 'Bearer test-access-token',
-      }),
       body: expect.stringContaining('"situation":"New Sit"'),
     }));
 

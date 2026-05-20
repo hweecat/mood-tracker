@@ -30,10 +30,7 @@ export function SettingsView() {
     try {
       const response = await fetch(`${API_V1_URL}/users/me`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email }),
       });
 

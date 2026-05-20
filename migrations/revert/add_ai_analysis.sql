@@ -1,5 +1,4 @@
 -- Revert mood-tracker:add_ai_analysis from sqlite
--- requires: mood_entries
 
 BEGIN;
 
