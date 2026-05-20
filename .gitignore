@@ -76,3 +76,6 @@ migrations/*.db-journal
 
 # settings
 */settings.json
+
+# local git worktrees
+.worktrees/
