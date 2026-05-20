@@ -113,3 +113,63 @@ async def test_gemini_analyze_cbt_records_failure_statuses_without_raw_request_p
         "automatic_thought_length": 15,
         "situation_length": 28,
     }
+
+
+@pytest.mark.anyio
+async def test_gemini_analyze_cbt_prefers_explicit_user_id_over_request_user_id_for_audit():
+    with patch("app.services.gemini_client.get_ai_config") as mock_config, \
+         patch("app.services.gemini_client.genai.configure"), \
+         patch("app.services.gemini_client.genai.GenerativeModel"):
+
+        mock_config.return_value.gemini_api_key = "test-key"
+        mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        client = GeminiClient()
+
+        with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
+             patch.object(client, "_generate_reframes_with_retry") as mock_reframe, \
+             patch("app.services.gemini_client.ai_audit_service.record_ai_audit_log") as mock_record:
+
+            mock_record.return_value = "audit-reframe-2"
+            mock_detect.return_value = ([DistortionSuggestion(distortion="All-or-Nothing Thinking", reasoning="absolute")], "cbt-detect-v1")
+            mock_reframe.return_value = ([RationalReframe(perspective="Balanced", content="Try a balanced view")], "cbt-reframe-v1")
+
+            request = CBTAnalysisRequest(
+                situation="A private situation",
+                automatic_thought="A private automatic thought",
+                user_id="request-user",
+            )
+
+            await client.analyze_cbt(request, user_id="auth-user")
+
+    audit_in = mock_record.call_args.args[0]
+    assert audit_in.user_id == "auth-user"
+
+
+@pytest.mark.anyio
+async def test_gemini_analyze_cbt_uses_request_user_id_when_explicit_user_id_missing():
+    with patch("app.services.gemini_client.get_ai_config") as mock_config, \
+         patch("app.services.gemini_client.genai.configure"), \
+         patch("app.services.gemini_client.genai.GenerativeModel"):
+
+        mock_config.return_value.gemini_api_key = "test-key"
+        mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        client = GeminiClient()
+
+        with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
+             patch.object(client, "_generate_reframes_with_retry") as mock_reframe, \
+             patch("app.services.gemini_client.ai_audit_service.record_ai_audit_log") as mock_record:
+
+            mock_record.return_value = "audit-reframe-3"
+            mock_detect.return_value = ([DistortionSuggestion(distortion="All-or-Nothing Thinking", reasoning="absolute")], "cbt-detect-v1")
+            mock_reframe.return_value = ([RationalReframe(perspective="Balanced", content="Try a balanced view")], "cbt-reframe-v1")
+
+            request = CBTAnalysisRequest(
+                situation="A private situation",
+                automatic_thought="A private automatic thought",
+                user_id="request-user",
+            )
+
+            await client.analyze_cbt(request)
+
+    audit_in = mock_record.call_args.args[0]
+    assert audit_in.user_id == "request-user"
