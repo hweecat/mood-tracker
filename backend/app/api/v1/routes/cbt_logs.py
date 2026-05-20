@@ -72,7 +72,7 @@ async def analyze_cbt(
 
     try:
         result = await asyncio.wait_for(
-            ai_client.analyze_cbt(request),
+            ai_client.analyze_cbt(request, user_id=current_user.id),
             timeout=10.0
         )
         return result

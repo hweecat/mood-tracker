@@ -6,6 +6,8 @@ from httpx import AsyncClient, ASGITransport
 from fastapi import status
 from unittest.mock import Mock, patch
 from app.main import app
+from app.api.v1.routes import cbt_logs
+from app.schemas.user import UserPublic
 
 
 @pytest.fixture
@@ -69,6 +71,41 @@ class TestCBTAnalyzeEndpoint:
             
             response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
             assert response.status_code == status.HTTP_200_OK
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_passes_authenticated_user_id_to_ai_client(
+        self,
+        mock_get_client,
+        async_client,
+        valid_request,
+        mock_ai_response,
+    ):
+        """Save-time feedback can only link to audit rows owned by the same user."""
+        mock_client = Mock()
+        seen_user_ids = []
+
+        async def mock_analyze(request, *, user_id=None):
+            seen_user_ids.append(user_id)
+            return mock_ai_response
+
+        async def override_current_user():
+            return UserPublic(
+                id="user-123",
+                username="pat",
+                name="Pat",
+                email="pat@example.com",
+            )
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+        app.dependency_overrides[cbt_logs.get_current_user] = override_current_user
+        try:
+            response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+        finally:
+            app.dependency_overrides.pop(cbt_logs.get_current_user, None)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert seen_user_ids == ["user-123"]
 
     async def test_analyze_endpoint_requires_json(self, async_client):
         """Test /analyze endpoint requires JSON body."""

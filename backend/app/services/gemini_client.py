@@ -35,7 +35,11 @@ class GeminiClient:
         self.safety_handler = SafetyHandler()
         self.prompt_manager = PromptManager()
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(
+        self,
+        request: CBTAnalysisRequest,
+        user_id: str | None = None,
+    ) -> CBTAnalysisResponse:
         """
         Perform full CBT analysis: distortion detection and rational reframing.
 
@@ -75,7 +79,8 @@ class GeminiClient:
                 prompt_version_id=reframe_prompt_version,
                 safety_tier="negligible", # Will be updated if exceptions occur
                 latency_ms=latency_ms,
-                status="success"
+                status="success",
+                user_id=user_id,
             )
             if not isinstance(audit_log_id, str):
                 audit_log_id = None
@@ -99,6 +104,7 @@ class GeminiClient:
                 latency_ms=latency_ms,
                 status="safety_blocked",
                 error_code="SafetyException",
+                user_id=user_id,
             )
             raise
         except ParseException:
@@ -111,6 +117,7 @@ class GeminiClient:
                 latency_ms=latency_ms,
                 status="parse_error",
                 error_code="ParseException",
+                user_id=user_id,
             )
             raise
         except asyncio.TimeoutError:
@@ -123,6 +130,7 @@ class GeminiClient:
                 latency_ms=latency_ms,
                 status="timeout",
                 error_code="TimeoutError",
+                user_id=user_id,
             )
             raise
         except Exception as e:
@@ -139,6 +147,7 @@ class GeminiClient:
                 latency_ms=latency_ms,
                 status="provider_error",
                 error_code=type(e).__name__,
+                user_id=user_id,
             )
             raise
 
@@ -308,10 +317,12 @@ class GeminiClient:
         latency_ms: int,
         status: str,
         error_code: str | None = None,
+        user_id: str | None = None,
     ) -> str | None:
         """Record a PII-minimized AI audit entry."""
         audit_in = AIAuditLogCreate(
             correlation_id=request_id,
+            user_id=user_id,
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider="gemini",
