@@ -45,6 +45,13 @@
 - Focused provider PII masking verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py::test_openai_prompt_masks_direct_identifiers_before_provider_call tests/services/test_ollama_client.py::test_ollama_prompt_masks_direct_identifiers_before_provider_call tests/services/test_gemini_client.py::TestGeminiClient::test_generate_reframes_and_action_plans_masks_direct_identifiers -q`: 3 passed.
 - Backend lint verified with `uv run --with ruff ruff check .`: all checks passed.
 - Frontend type/test changes are present, but local frontend verification is blocked because `npm`, `npx`, `pnpm`, `yarn`, and `corepack` are unavailable and `frontend/node_modules` is absent in this worktree.
+- 2026-05-10 re-verification: focused backend action-plan/prompt/analyze/feedback suite passed with `25 passed, 27 warnings`; Gemini masking test passes with dummy `GEMINI_API_KEY`, but fails without it due test harness configuration.
+- 2026-05-11 RED: `Remove-Item Env:GEMINI_API_KEY; UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_quality_prompts.py::test_prompt_manager_default_prompts_do_not_read_provider_credentials -q` failed because `PromptManager.__init__` read provider credentials.
+- 2026-05-11 focused backend re-verification without `GEMINI_API_KEY`: `Remove-Item Env:GEMINI_API_KEY; UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_llm_orchestrator.py tests/services/test_gemini_client.py tests/services/test_ai_audit_service.py -q`: 44 passed, 27 warnings.
+- 2026-05-11 API v2 docs updated for `analysisId`, `provider`, `model`, stable suggestion/reframe/action-plan ids, and `actionPlans`.
+- 2026-05-11 gap: generated action plans are not surfaced or persisted from the current `CBTLogForm`; this remains dependent on `codex/mobile-usability` and is not implemented in this worktree.
+- 2026-05-19 review follow-up: stale `PromptManager` tests no longer patch the removed provider config dependency; CBT quality focused suite passed with `53 passed, 36 warnings`.
+- 2026-05-19 coordination verification: `codex/mobile-usability` surfaces action plans, submits accepted action-plan metadata, and passed TypeScript, full Vitest, and Playwright viewport checks.
 
 ## Tasks
 
@@ -113,6 +120,9 @@ def test_cbt_analysis_response_accepts_action_plans():
 - [x] Update `frontend/src/types/index.ts` with `CBTActionPlan` and extended `CBTAnalysisResponse`.
 - [x] Update `useCBTAnalysis` tests to assert `actionPlans` is preserved from response.
 - [x] Do not redesign the full UI in this workstream; leave mobile layout to `codex/mobile-usability`.
+- [x] Follow-up: update `docs/api_spec_cbt_v2.md` so `/api/v1/cbt-logs/analyze` documents `analysisId`, `provider`, `model`, stable ids, and `actionPlans`.
+- [x] Follow-up: make Gemini masking/provider tests independent of a real `GEMINI_API_KEY` through fixtures or dependency injection.
+- [x] Coordination follow-up: verify mobile-usability surfaces action plans and submits accepted action-plan metadata before checking the roadmap UI acceptance criterion.
 
 ## Acceptance Criteria
 

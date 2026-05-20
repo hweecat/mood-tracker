@@ -1,7 +1,6 @@
 # backend/app/services/prompt_manager.py
 
 from typing import Optional, Tuple
-from app.core.ai_config import get_ai_config
 from app.core.constants import COGNITIVE_DISTORTIONS
 from app.core.logging import get_logger
 from app.db.session import get_db
@@ -82,9 +81,6 @@ Return ONLY a valid JSON object with this structure:
   ]
 }}
 """
-
-    def __init__(self):
-        self.config = get_ai_config()
 
     async def get_distortion_prompt(self, version: Optional[str] = None) -> Tuple[str, str]:
         """
