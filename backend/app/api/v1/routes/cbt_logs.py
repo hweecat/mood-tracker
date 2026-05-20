@@ -71,8 +71,9 @@ async def analyze_cbt(
     ai_client = get_ai_client()
 
     try:
+        request_with_user = request.model_copy(update={"user_id": current_user.id})
         result = await asyncio.wait_for(
-            ai_client.analyze_cbt(request),
+            ai_client.analyze_cbt(request_with_user),
             timeout=10.0
         )
         return result
