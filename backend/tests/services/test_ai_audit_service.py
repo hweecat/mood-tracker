@@ -49,11 +49,13 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
                 CBTAnalysisRequest(
                     situation="A private situation",
                     automatic_thought="A private automatic thought",
-                )
+                ),
+                user_id="user-123",
             )
 
     audit_in = mock_record.call_args.args[0]
     assert result.ai_analysis_id == "audit-reframe-1"
+    assert audit_in.user_id == "user-123"
     assert audit_in.provider == "gemini"
     assert audit_in.model == "gemini-1.5-flash"
     assert audit_in.operation == "generate_reframes"
@@ -100,9 +102,10 @@ async def test_gemini_analyze_cbt_records_failure_statuses_without_raw_request_p
             )
 
             with pytest.raises(type(exception)):
-                await client.analyze_cbt(request)
+                await client.analyze_cbt(request, user_id="user-123")
 
     audit_in = mock_record.call_args.args[0]
+    assert audit_in.user_id == "user-123"
     assert audit_in.status == expected_status
     assert audit_in.error_code == expected_error_code
     assert "jane@example.com" not in str(audit_in.masked_request_payload)

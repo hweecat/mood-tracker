@@ -13,7 +13,7 @@ class AIClientProtocol(ABC):
     """Abstract protocol for AI clients."""
 
     @abstractmethod
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(self, request: CBTAnalysisRequest, user_id: str | None = None) -> CBTAnalysisResponse:
         """Analyze CBT entry for distortions and generate reframes."""
         pass
 
@@ -25,7 +25,7 @@ class AIClientProtocol(ABC):
 class TextBlobClient(AIClientProtocol):
     """TextBlob-based AI client (Phase 1 implementation)."""
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
+    async def analyze_cbt(self, request: CBTAnalysisRequest, user_id: str | None = None) -> CBTAnalysisResponse:
         """TextBlob doesn't support CBT analysis - return empty response."""
         logger.warning("CBT analysis requested on TextBlob client (not supported)")
         return CBTAnalysisResponse(suggestions=[], reframes=[])
@@ -69,8 +69,8 @@ class GeminiAdapter(AIClientProtocol):
     def __init__(self):
         self.client = GeminiClient()
 
-    async def analyze_cbt(self, request: CBTAnalysisRequest) -> CBTAnalysisResponse:
-        return await self.client.analyze_cbt(request)
+    async def analyze_cbt(self, request: CBTAnalysisRequest, user_id: str | None = None) -> CBTAnalysisResponse:
+        return await self.client.analyze_cbt(request, user_id=user_id)
 
     async def analyze_mood(self, text: str) -> Optional[dict]:
         # Currently, we still use TextBlob for mood analysis as it's faster and sufficient.

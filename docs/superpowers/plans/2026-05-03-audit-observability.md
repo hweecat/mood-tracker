@@ -155,13 +155,17 @@ def test_create_ai_audit_log_persists_provider_metadata():
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/7.
 - [x] Local audit-focused verification after lint fix: `uv run --with ruff ruff check .` passed.
 - [x] Local audit-focused verification after lint fix: `uv run --with pytest pytest tests\services\test_gemini_client.py tests\services\test_ai_audit_service.py` passed with CI-equivalent Gemini env vars (`14 passed`).
-- [x] GitHub Actions CI passed for head `86c712f905d04cbef56b532fde379654061178dd` (run `25300237020`).
-- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [x] GitHub Actions CI passed for current head `53399baeb9006024e330fdfb4f4734d34c4eab80` (run `25492073370`).
+- [x] 2026-05-10 re-verification: focused audit suite `tests\repositories tests\services tests\integration\test_cbt_logs_feedback_capture.py` passed with `40 passed, 38 warnings`; `uv run --with ruff ruff check .` passed.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
+- [x] PR review follow-up: ensure every CBT analysis audit row is persisted with authenticated `user_id` before returning `aiAnalysisId`. Evidence: 2026-05-11 TDD RED confirmed route passed `None` and `GeminiClient.analyze_cbt()` rejected `user_id`; GREEN passed with `.\.uv-cache\test-venv\Scripts\python.exe -m pytest tests/integration/test_cbt_analyze_endpoint.py tests/services/test_ai_audit_service.py tests/integration/test_cbt_logs_feedback_capture.py tests/repositories/test_ai_audit_repository.py` (`26 passed, 35 warnings`) after running outside the sandbox for `tmp_path` permissions.
+- [ ] Integration note: provider fallback work adds a user-aware `analyze_cbt(..., user_id=current_user.id)` path; preserve that behavior when rebasing/merging audit and provider branches.
 
 ## Acceptance Criteria
 
 - Audit and feedback repository tests pass.
 - CBT log integration test proves user/model feedback is persisted.
 - Gemini audit no longer inserts columns that do not exist.
+- Analyze-then-save feedback linkage is user-scoped: returned analysis ids only link to audit rows owned by the current user.
 - No raw sensitive test strings appear in captured logs.
 - `migrations/verify/*` covers the new schema.
