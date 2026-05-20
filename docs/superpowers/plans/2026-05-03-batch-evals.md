@@ -111,10 +111,14 @@ python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl 
 ## Validation Status
 
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/9.
-- [x] GitHub Actions CI passed for head `bc1ac0c3d974c804605407bee62e99b9f5f9aaf8` (run `25299979604`).
-- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [x] GitHub Actions CI passed for current head `66e3b7baaa0af2054542a4e47b4a962dc6655a81` (run `25492104837`).
+- [x] 2026-05-10 re-verification: `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `19 passed`.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
 - [x] PR review follow-up: internal feedback loader coerces `null` or non-object nested `feedback_event`, `audit_log`, and response payload values to empty mappings before dereferencing.
 - [x] PR review follow-up: committed fixture detection uses repo-root-relative checks so external exports under similarly named paths are not misclassified as synthetic fixtures.
+- [x] Verification follow-up: coerce truthy non-object `accepted_reframe_payload` and `accepted_action_plan_payload` values before dereferencing internal feedback exports.
+- [x] 2026-05-11 TDD verification: adapter RED showed external `evals/fixtures` lookalike paths were misclassified and truthy non-object accepted payloads raised `AttributeError`; GREEN `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `21 passed`.
+- [x] 2026-05-19 review follow-up: public dataset loaders now allocate independent provenance dicts per `EvalExample`; RED regression reproduced shared mutable provenance and GREEN `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `22 passed`.
 
 ## Acceptance Criteria
 

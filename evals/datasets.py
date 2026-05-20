@@ -67,7 +67,7 @@ def load_cbt_bench_distortion_examples(
                     "situation": situation,
                 },
                 reference={"distortions": distortions},
-                provenance=provenance,
+                provenance=dict(provenance),
                 license="cc-by-nc-4.0",
                 metadata={"source_record_index": index},
             )
@@ -104,7 +104,7 @@ def load_cactus_examples(
                     "attitude": record.get("attitude"),
                 },
                 reference={"cbt_plan": record.get("cbt_plan", "")},
-                provenance=provenance,
+                provenance=dict(provenance),
                 license="gpl",
                 metadata={
                     "source_record_index": index,
@@ -136,8 +136,8 @@ def load_internal_feedback_examples(
         response_payload = _as_mapping(audit.get("response_payload"))
         generated_reframe = _first_text_item(response_payload.get("reframes"), "content")
         generated_action_plan = _first_text_item(response_payload.get("actionPlans"), "title")
-        accepted_reframe = feedback.get("accepted_reframe_payload") or {}
-        accepted_action_plan = feedback.get("accepted_action_plan_payload") or {}
+        accepted_reframe = _as_mapping(feedback.get("accepted_reframe_payload"))
+        accepted_action_plan = _as_mapping(feedback.get("accepted_action_plan_payload"))
 
         examples.append(
             EvalExample(
@@ -214,8 +214,11 @@ def _build_provenance(
 
 
 def _is_committed_fixture_path(path: Path) -> bool:
-    normalized_parts = {part.lower() for part in path.parts}
-    return "evals" in normalized_parts and "fixtures" in normalized_parts
+    repo_root = Path(__file__).resolve().parents[1]
+    fixture_root = (repo_root / "evals" / "fixtures").resolve(strict=False)
+    candidate = path if path.is_absolute() else repo_root / path
+
+    return candidate.resolve(strict=False).is_relative_to(fixture_root)
 
 
 def _load_json_records(path: Path) -> list[dict[str, Any]]:
