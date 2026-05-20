@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 
+from app.core.logging import get_logger
 from app.schemas.cbt import CBTAnalysisRequest
 from app.services.llm_provider import (
     LLMParseError,
@@ -12,6 +13,8 @@ from app.services.llm_provider import (
     LLMTimeoutError,
     minimize_cbt_request_for_provider,
 )
+
+logger = get_logger(__name__)
 
 
 CBT_OUTPUT_SCHEMA: dict[str, Any] = {
@@ -85,10 +88,22 @@ class OpenAIClient:
             payload = response.json()
             parsed = self._extract_structured_output(payload)
         except httpx.TimeoutException as exc:
+            logger.error(
+                "OpenAI provider request timed out",
+                extra={"error_type": type(exc).__name__},
+            )
             raise LLMTimeoutError("OpenAI provider request timed out") from exc
-        except (httpx.HTTPError, KeyError, TypeError) as exc:
+        except httpx.HTTPError as exc:
+            logger.error(
+                "OpenAI provider request failed",
+                extra={"error_type": type(exc).__name__},
+            )
             raise LLMProviderError("OpenAI provider request failed") from exc
-        except (json.JSONDecodeError, ValueError) as exc:
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError) as exc:
+            logger.error(
+                "OpenAI provider response parse failed",
+                extra={"error_type": type(exc).__name__},
+            )
             raise LLMParseError("OpenAI response was not valid CBT JSON") from exc
 
         return LLMResult(

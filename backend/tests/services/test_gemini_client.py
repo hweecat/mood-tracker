@@ -1,10 +1,12 @@
 # backend/tests/services/test_gemini_client.py
 
-import pytest
 import json
 import logging
+import pytest
 from unittest.mock import Mock, patch, AsyncMock
+from app.services.ai_client import GeminiLLMProvider
 from app.services.gemini_client import GeminiClient, SafetyException, ParseException
+from app.services.llm_provider import LLMResult
 from app.schemas.cbt import CBTAnalysisRequest, CBTAnalysisResponse, DistortionSuggestion, RationalReframe
 from google.generativeai.types import HarmProbability
 
@@ -16,6 +18,52 @@ def anyio_backend():
 
 class TestGeminiClient:
     """Tests for GeminiClient CBT analysis."""
+
+    @pytest.mark.anyio
+    async def test_llm_provider_returns_configured_provider_and_model_metadata(self):
+        """Gemini provider protocol results should preserve provider/model metadata."""
+        with patch('app.services.ai_client.GeminiClient') as mock_client_cls:
+            mock_client = mock_client_cls.return_value
+            mock_client._detect_distortions_with_retry = AsyncMock(
+                return_value=(
+                    [
+                        DistortionSuggestion(
+                            distortion="Overgeneralization",
+                            reasoning="Uses always",
+                        )
+                    ],
+                    "distortion-v1",
+                )
+            )
+            mock_client._generate_reframes_with_retry = AsyncMock(
+                return_value=(
+                    [
+                        RationalReframe(
+                            perspective="Balanced",
+                            content="Feedback is specific and actionable.",
+                        )
+                    ],
+                    "reframe-v1",
+                )
+            )
+            provider = GeminiLLMProvider("gemini-2.0-flash")
+
+            result = await provider.analyze_cbt(
+                CBTAnalysisRequest(
+                    situation="I got feedback from jane@example.com",
+                    automatic_thought="I always fail",
+                )
+            )
+
+        assert isinstance(result, LLMResult)
+        assert result.provider == "gemini"
+        assert result.model == "gemini-2.0-flash"
+        assert result.parsed_payload["prompt_version"] == "reframe-v1"
+        mock_client_cls.assert_called_once_with(model="gemini-2.0-flash")
+        mock_client._detect_distortions_with_retry.assert_awaited_once_with(
+            "I got feedback from [email]",
+            "I always fail",
+        )
 
     def test_init_creates_client(self):
         """Test GeminiClient initializes with config and client."""

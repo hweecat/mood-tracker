@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.core.ai_config import AIConfig, ProviderModel, parse_model_chain
 
@@ -36,3 +37,11 @@ def test_ai_config_exposes_provider_fallback_settings(monkeypatch):
         ProviderModel(provider="openai", model="gpt-5.5"),
         ProviderModel(provider="ollama", model="llama3.1"),
     ]
+
+
+def test_ai_config_rejects_non_positive_provider_timeout(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
+    monkeypatch.setenv("AI_PROVIDER_TIMEOUT", "0")
+
+    with pytest.raises(ValidationError, match="greater than 0"):
+        AIConfig()

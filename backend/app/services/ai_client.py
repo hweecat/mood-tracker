@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 import asyncio
+import hashlib
 import time
 from typing import Optional
 from textblob import TextBlob
@@ -210,6 +211,10 @@ def get_ai_client() -> AIClientProtocol:
 
 
 def _build_cbt_providers(config) -> list:
+    cache_key = _provider_cache_key(config)
+    if cache_key in _provider_cache:
+        return _provider_cache[cache_key]
+
     providers = []
     for item in config.cbt_model_chain:
         if item.provider == "gemini":
@@ -238,6 +243,7 @@ def _build_cbt_providers(config) -> list:
                     timeout=config.ai_provider_timeout,
                 )
             )
+    _provider_cache[cache_key] = providers
     return providers
 
 # Legacy function for backward compatibility

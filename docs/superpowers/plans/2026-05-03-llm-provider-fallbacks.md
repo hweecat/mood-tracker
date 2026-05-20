@@ -114,8 +114,18 @@ def test_parse_model_chain_rejects_unknown_provider():
 ## Validation Status
 
 - [x] PR opened: https://github.com/hweecat/mood-tracker/pull/5.
-- [x] GitHub Actions CI passed for head `81cc1fadec3f75c23f2805a916d58975eae7058f` (run `25285205456`).
-- [x] PR is ready for review and mergeable as of orchestration review on 2026-05-04.
+- [x] GitHub Actions CI passed for current head `26c21882e64ddd6c5474fe30fd3302d25a2306d8` (run `25492058106`).
+- [x] 2026-05-10 re-verification: focused provider suite `tests/services/test_llm_provider_config.py tests/services/test_llm_orchestrator.py tests/services/test_openai_client.py tests/services/test_ollama_client.py tests/services/test_ai_client_factory.py tests/services/test_gemini_client.py tests/integration/test_cbt_analyze_endpoint.py` passed with `43 passed, 33 warnings`.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
+- [x] PR review follow-up: map provider `LLMTimeoutError` to HTTP 504 instead of generic 503.
+- [x] PR review follow-up: add safe `error_type`/`error_class` logging metadata without raw exception text.
+- [x] Verification follow-up: add direct log-capture coverage proving OpenAI provider keys are not emitted to logs.
+- [x] Verification follow-up: add an invalid provider-timeout configuration test if timeout positivity remains part of the config contract.
+- [x] PR review follow-up: merge provider-client caching from PR #10 after its cache-key review is resolved.
+- [x] PR #10 review follow-up: cache invalidation must distinguish rotated non-empty OpenAI keys without logging the key.
+- [x] 2026-05-11 follow-up verification: focused tests for Gemini `LLMResult` metadata, OpenAI secret-safe failure logs, non-positive `AI_PROVIDER_TIMEOUT` validation, and OpenAI provider-cache invalidation passed with `4 passed, 1 warning`.
+- [x] 2026-05-11 broader provider verification: `tests/services/test_llm_provider_config.py tests/services/test_llm_orchestrator.py tests/services/test_openai_client.py tests/services/test_ollama_client.py tests/services/test_ai_client_factory.py tests/services/test_gemini_client.py tests/integration/test_cbt_analyze_endpoint.py` passed with `47 passed, 40 warnings`.
+- [x] 2026-05-19 review follow-up: malformed OpenAI structured-output items without `text` now normalize to `LLMParseError` instead of `LLMProviderError`; focused provider suite passed with `48 passed, 41 warnings`.
 
 ## Acceptance Criteria
 
@@ -124,3 +134,5 @@ def test_parse_model_chain_rejects_unknown_provider():
 - Gemini/OpenAI/Ollama providers are unit-tested without real network calls.
 - `/api/v1/cbt-logs/analyze` remains stable and includes provider metadata.
 - No provider-specific API key or raw prompt is logged.
+- Provider timeouts return timeout-specific API behavior and remain distinguishable from generic provider errors.
+- Provider-client reuse avoids per-request HTTP client pool churn, with safe cache invalidation on provider chain, endpoint, timeout, and credential changes.
