@@ -33,6 +33,7 @@ export interface MoodEntry {
 }
 
 export interface DistortionSuggestion {
+  id?: string;
   distortion: CognitiveDistortion;
   reasoning: string;
   confidence?: number;
@@ -62,10 +63,13 @@ export interface CrisisResource {
 export type AIFeedbackSource = 'accepted_ai' | 'edited_ai' | 'user_original';
 
 export interface CBTAnalysisResponse {
+  analysisId?: string;
+  aiAnalysisId?: string;
   suggestions: DistortionSuggestion[];
   reframes: RationalReframe[];
   actionPlans?: ActionPlanSuggestion[];
   promptVersion?: string;
+  prompt_version?: string;
 }
 
 export interface CBTLog {
@@ -81,13 +85,19 @@ export interface CBTLog {
   behavioralLink?: string;
   actionPlanStatus?: 'pending' | 'completed';
   // HITL Metadata
+  aiAnalysisId?: string | null;
   aiSuggestedDistortions?: CognitiveDistortion[];
+  acceptedDistortionsPayload?: DistortionSuggestion[];
+  ignoredDistortionsPayload?: DistortionSuggestion[];
   acceptedReframeId?: string | null;
+  acceptedReframePayload?: RationalReframe | null;
   dismissedReframeIds?: string[];
   ignoredReframeIds?: string[];
+  ignoredReframesPayload?: RationalReframe[];
   rationalResponseSource?: AIFeedbackSource;
   acceptedActionPlanId?: string | null;
   acceptedActionPlan?: ActionPlanSuggestion | null;
+  acceptedActionPlanPayload?: ActionPlanSuggestion | null;
   actionPlanSource?: AIFeedbackSource;
   feedbackSource?: AIFeedbackSource;
   aiAnalysis?: CBTAnalysisResponse | null;

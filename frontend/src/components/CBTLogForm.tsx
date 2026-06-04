@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion, CrisisResource, AIFeedbackSource } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion, CrisisResource, AIFeedbackSource, DistortionSuggestion, CBTAnalysisResponse } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
@@ -28,6 +28,40 @@ function crisisResourceHref(resource: CrisisResource) {
   return resource.url || '#';
 }
 
+function getAnalysisId(analysis: CBTAnalysisResponse | null) {
+  return analysis?.aiAnalysisId || analysis?.analysisId || null;
+}
+
+function getReframeId(reframe: RationalReframe, index: number) {
+  return reframe.id ?? `reframe-${index + 1}`;
+}
+
+function getAcceptedDistortionsPayload(
+  suggestions: DistortionSuggestion[],
+  selectedDistortions: CognitiveDistortion[],
+) {
+  const selected = new Set(selectedDistortions);
+  return suggestions.filter(suggestion => selected.has(suggestion.distortion));
+}
+
+function getIgnoredDistortionsPayload(
+  suggestions: DistortionSuggestion[],
+  selectedDistortions: CognitiveDistortion[],
+) {
+  const selected = new Set(selectedDistortions);
+  return suggestions.filter(suggestion => !selected.has(suggestion.distortion));
+}
+
+function getIgnoredReframesPayload(
+  reframes: RationalReframe[],
+  ignoredReframeIds: string[],
+) {
+  const ignored = new Set(ignoredReframeIds);
+  return reframes
+    .map((reframe, index) => ({ ...reframe, id: getReframeId(reframe, index) }))
+    .filter(reframe => reframe.id && ignored.has(reframe.id));
+}
+
 const DEFAULT_FORM_DATA = {
   situation: '',
   automaticThoughts: '',
@@ -37,13 +71,19 @@ const DEFAULT_FORM_DATA = {
   moodAfter: 5 as MoodRating,
   behavioralLink: '',
   actionPlanStatus: 'pending' as 'pending' | 'completed',
+  aiAnalysisId: null as string | null,
   aiSuggestedDistortions: [] as CognitiveDistortion[],
+  acceptedDistortionsPayload: [] as DistortionSuggestion[],
+  ignoredDistortionsPayload: [] as DistortionSuggestion[],
   acceptedReframeId: null as string | null,
+  acceptedReframePayload: null as RationalReframe | null,
   dismissedReframeIds: [] as string[],
   ignoredReframeIds: [] as string[],
+  ignoredReframesPayload: [] as RationalReframe[],
   rationalResponseSource: 'user_original' as AIFeedbackSource,
   acceptedActionPlanId: null as string | null,
   acceptedActionPlan: null as ActionPlanSuggestion | null,
+  acceptedActionPlanPayload: null as ActionPlanSuggestion | null,
   actionPlanSource: 'user_original' as AIFeedbackSource,
   feedbackSource: 'user_original' as AIFeedbackSource,
 };
@@ -64,13 +104,19 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     moodAfter: initialData.moodAfter || 5,
     behavioralLink: initialData.behavioralLink || '',
     actionPlanStatus: initialData.actionPlanStatus || 'pending',
+    aiAnalysisId: initialData.aiAnalysisId || null,
     aiSuggestedDistortions: initialData.aiSuggestedDistortions || [],
+    acceptedDistortionsPayload: initialData.acceptedDistortionsPayload || [],
+    ignoredDistortionsPayload: initialData.ignoredDistortionsPayload || [],
     acceptedReframeId: initialData.acceptedReframeId || null,
+    acceptedReframePayload: initialData.acceptedReframePayload || null,
     dismissedReframeIds: initialData.dismissedReframeIds || [],
     ignoredReframeIds: initialData.ignoredReframeIds || initialData.dismissedReframeIds || [],
+    ignoredReframesPayload: initialData.ignoredReframesPayload || [],
     rationalResponseSource: initialData.rationalResponseSource || 'user_original',
     acceptedActionPlanId: initialData.acceptedActionPlanId || null,
     acceptedActionPlan: initialData.acceptedActionPlan || null,
+    acceptedActionPlanPayload: initialData.acceptedActionPlanPayload || initialData.acceptedActionPlan || null,
     actionPlanSource: initialData.actionPlanSource || 'user_original',
     feedbackSource: initialData.feedbackSource || initialData.actionPlanSource || initialData.rationalResponseSource || 'user_original',
   } : draftData);
@@ -89,6 +135,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     if (analysis) {
       setFormData(prev => ({
         ...prev,
+        aiAnalysisId: getAnalysisId(analysis),
         aiSuggestedDistortions: analysis.suggestions.map(s => s.distortion),
       }));
     }
@@ -121,6 +168,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       ...prev,
       rationalResponse: reframe.content,
       acceptedReframeId: reframe.id || null,
+      acceptedReframePayload: reframe,
       rationalResponseSource: 'accepted_ai',
       feedbackSource: 'accepted_ai',
     }));
@@ -131,6 +179,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       ...prev,
       rationalResponse: reframe.content,
       acceptedReframeId: reframe.id || null,
+      acceptedReframePayload: reframe,
       rationalResponseSource: 'edited_ai',
       feedbackSource: 'edited_ai',
     }));
@@ -140,12 +189,19 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     setFormData(prev => ({
       ...prev,
       acceptedReframeId: prev.acceptedReframeId === reframeId ? null : prev.acceptedReframeId,
+      acceptedReframePayload: prev.acceptedReframeId === reframeId ? null : prev.acceptedReframePayload,
       dismissedReframeIds: (prev.dismissedReframeIds || []).includes(reframeId)
         ? (prev.dismissedReframeIds || [])
         : [...(prev.dismissedReframeIds || []), reframeId],
       ignoredReframeIds: (prev.ignoredReframeIds || []).includes(reframeId)
         ? (prev.ignoredReframeIds || [])
         : [...(prev.ignoredReframeIds || []), reframeId],
+      ignoredReframesPayload: getIgnoredReframesPayload(
+        analysis?.reframes || [],
+        (prev.ignoredReframeIds || []).includes(reframeId)
+          ? (prev.ignoredReframeIds || [])
+          : [...(prev.ignoredReframeIds || []), reframeId],
+      ),
     }));
   };
 
@@ -156,6 +212,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       actionPlanStatus: 'pending',
       acceptedActionPlanId: plan.id || null,
       acceptedActionPlan: plan,
+      acceptedActionPlanPayload: plan,
       actionPlanSource: 'accepted_ai',
       feedbackSource: 'accepted_ai',
     }));
@@ -168,6 +225,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
       actionPlanStatus: 'pending',
       acceptedActionPlanId: plan.id || null,
       acceptedActionPlan: plan,
+      acceptedActionPlanPayload: plan,
       actionPlanSource: 'edited_ai',
       feedbackSource: 'edited_ai',
     }));
@@ -179,7 +237,22 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    const suggestions = analysis?.suggestions || [];
+    const ignoredReframeIds = formData.ignoredReframeIds || [];
+    onSubmit({
+      ...formData,
+      aiAnalysisId: formData.aiAnalysisId || getAnalysisId(analysis),
+      acceptedDistortionsPayload: suggestions.length > 0
+        ? getAcceptedDistortionsPayload(suggestions, formData.distortions)
+        : formData.acceptedDistortionsPayload,
+      ignoredDistortionsPayload: suggestions.length > 0
+        ? getIgnoredDistortionsPayload(suggestions, formData.distortions)
+        : formData.ignoredDistortionsPayload,
+      ignoredReframesPayload: analysis?.reframes
+        ? getIgnoredReframesPayload(analysis.reframes, ignoredReframeIds)
+        : formData.ignoredReframesPayload,
+      acceptedActionPlanPayload: formData.acceptedActionPlanPayload || formData.acceptedActionPlan,
+    });
     
     if (!initialData) {
       setDraftData(DEFAULT_FORM_DATA);

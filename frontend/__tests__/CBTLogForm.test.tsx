@@ -29,8 +29,10 @@ vi.mock('lucide-react', () => ({
 }));
 
 const MOCK_ANALYSIS = {
+  aiAnalysisId: 'audit-analysis-1',
   suggestions: [
-    { distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' }
+    { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' },
+    { id: 'suggestion-2', distortion: 'Catastrophizing', reasoning: 'Reason 2' }
   ],
   reframes: [
     { id: 'reframe-1', perspective: 'Compassionate', content: 'Reframe 1' },
@@ -297,6 +299,8 @@ describe('CBTLogForm Flow & Integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByText('All-or-Nothing Thinking').closest('button')!);
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /accept compassionate reframe/i }));
@@ -306,12 +310,22 @@ describe('CBTLogForm Flow & Integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /finalize entry/i }));
 
     expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      aiAnalysisId: 'audit-analysis-1',
+      acceptedDistortionsPayload: [
+        { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' },
+      ],
+      ignoredDistortionsPayload: [
+        { id: 'suggestion-2', distortion: 'Catastrophizing', reasoning: 'Reason 2' },
+      ],
       acceptedReframeId: 'reframe-1',
+      acceptedReframePayload: MOCK_ANALYSIS.reframes[0],
       dismissedReframeIds: ['reframe-2'],
       ignoredReframeIds: ['reframe-2'],
+      ignoredReframesPayload: [MOCK_ANALYSIS.reframes[1]],
       rationalResponseSource: 'accepted_ai',
       acceptedActionPlanId: 'plan-1',
       acceptedActionPlan: MOCK_ANALYSIS.actionPlans[0],
+      acceptedActionPlanPayload: MOCK_ANALYSIS.actionPlans[0],
       actionPlanSource: 'accepted_ai',
       feedbackSource: 'accepted_ai',
     }));
