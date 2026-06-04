@@ -107,6 +107,10 @@ class GeminiClient:
                     "reframes": [
                         reframe.model_dump(exclude_none=True) for reframe in reframes
                     ],
+                    "actionPlans": [
+                        action_plan.model_dump(exclude_none=True)
+                        for action_plan in action_plans
+                    ],
                 },
             )
             if not isinstance(audit_log_id, str):
@@ -420,7 +424,6 @@ class GeminiClient:
         latency_ms: int,
         status: str,
         error_code: str | None = None,
-        user_id: str | None = None,
         response_payload: dict | None = None,
     ) -> str | None:
         """Record a PII-minimized AI audit entry."""

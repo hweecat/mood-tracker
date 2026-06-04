@@ -114,6 +114,7 @@ class LLMOrchestrator:
                     latency_ms=result.latency_ms,
                     safety_ratings=result.safety_ratings,
                     prompt_version_id=result.parsed_payload.get("prompt_version"),
+                    response_payload=result.parsed_payload,
                 )
                 response.analysis_id = audit_id
                 response.ai_analysis_id = audit_id
@@ -135,6 +136,7 @@ class LLMOrchestrator:
         latency_ms: int,
         error_code: str | None = None,
         prompt_version_id: str | None = None,
+        response_payload: dict | None = None,
         safety_ratings: dict | None = None,
     ) -> str | None:
         audit_in = AIAuditLogCreate(
@@ -149,6 +151,7 @@ class LLMOrchestrator:
                 "automatic_thought_length": len(request.automatic_thought),
                 "situation_length": len(request.situation),
             },
+            response_payload=response_payload,
             safety_ratings=safety_ratings,
             safety_tier=safety_tier,
             latency_ms=latency_ms,
