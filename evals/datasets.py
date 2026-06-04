@@ -134,8 +134,28 @@ def load_internal_feedback_examples(
         feedback = _as_mapping(record.get("feedback_event"))
         audit = _as_mapping(record.get("audit_log"))
         response_payload = _as_mapping(audit.get("response_payload"))
-        generated_reframe = _first_text_item(response_payload.get("reframes"), "content")
-        generated_action_plan = _first_text_item(response_payload.get("actionPlans"), "title")
+        generated_suggestions = _as_list_of_mappings(
+            feedback.get("ai_suggestions_payload")
+            or response_payload.get("suggestions")
+            or response_payload.get("distortions")
+        )
+        generated_reframes = _as_list_of_mappings(
+            feedback.get("ai_reframes_payload") or response_payload.get("reframes")
+        )
+        generated_action_plans = _as_list_of_mappings(
+            feedback.get("ai_action_plans_payload")
+            or response_payload.get("actionPlans")
+            or response_payload.get("action_plans")
+        )
+        generated_response_payload = dict(response_payload)
+        if generated_suggestions:
+            generated_response_payload["suggestions"] = generated_suggestions
+        if generated_reframes:
+            generated_response_payload["reframes"] = generated_reframes
+        if generated_action_plans:
+            generated_response_payload["actionPlans"] = generated_action_plans
+        generated_reframe = _first_text_item(generated_reframes, "content")
+        generated_action_plan = _first_text_item(generated_action_plans, "title")
         accepted_reframe = _as_mapping(feedback.get("accepted_reframe_payload"))
         accepted_action_plan = _as_mapping(feedback.get("accepted_action_plan_payload"))
 
@@ -146,9 +166,10 @@ def load_internal_feedback_examples(
                 task="user_preference_alignment",
                 input={
                     "masked_request_payload": audit.get("masked_request_payload", {}),
+                    "generated_suggestions": generated_suggestions,
                     "generated_reframe": generated_reframe,
                     "generated_action_plan": generated_action_plan,
-                    "generated_response_payload": response_payload,
+                    "generated_response_payload": generated_response_payload,
                 },
                 reference={
                     "accepted_response": _first_present(
@@ -160,8 +181,8 @@ def load_internal_feedback_examples(
                     "accepted_reframe": accepted_reframe,
                     "accepted_action_plan": accepted_action_plan,
                     "user_action_plan": feedback.get("user_action_plan", ""),
-                    "accepted_distortions": feedback.get(
-                        "accepted_distortions_payload", []
+                    "accepted_distortions": _as_list_of_mappings(
+                        feedback.get("accepted_distortions_payload")
                     ),
                     "source": feedback.get("source"),
                 },
@@ -259,9 +280,11 @@ def _first_present(record: dict[str, Any], *keys: str) -> Any:
 
 
 def _as_mapping(value: Any) -> dict[str, Any]:
+    value = _decode_json_string(value)
     if isinstance(value, Mapping):
         return dict(value)
     return {}
+
 
 def _as_list(value: Any) -> list[str]:
     if value is None:
@@ -269,6 +292,22 @@ def _as_list(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value if str(item)]
     return [str(value)]
+
+
+def _as_list_of_mappings(value: Any) -> list[dict[str, Any]]:
+    value = _decode_json_string(value)
+    if not isinstance(value, list):
+        return []
+    return [dict(item) for item in value if isinstance(item, Mapping)]
+
+
+def _decode_json_string(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return None
 
 
 def _first_text_item(value: Any, key: str) -> str:

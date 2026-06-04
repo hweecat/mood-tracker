@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from evals.datasets import (
@@ -201,3 +202,141 @@ def test_load_internal_feedback_coerces_truthy_non_object_accepted_payloads(tmp_
     assert examples[0].reference["accepted_response"] == ""
     assert examples[0].reference["accepted_reframe"] == {}
     assert examples[0].reference["accepted_action_plan"] == {}
+
+
+def test_internal_feedback_uses_feedback_event_ai_payload_snapshot(tmp_path):
+    export_path = tmp_path / "ai_feedback_events_with_feedback_snapshot.jsonl"
+    export_path.write_text(
+        """{"feedback_event": {"id": "feedback-with-snapshot", "ai_suggestions_payload": [{"distortion": "Catastrophizing", "reasoning": "Worst-case prediction"}], "ai_reframes_payload": [{"content": "This is one setback, not the whole story.", "perspective": "balanced"}], "ai_action_plans_payload": [{"title": "Take one next step", "steps": ["Write a two-line email"]}], "accepted_reframe_payload": {"content": "A setback can be repaired."}, "accepted_action_plan_payload": {"title": "Email for help"}, "user_rational_response": "A setback can be repaired.", "user_action_plan": "Email for help.", "source": "edited_ai"}, "audit_log": {"id": "audit-without-response", "response_payload": {}, "masked_request_payload": {"automatic_thought": "I ruined everything"}}}
+""",
+        encoding="utf-8",
+    )
+
+    examples = load_internal_feedback_examples(export_path)
+
+    assert examples[0].input["generated_suggestions"] == [
+        {"distortion": "Catastrophizing", "reasoning": "Worst-case prediction"}
+    ]
+    assert examples[0].input["generated_reframe"] == "This is one setback, not the whole story."
+    assert examples[0].input["generated_action_plan"] == "Take one next step"
+    assert examples[0].input["generated_response_payload"] == {
+        "suggestions": [
+            {
+                "distortion": "Catastrophizing",
+                "reasoning": "Worst-case prediction",
+            }
+        ],
+        "reframes": [
+            {
+                "content": "This is one setback, not the whole story.",
+                "perspective": "balanced",
+            }
+        ],
+        "actionPlans": [
+            {
+                "title": "Take one next step",
+                "steps": ["Write a two-line email"],
+            }
+        ],
+    }
+
+
+def test_internal_feedback_decodes_json_string_payload_columns(tmp_path):
+    export_path = tmp_path / "ai_feedback_events_with_string_payloads.jsonl"
+    record = {
+        "feedback_event": {
+            "id": "feedback-string-payloads",
+            "ai_suggestions_payload": json.dumps(
+                [
+                    {
+                        "distortion": "Catastrophizing",
+                        "reasoning": "Worst-case prediction",
+                    }
+                ]
+            ),
+            "ai_reframes_payload": json.dumps(
+                [
+                    {
+                        "content": "This is one setback, not the whole story.",
+                        "perspective": "balanced",
+                    }
+                ]
+            ),
+            "ai_action_plans_payload": json.dumps(
+                [
+                    {
+                        "title": "Take one next step",
+                        "steps": ["Write a two-line email"],
+                    }
+                ]
+            ),
+            "accepted_reframe_payload": json.dumps(
+                {"content": "A setback can be repaired.", "perspective": "balanced"}
+            ),
+            "accepted_action_plan_payload": json.dumps(
+                {"title": "Email for help", "steps": ["Ask for a review"]}
+            ),
+            "accepted_distortions_payload": json.dumps(
+                [{"distortion": "Catastrophizing", "confidence": 0.8}]
+            ),
+            "source": "edited_ai",
+        },
+        "audit_log": {
+            "id": "audit-string-payloads",
+            "response_payload": json.dumps(
+                {
+                    "suggestions": [
+                        {
+                            "distortion": "Should not replace feedback snapshot",
+                        }
+                    ],
+                    "reframes": [
+                        {
+                            "content": "Should not replace feedback snapshot.",
+                        }
+                    ],
+                    "actionPlans": [{"title": "Should not replace feedback snapshot"}],
+                }
+            ),
+        },
+    }
+    export_path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+
+    examples = load_internal_feedback_examples(export_path)
+
+    assert examples[0].input["generated_suggestions"] == [
+        {"distortion": "Catastrophizing", "reasoning": "Worst-case prediction"}
+    ]
+    assert examples[0].input["generated_reframe"] == "This is one setback, not the whole story."
+    assert examples[0].input["generated_action_plan"] == "Take one next step"
+    assert examples[0].input["generated_response_payload"] == {
+        "suggestions": [
+            {
+                "distortion": "Catastrophizing",
+                "reasoning": "Worst-case prediction",
+            }
+        ],
+        "reframes": [
+            {
+                "content": "This is one setback, not the whole story.",
+                "perspective": "balanced",
+            }
+        ],
+        "actionPlans": [
+            {
+                "title": "Take one next step",
+                "steps": ["Write a two-line email"],
+            }
+        ],
+    }
+    assert examples[0].reference["accepted_reframe"] == {
+        "content": "A setback can be repaired.",
+        "perspective": "balanced",
+    }
+    assert examples[0].reference["accepted_action_plan"] == {
+        "title": "Email for help",
+        "steps": ["Ask for a review"],
+    }
+    assert examples[0].reference["accepted_distortions"] == [
+        {"distortion": "Catastrophizing", "confidence": 0.8}
+    ]
