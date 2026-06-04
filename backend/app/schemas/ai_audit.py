@@ -27,6 +27,9 @@ class AIFeedbackEventCreate(TunedBaseModel):
     audit_log_id: Optional[str] = None
     user_id: str
     cbt_log_id: str
+    ai_suggestions_payload: Optional[list[dict[str, Any]]] = None
+    ai_reframes_payload: Optional[list[dict[str, Any]]] = None
+    ai_action_plans_payload: Optional[list[dict[str, Any]]] = None
     accepted_distortions_payload: Optional[list[dict[str, Any]]] = None
     ignored_distortions_payload: Optional[list[dict[str, Any]]] = None
     accepted_reframe_payload: Optional[dict[str, Any]] = None

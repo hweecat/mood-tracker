@@ -85,6 +85,9 @@ def init_db():
                     audit_log_id TEXT,
                     user_id TEXT NOT NULL,
                     cbt_log_id TEXT NOT NULL,
+                    ai_suggestions_payload TEXT,
+                    ai_reframes_payload TEXT,
+                    ai_action_plans_payload TEXT,
                     accepted_distortions_payload TEXT,
                     ignored_distortions_payload TEXT,
                     accepted_reframe_payload TEXT,
@@ -281,6 +284,9 @@ def _ensure_ai_audit_tables(conn: sqlite3.Connection):
             audit_log_id TEXT,
             user_id TEXT NOT NULL,
             cbt_log_id TEXT NOT NULL,
+            ai_suggestions_payload TEXT,
+            ai_reframes_payload TEXT,
+            ai_action_plans_payload TEXT,
             accepted_distortions_payload TEXT,
             ignored_distortions_payload TEXT,
             accepted_reframe_payload TEXT,
@@ -292,6 +298,14 @@ def _ensure_ai_audit_tables(conn: sqlite3.Connection):
             created_at INTEGER NOT NULL
         )
     """)
+    feedback_columns = _table_columns(conn, "ai_feedback_events")
+    for column in [
+        "ai_suggestions_payload",
+        "ai_reframes_payload",
+        "ai_action_plans_payload",
+    ]:
+        if column not in feedback_columns:
+            conn.execute(f"ALTER TABLE ai_feedback_events ADD COLUMN {column} TEXT")
 
 def _ensure_cbt_log_columns(conn: sqlite3.Connection):
     cbt_columns = _table_columns(conn, "cbt_logs")

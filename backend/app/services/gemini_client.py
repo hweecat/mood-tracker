@@ -81,6 +81,15 @@ class GeminiClient:
                 latency_ms=latency_ms,
                 status="success",
                 user_id=user_id,
+                response_payload={
+                    "suggestions": [
+                        suggestion.model_dump(exclude_none=True)
+                        for suggestion in distortions
+                    ],
+                    "reframes": [
+                        reframe.model_dump(exclude_none=True) for reframe in reframes
+                    ],
+                },
             )
             if not isinstance(audit_log_id, str):
                 audit_log_id = None
@@ -318,6 +327,7 @@ class GeminiClient:
         status: str,
         error_code: str | None = None,
         user_id: str | None = None,
+        response_payload: dict | None = None,
     ) -> str | None:
         """Record a PII-minimized AI audit entry."""
         audit_in = AIAuditLogCreate(
@@ -336,6 +346,7 @@ class GeminiClient:
             latency_ms=latency_ms,
             status=status,
             error_code=error_code,
+            response_payload=response_payload,
             schema_version=1,
         )
         return ai_audit_service.record_ai_audit_log(audit_in)

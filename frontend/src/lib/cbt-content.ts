@@ -43,6 +43,12 @@ export const CBT_DISTORTIONS: DistortionDefinition[] = [
     reframe: 'I cannot predict the future. If I prepare well, I increase my chances of success.'
   },
   {
+    name: 'Catastrophizing',
+    definition: 'Expecting the worst possible outcome or treating a difficult situation as if it will be disastrous.',
+    example: 'If I make one mistake in this meeting, my career is over.',
+    reframe: 'A mistake would be uncomfortable, but it would not erase my work or prevent me from recovering.'
+  },
+  {
     name: 'Magnification/Minimization',
     definition: 'Exaggerating the importance of things (such as your mistake) or inappropriately shrinking things until they appear tiny (your own desirable qualities).',
     example: 'My small mistake is catastrophic, but my big promotion was just luck.',

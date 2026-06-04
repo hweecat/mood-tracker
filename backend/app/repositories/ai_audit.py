@@ -77,6 +77,9 @@ def create_ai_feedback_event(db: Connection, feedback_in: AIFeedbackEventCreate)
             audit_log_id,
             user_id,
             cbt_log_id,
+            ai_suggestions_payload,
+            ai_reframes_payload,
+            ai_action_plans_payload,
             accepted_distortions_payload,
             ignored_distortions_payload,
             accepted_reframe_payload,
@@ -87,13 +90,16 @@ def create_ai_feedback_event(db: Connection, feedback_in: AIFeedbackEventCreate)
             source,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             row_id,
             feedback_in.audit_log_id,
             feedback_in.user_id,
             feedback_in.cbt_log_id,
+            _serialize_json(feedback_in.ai_suggestions_payload),
+            _serialize_json(feedback_in.ai_reframes_payload),
+            _serialize_json(feedback_in.ai_action_plans_payload),
             _serialize_json(feedback_in.accepted_distortions_payload),
             _serialize_json(feedback_in.ignored_distortions_payload),
             _serialize_json(feedback_in.accepted_reframe_payload),

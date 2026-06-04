@@ -70,6 +70,20 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
         "automatic_thought_length": 27,
         "situation_length": 19,
     }
+    assert audit_in.response_payload == {
+        "suggestions": [
+            {
+                "distortion": "All-or-Nothing Thinking",
+                "reasoning": "The thought uses absolute language.",
+            }
+        ],
+        "reframes": [
+            {
+                "perspective": "Compassionate",
+                "content": "One difficult moment does not define you.",
+            }
+        ],
+    }
 
 
 @pytest.mark.anyio

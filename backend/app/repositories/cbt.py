@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from typing import List
+from typing import Any, List
 from sqlite3 import Connection
 from app.schemas.cbt import CBTLogPublic, CBTLogCreate
 from app.schemas.ai_audit import AIFeedbackEventCreate
@@ -78,18 +78,29 @@ def _capture_ai_feedback_event(db: Connection, user_id: str, log_in: CBTLogCreat
         {"id": reframe_id}
         for reframe_id in (log_in.ignored_reframe_ids or [])
     ]
-    audit_log_id = _verified_user_audit_log_id(
+    audit_log = _verified_user_audit_log(
         db,
         audit_log_id=log_in.ai_analysis_id,
         user_id=user_id,
     )
+    ai_response_payload = _decode_mapping(audit_log["response_payload"]) if audit_log else {}
 
     create_ai_feedback_event(
         db,
         AIFeedbackEventCreate(
-            audit_log_id=audit_log_id,
+            audit_log_id=audit_log["id"] if audit_log else None,
             user_id=user_id,
             cbt_log_id=log_in.id,
+            ai_suggestions_payload=_list_of_mappings(
+                ai_response_payload.get("suggestions")
+                or ai_response_payload.get("distortions")
+            ),
+            ai_reframes_payload=_list_of_mappings(ai_response_payload.get("reframes")),
+            ai_action_plans_payload=_list_of_mappings(
+                ai_response_payload.get("actionPlans")
+                or ai_response_payload.get("action_plans")
+                or ai_response_payload.get("actionPlansPayload")
+            ),
             accepted_distortions_payload=accepted_distortions,
             ignored_distortions_payload=ignored_distortions,
             accepted_reframe_payload=(
@@ -118,19 +129,37 @@ def _capture_ai_feedback_event(db: Connection, user_id: str, log_in: CBTLogCreat
     )
 
 
-def _verified_user_audit_log_id(
+def _verified_user_audit_log(
     db: Connection,
     audit_log_id: str | None,
     user_id: str,
-) -> str | None:
+) -> sqlite3.Row | None:
     if not audit_log_id or not _table_exists(db, "ai_audit_logs"):
         return None
 
     row = db.execute(
-        "SELECT id FROM ai_audit_logs WHERE id = ? AND user_id = ?",
+        "SELECT id, response_payload FROM ai_audit_logs WHERE id = ? AND user_id = ?",
         (audit_log_id, user_id),
     ).fetchone()
-    return audit_log_id if row else None
+    return row
+
+
+def _decode_mapping(payload: Any) -> dict[str, Any]:
+    if isinstance(payload, dict):
+        return payload
+    if not isinstance(payload, str):
+        return {}
+    try:
+        decoded = json.loads(payload)
+    except json.JSONDecodeError:
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def _list_of_mappings(payload: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(payload, list):
+        return None
+    return [item for item in payload if isinstance(item, dict)]
 
 
 def _table_exists(db: Connection, table_name: str) -> bool:

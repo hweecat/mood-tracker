@@ -17,7 +17,45 @@ def test_create_cbt_log_captures_ai_feedback_event(tmp_path):
         session.init_db()
     finally:
         session.DATABASE_PATH = original_database_path
-    _insert_audit_log(db_path, audit_id="audit-1", user_id="1")
+    ai_response_payload = {
+        "suggestions": [
+            {
+                "id": "suggestion-1",
+                "distortion": "All-or-Nothing Thinking",
+                "reasoning": "Uses all-or-nothing language.",
+            },
+            {
+                "id": "suggestion-2",
+                "distortion": "Catastrophizing",
+                "reasoning": "Jumps to worst-case outcome.",
+            },
+        ],
+        "reframes": [
+            {
+                "id": "reframe-1",
+                "perspective": "Balanced",
+                "content": "I missed one deadline, and I can recover.",
+            },
+            {
+                "id": "reframe-2",
+                "perspective": "Compassionate",
+                "content": "This is stressful, and one mistake is not my whole story.",
+            },
+        ],
+        "actionPlans": [
+            {
+                "id": "plan-1",
+                "title": "Email my teacher",
+                "steps": ["Ask about a revised deadline"],
+            }
+        ],
+    }
+    _insert_audit_log(
+        db_path,
+        audit_id="audit-1",
+        user_id="1",
+        response_payload=ai_response_payload,
+    )
 
     def override_get_db():
         conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -47,9 +85,40 @@ def test_create_cbt_log_captures_ai_feedback_event(tmp_path):
                     "Catastrophizing",
                 ],
                 "aiAnalysisId": "audit-1",
+                "acceptedDistortionsPayload": [
+                    {
+                        "id": "suggestion-1",
+                        "distortion": "All-or-Nothing Thinking",
+                        "reasoning": "Uses all-or-nothing language.",
+                    }
+                ],
+                "ignoredDistortionsPayload": [
+                    {
+                        "id": "suggestion-2",
+                        "distortion": "Catastrophizing",
+                        "reasoning": "Jumps to worst-case outcome.",
+                    }
+                ],
                 "acceptedReframeId": "reframe-1",
                 "ignoredReframeIds": ["reframe-2"],
+                "acceptedReframePayload": {
+                    "id": "reframe-1",
+                    "perspective": "Balanced",
+                    "content": "I missed one deadline, and I can recover.",
+                },
+                "ignoredReframesPayload": [
+                    {
+                        "id": "reframe-2",
+                        "perspective": "Compassionate",
+                        "content": "This is stressful, and one mistake is not my whole story.",
+                    }
+                ],
                 "acceptedActionPlanId": "plan-1",
+                "acceptedActionPlanPayload": {
+                    "id": "plan-1",
+                    "title": "Email my teacher",
+                    "steps": ["Ask about a revised deadline"],
+                },
                 "feedbackSource": "edited_ai",
             },
         )
@@ -69,16 +138,41 @@ def test_create_cbt_log_captures_ai_feedback_event(tmp_path):
     assert row["audit_log_id"] == "audit-1"
     assert row["user_id"] == "1"
     assert row["cbt_log_id"] == "cbt-1"
+    assert json.loads(row["ai_suggestions_payload"]) == ai_response_payload["suggestions"]
+    assert json.loads(row["ai_reframes_payload"]) == ai_response_payload["reframes"]
+    assert json.loads(row["ai_action_plans_payload"]) == ai_response_payload["actionPlans"]
     assert json.loads(row["accepted_distortions_payload"]) == [
-        {"distortion": "All-or-Nothing Thinking"}
+        {
+            "id": "suggestion-1",
+            "distortion": "All-or-Nothing Thinking",
+            "reasoning": "Uses all-or-nothing language.",
+        }
     ]
     assert json.loads(row["ignored_distortions_payload"]) == [
-        {"distortion": "Catastrophizing"}
+        {
+            "id": "suggestion-2",
+            "distortion": "Catastrophizing",
+            "reasoning": "Jumps to worst-case outcome.",
+        }
     ]
-    assert json.loads(row["accepted_reframe_payload"]) == {"id": "reframe-1"}
-    assert json.loads(row["ignored_reframes_payload"]) == [{"id": "reframe-2"}]
+    assert json.loads(row["accepted_reframe_payload"]) == {
+        "id": "reframe-1",
+        "perspective": "Balanced",
+        "content": "I missed one deadline, and I can recover.",
+    }
+    assert json.loads(row["ignored_reframes_payload"]) == [
+        {
+            "id": "reframe-2",
+            "perspective": "Compassionate",
+            "content": "This is stressful, and one mistake is not my whole story.",
+        }
+    ]
     assert row["user_rational_response"] == "I missed one deadline, and I can recover."
-    assert json.loads(row["accepted_action_plan_payload"]) == {"id": "plan-1"}
+    assert json.loads(row["accepted_action_plan_payload"]) == {
+        "id": "plan-1",
+        "title": "Email my teacher",
+        "steps": ["Ask about a revised deadline"],
+    }
     assert row["user_action_plan"] == "Email my teacher"
     assert row["source"] == "edited_ai"
 
@@ -131,16 +225,21 @@ def test_create_cbt_log_does_not_log_raw_sensitive_feedback_text(tmp_path, caplo
         assert "jane@example.com" not in str(record.__dict__)
 
 
-def _insert_audit_log(db_path, audit_id: str, user_id: str) -> None:
+def _insert_audit_log(
+    db_path,
+    audit_id: str,
+    user_id: str,
+    response_payload: dict | None = None,
+) -> None:
     db = sqlite3.connect(db_path)
     try:
         db.execute(
             """
             INSERT INTO ai_audit_logs (
                 id, correlation_id, user_id, operation, provider, model,
-                latency_ms, status, schema_version, created_at
+                response_payload, latency_ms, status, schema_version, created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 audit_id,
@@ -149,6 +248,7 @@ def _insert_audit_log(db_path, audit_id: str, user_id: str) -> None:
                 "analyze_cbt",
                 "gemini",
                 "gemini-1.5-flash",
+                json.dumps(response_payload, sort_keys=True) if response_payload else None,
                 25,
                 "success",
                 1,
