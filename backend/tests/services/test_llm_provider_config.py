@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.core.ai_config import AIConfig, ProviderModel, parse_model_chain
 
@@ -36,3 +37,22 @@ def test_ai_config_exposes_provider_fallback_settings(monkeypatch):
         ProviderModel(provider="openai", model="gpt-5.5"),
         ProviderModel(provider="ollama", model="llama3.1"),
     ]
+
+
+@pytest.mark.parametrize("chain", ["ollama:llama3", "openai:gpt-5.5"])
+def test_ai_config_allows_non_gemini_chain_without_gemini_api_key(monkeypatch, chain):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("AI_CBT_MODEL_CHAIN", chain)
+
+    config = AIConfig(_env_file=None)
+
+    assert config.gemini_api_key is None
+    assert config.cbt_model_chain[0].provider == chain.split(":", 1)[0]
+
+
+def test_ai_config_requires_gemini_api_key_when_chain_uses_gemini(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("AI_CBT_MODEL_CHAIN", "openai:gpt-5.5,gemini:gemini-1.5-flash")
+
+    with pytest.raises(ValidationError, match="GEMINI_API_KEY is required"):
+        AIConfig(_env_file=None)
