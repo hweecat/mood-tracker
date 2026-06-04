@@ -15,10 +15,13 @@ def anyio_backend():
 async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_service():
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
@@ -65,6 +68,20 @@ async def test_gemini_analyze_cbt_records_provider_metadata_through_audit_servic
         "automatic_thought_length": 27,
         "situation_length": 19,
     }
+    assert audit_in.response_payload == {
+        "suggestions": [
+            {
+                "distortion": "All-or-Nothing Thinking",
+                "reasoning": "The thought uses absolute language.",
+            }
+        ],
+        "reframes": [
+            {
+                "perspective": "Compassionate",
+                "content": "One difficult moment does not define you.",
+            }
+        ],
+    }
 
 
 @pytest.mark.anyio
@@ -84,10 +101,13 @@ async def test_gemini_analyze_cbt_records_failure_statuses_without_raw_request_p
 ):
     with patch("app.services.gemini_client.get_ai_config") as mock_config, \
          patch("app.services.gemini_client.genai.configure"), \
-         patch("app.services.gemini_client.genai.GenerativeModel"):
+         patch("app.services.gemini_client.genai.GenerativeModel"), \
+         patch("app.services.prompt_manager.get_ai_config") as mock_prompt_config:
 
         mock_config.return_value.gemini_api_key = "test-key"
         mock_config.return_value.gemini_model = "gemini-1.5-flash"
+        mock_prompt_config.return_value.gemini_api_key = "test-key"
+        mock_prompt_config.return_value.gemini_model = "gemini-1.5-flash"
         client = GeminiClient()
 
         with patch.object(client, "_detect_distortions_with_retry") as mock_detect, \
