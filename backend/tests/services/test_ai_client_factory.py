@@ -11,6 +11,17 @@ from app.services.ai_client import (
     TextBlobClient,
     get_ai_client,
 )
+import app.services.ai_client as ai_client_module
+
+
+@pytest.fixture(autouse=True)
+def reset_ai_client_cache():
+    ai_client_module._cached_ai_client = None
+    ai_client_module._cached_chain_key = None
+    yield
+    ai_client_module._cached_ai_client = None
+    ai_client_module._cached_chain_key = None
+
 
 class TestAIClientFactory:
     """Tests for the AI client factory logic (get_ai_client)."""
@@ -61,12 +72,12 @@ class TestAIClientFactory:
         """Test factory returns TextBlobClient when Gemini is disabled and no other providers are configured."""
         with patch('app.services.ai_client.get_ai_config') as mock_config, \
              patch('app.services.ai_client._gemini_available', True):
-            
+
             mock_config.return_value.enable_gemini = False
             mock_config.return_value.cbt_model_chain = [
                 ProviderModel(provider="gemini", model="gemini-1.5-flash")
             ]
-            
+
             client = get_ai_client()
             assert isinstance(client, TextBlobClient)
 
@@ -130,7 +141,7 @@ class TestAIClientFactory:
         """Test factory falls back to TextBlob if Gemini library is missing."""
         with patch('app.services.ai_client.get_ai_config') as mock_config, \
              patch('app.services.ai_client._gemini_available', False):
-            
+
             mock_config.return_value.enable_gemini = True
             mock_config.return_value.cbt_model_chain = [
                 ProviderModel(provider="gemini", model="gemini-1.5-flash")
@@ -138,6 +149,25 @@ class TestAIClientFactory:
 
             client = get_ai_client()
             assert isinstance(client, TextBlobClient)
+
+    def test_get_ai_client_reuses_cached_provider_clients_for_same_config(self):
+        """Repeated factory calls should reuse provider clients and avoid new connection pools."""
+        with patch('app.services.ai_client.get_ai_config') as mock_config, \
+             patch('app.services.ai_client.OpenAIClient') as mock_openai_client:
+
+            mock_config.return_value.enable_gemini = False
+            mock_config.return_value.cbt_model_chain = [
+                ProviderModel(provider="openai", model="gpt-5.5")
+            ]
+            mock_config.return_value.openai_api_key = "test-openai"
+            mock_config.return_value.ai_provider_timeout = 7
+            mock_config.return_value.ollama_base_url = "http://localhost:11434"
+
+            first = get_ai_client()
+            second = get_ai_client()
+
+            assert first is second
+            mock_openai_client.assert_called_once()
 
     @pytest.mark.anyio
     async def test_textblob_mood_failure_logs_exception_type_without_raw_text(self, caplog):
