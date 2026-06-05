@@ -7,6 +7,7 @@ export type CognitiveDistortion =
   | 'Disqualifying the Positive'
   | 'Mind Reading'
   | 'Fortune Telling'
+  | 'Catastrophizing'
   | 'Magnification/Minimization'
   | 'Emotional Reasoning'
   | 'Should Statements'

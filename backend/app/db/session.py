@@ -54,8 +54,49 @@ def init_db():
                     mood_before INTEGER NOT NULL,
                     mood_after INTEGER,
                     behavioral_link TEXT,
+                    action_plan_status TEXT NOT NULL DEFAULT 'pending',
                     user_id TEXT NOT NULL DEFAULT '1',
                     FOREIGN KEY (user_id) REFERENCES users(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS ai_audit_logs (
+                    id TEXT PRIMARY KEY,
+                    correlation_id TEXT NOT NULL,
+                    user_id TEXT,
+                    entry_type TEXT,
+                    entry_id TEXT,
+                    operation TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    prompt_version_id TEXT,
+                    masked_request_payload TEXT,
+                    response_payload TEXT,
+                    safety_ratings TEXT,
+                    safety_tier TEXT,
+                    latency_ms INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    error_code TEXT,
+                    schema_version INTEGER NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS ai_feedback_events (
+                    id TEXT PRIMARY KEY,
+                    audit_log_id TEXT,
+                    user_id TEXT NOT NULL,
+                    cbt_log_id TEXT NOT NULL,
+                    ai_suggestions_payload TEXT,
+                    ai_reframes_payload TEXT,
+                    ai_action_plans_payload TEXT,
+                    accepted_distortions_payload TEXT,
+                    ignored_distortions_payload TEXT,
+                    accepted_reframe_payload TEXT,
+                    ignored_reframes_payload TEXT,
+                    user_rational_response TEXT,
+                    accepted_action_plan_payload TEXT,
+                    user_action_plan TEXT,
+                    source TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
                 );
             """)
             
@@ -140,6 +181,9 @@ def init_db():
             if "password_reset_requested_at" not in columns:
                 print("Migrating users table: adding password_reset_requested_at...")
                 conn.execute("ALTER TABLE users ADD COLUMN password_reset_requested_at INTEGER")
+
+            _ensure_cbt_log_columns(conn)
+            _ensure_ai_audit_tables(conn)
             
             # Ensure Demo User has a password hash and username
             demo_password_hash = get_password_hash("demo")
@@ -152,6 +196,127 @@ def init_db():
 
     finally:
         conn.close()
+
+def _ensure_ai_audit_tables(conn: sqlite3.Connection):
+    audit_columns = _table_columns(conn, "ai_audit_logs")
+    if not audit_columns:
+        conn.execute("""
+            CREATE TABLE ai_audit_logs (
+                id TEXT PRIMARY KEY,
+                correlation_id TEXT NOT NULL,
+                user_id TEXT,
+                entry_type TEXT,
+                entry_id TEXT,
+                operation TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                prompt_version_id TEXT,
+                masked_request_payload TEXT,
+                response_payload TEXT,
+                safety_ratings TEXT,
+                safety_tier TEXT,
+                latency_ms INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                error_code TEXT,
+                schema_version INTEGER NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
+    elif "provider" not in audit_columns:
+        conn.execute("ALTER TABLE ai_audit_logs RENAME TO ai_audit_logs_backup")
+        conn.execute("""
+            CREATE TABLE ai_audit_logs (
+                id TEXT PRIMARY KEY,
+                correlation_id TEXT NOT NULL,
+                user_id TEXT,
+                entry_type TEXT,
+                entry_id TEXT,
+                operation TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                prompt_version_id TEXT,
+                masked_request_payload TEXT,
+                response_payload TEXT,
+                safety_ratings TEXT,
+                safety_tier TEXT,
+                latency_ms INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                error_code TEXT,
+                schema_version INTEGER NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
+        conn.execute("""
+            INSERT INTO ai_audit_logs (
+                id,
+                correlation_id,
+                operation,
+                provider,
+                model,
+                masked_request_payload,
+                response_payload,
+                safety_ratings,
+                latency_ms,
+                status,
+                schema_version,
+                created_at
+            )
+            SELECT
+                id,
+                correlation_id,
+                'unknown',
+                'gemini',
+                'unknown',
+                masked_payload,
+                response_payload,
+                safety_ratings,
+                0,
+                status,
+                1,
+                timestamp
+            FROM ai_audit_logs_backup
+        """)
+        conn.execute("DROP TABLE ai_audit_logs_backup")
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS ai_feedback_events (
+            id TEXT PRIMARY KEY,
+            audit_log_id TEXT,
+            user_id TEXT NOT NULL,
+            cbt_log_id TEXT NOT NULL,
+            ai_suggestions_payload TEXT,
+            ai_reframes_payload TEXT,
+            ai_action_plans_payload TEXT,
+            accepted_distortions_payload TEXT,
+            ignored_distortions_payload TEXT,
+            accepted_reframe_payload TEXT,
+            ignored_reframes_payload TEXT,
+            user_rational_response TEXT,
+            accepted_action_plan_payload TEXT,
+            user_action_plan TEXT,
+            source TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    """)
+    feedback_columns = _table_columns(conn, "ai_feedback_events")
+    for column in [
+        "ai_suggestions_payload",
+        "ai_reframes_payload",
+        "ai_action_plans_payload",
+    ]:
+        if column not in feedback_columns:
+            conn.execute(f"ALTER TABLE ai_feedback_events ADD COLUMN {column} TEXT")
+
+def _ensure_cbt_log_columns(conn: sqlite3.Connection):
+    cbt_columns = _table_columns(conn, "cbt_logs")
+    if cbt_columns and "action_plan_status" not in cbt_columns:
+        conn.execute(
+            "ALTER TABLE cbt_logs ADD COLUMN action_plan_status TEXT NOT NULL DEFAULT 'pending'"
+        )
+
+def _table_columns(conn: sqlite3.Connection, table_name: str) -> list[str]:
+    cursor = conn.execute(f"PRAGMA table_info({table_name})")
+    return [row[1] for row in cursor.fetchall()]
 
 def get_db():
     # Ensure the directory exists

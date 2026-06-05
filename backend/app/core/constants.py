@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "moodtrackersecret123")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 
-# The 13 cognitive distortions from Cognitive Behavioral Therapy
+# Canonical cognitive distortions from Cognitive Behavioral Therapy
 # Reference: Burns, David D. (1980). Feeling Good: The New Mood Therapy.
 COGNITIVE_DISTORTIONS = [
     "All-or-Nothing Thinking",
@@ -21,6 +21,7 @@ COGNITIVE_DISTORTIONS = [
     "Disqualifying the Positive",
     "Mind Reading",
     "Fortune Telling",
+    "Catastrophizing",
     "Magnification/Minimization",
     "Emotional Reasoning",
     "Should Statements",

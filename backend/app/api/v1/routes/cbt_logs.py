@@ -71,8 +71,9 @@ async def analyze_cbt(
     ai_client = get_ai_client()
 
     try:
+        request_with_user = request.model_copy(update={"user_id": current_user.id})
         result = await asyncio.wait_for(
-            ai_client.analyze_cbt(request),
+            ai_client.analyze_cbt(request_with_user, user_id=current_user.id),
             timeout=10.0
         )
         return result
@@ -94,7 +95,7 @@ async def analyze_cbt(
             detail="Analysis timed out. Please try again."
         )
     except Exception as e:
-        logger.error("AI analysis failed", extra={"error": str(e)})
+        logger.error("AI analysis failed", extra={"error_type": type(e).__name__})
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Analysis service unavailable"
