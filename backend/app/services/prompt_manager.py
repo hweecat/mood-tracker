@@ -1,7 +1,6 @@
 # backend/app/services/prompt_manager.py
 
 from typing import Optional, Tuple
-from app.core.ai_config import get_ai_config
 from app.core.constants import COGNITIVE_DISTORTIONS
 from app.core.logging import get_logger
 from app.db.session import get_db
@@ -35,38 +34,53 @@ Return ONLY a valid JSON object with this structure:
 """
 
     DEFAULT_REFRAMING_PROMPT = """
-You are a cognitive behavioral therapy assistant. Generate 3 distinct rational reframes for the following automatic thought.
+You are a cognitive behavioral therapy assistant. Generate 3 distinct rational reframes and 1 to 3 optional action plans for the following automatic thought.
 
 Situation: {situation}
 Automatic Thought: {automatic_thought}
 Detected Distortions: {distortions}
+
+Write in warm, non-diagnostic language. validate the user's feeling, avoid diagnosis, do not minimize the concern, and preserve the user's agency.
 
 Generate exactly 3 rational reframes, each from a different perspective:
 1. Compassionate - A kind, understanding perspective
 2. Logical - A fact-based, analytical perspective
 3. Evidence-based - A perspective based on available evidence
 
+Then generate 1 to 3 optional self-help action plans. Each plan should be concrete, small, and framed as one small next step the user can choose, edit, or ignore.
+
+If the content suggests crisis or self-harm, do not generate ordinary action plans; keep the response on the crisis safety path.
+
 Return ONLY a valid JSON object with this structure:
 {{
   "reframes": [
     {{
+      "id": "reframe-1",
       "perspective": "Compassionate",
       "content": "reframe content"
     }},
     {{
+      "id": "reframe-2",
       "perspective": "Logical",
       "content": "reframe content"
     }},
     {{
+      "id": "reframe-3",
       "perspective": "Evidence-based",
       "content": "reframe content"
+    }}
+  ],
+  "action_plans": [
+    {{
+      "id": "plan-1",
+      "title": "short title",
+      "rationale": "why this optional step may help",
+      "steps": ["one concrete step within the user's control"],
+      "timeframe": "today"
     }}
   ]
 }}
 """
-
-    def __init__(self):
-        self.config = get_ai_config()
 
     async def get_distortion_prompt(self, version: Optional[str] = None) -> Tuple[str, str]:
         """

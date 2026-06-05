@@ -74,8 +74,14 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 | --- | --- | --- | --- |
 | Backend | `UV_CACHE_DIR=.uv-cache GEMINI_API_KEY=test-key uv run --with pytest pytest` from `.worktrees/audit-observability/backend` | Pass | 42 passed, 56 warnings. Without a dummy `GEMINI_API_KEY`, 8 existing Gemini tests fail because `AIConfig.gemini_api_key` is required during `PromptManager` initialization. |
 | Backend sibling worktrees | Same command in parallel | Inconclusive | Parallel `uv` environment creation in OneDrive timed out. Workers should run the same command serially in their own worktree before feature edits. |
-| Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
+| Frontend | Vitest and Playwright from `.worktrees/mobile-usability/frontend` | Passed | 2026-05-19 Windows helper workaround allowed `%LOCALAPPDATA%\OpenAI\Codex\bin\node.exe`; TypeScript passed, full Vitest passed with `32 passed`, and Playwright mobile visual flow passed at 320/375/390/768/1280 px. |
 | Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
+
+## Workstream Progress
+
+| Workstream | Branch | Status | Latest Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| CBT quality/action plans | `codex/cbt-quality-action-plans` | Backend contract/docs implemented; mobile UI coordination verified | PR #6 head `1dfe1c8` has green CI run `25298850294`; 2026-05-19 focused backend re-verification passed with `53 passed, 36 warnings`. | PR #6 still reports draft. Action plans are present in backend response/types/hooks and API v2 docs; `codex/mobile-usability` now surfaces action plans and submits accepted action-plan metadata with frontend and Playwright evidence. |
 
 ## Orchestrator Responsibilities
 

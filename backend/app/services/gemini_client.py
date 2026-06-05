@@ -7,11 +7,13 @@ import time
 from typing import List, Tuple, Dict
 from google import generativeai as genai
 from google.generativeai.types import GenerationConfig, HarmCategory, HarmProbability
+from pydantic import ValidationError
 from app.core.ai_config import get_ai_config
 from app.core.constants import COGNITIVE_DISTORTIONS
 from app.schemas.cbt import (
     CBTAnalysisRequest,
     CBTAnalysisResponse,
+    CBTActionPlan,
     DistortionSuggestion,
     RationalReframe
 )
@@ -20,18 +22,20 @@ from app.services.prompt_manager import PromptManager
 from app.core.logging import get_logger
 from app.schemas.ai_audit import AIAuditLogCreate
 from app.services import ai_audit_service
+from app.services.pii_masking import mask_provider_text
 
 logger = get_logger(__name__)
 
 class GeminiClient:
     """Gemini AI client for cognitive distortion detection and rational reframing."""
 
-    def __init__(self):
+    def __init__(self, model: str | None = None):
         self.config = get_ai_config()
+        self.model_name = model or self.config.gemini_model
         # Initialize the SDK
         if self.config.gemini_api_key:
             genai.configure(api_key=self.config.gemini_api_key)
-        self.model = genai.GenerativeModel(self.config.gemini_model)
+        self.model = genai.GenerativeModel(self.model_name)
         self.safety_handler = SafetyHandler()
         self.prompt_manager = PromptManager()
 
@@ -63,16 +67,30 @@ class GeminiClient:
             )
             prompt_version = version_id
 
-            # 2. Generate reframes
+            # 2. Generate reframes and optional action plans
             distortion_names = [d.distortion for d in distortions]
-            reframes, reframe_prompt_version = await self._generate_reframes_with_retry(
+            reframes, action_plans, reframe_prompt_version = await self._generate_reframes_and_action_plans_with_retry(
                 request.situation,
                 request.automatic_thought,
                 distortion_names
             )
 
             latency_ms = int((time.time() - start_time) * 1000)
-            # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
+            prompt_version = reframe_prompt_version
+
+            try:
+                response = CBTAnalysisResponse(
+                    suggestions=distortions,
+                    reframes=reframes,
+                    action_plans=action_plans,
+                    prompt_version=reframe_prompt_version,
+                    provider="gemini",
+                    model=self.model_name,
+                )
+            except ValidationError as exc:
+                raise ParseException("Invalid AI response format") from exc
+
+            # 3. Log audit (PII-free) only after response contract validation succeeds.
             audit_log_id = self._log_audit(
                 request=request,
                 request_id=request_id,
@@ -89,17 +107,17 @@ class GeminiClient:
                     "reframes": [
                         reframe.model_dump(exclude_none=True) for reframe in reframes
                     ],
+                    "actionPlans": [
+                        action_plan.model_dump(exclude_none=True)
+                        for action_plan in action_plans
+                    ],
                 },
             )
             if not isinstance(audit_log_id, str):
                 audit_log_id = None
 
-            response = CBTAnalysisResponse(
-                suggestions=distortions,
-                reframes=reframes,
-                prompt_version=prompt_version,
-                ai_analysis_id=audit_log_id,
-            )
+            response.analysis_id = audit_log_id
+            response.ai_analysis_id = audit_log_id
 
             return response
 
@@ -202,6 +220,31 @@ class GeminiClient:
                 )
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
+    async def _generate_reframes_and_action_plans_with_retry(
+        self,
+        situation: str,
+        automatic_thought: str,
+        distortions: List[str]
+    ) -> Tuple[List[RationalReframe], List[CBTActionPlan], str]:
+        """Generate reframes and action plans with retry logic."""
+        for attempt in range(self.config.ai_max_retries + 1):
+            try:
+                return await self._generate_reframes_and_action_plans(
+                    situation,
+                    automatic_thought,
+                    distortions,
+                )
+            except (ParseException, SafetyException):
+                raise
+            except Exception as e:
+                if attempt == self.config.ai_max_retries:
+                    raise
+                logger.warning(
+                    "Reframe/action-plan generation failed, retrying",
+                    extra={"attempt": attempt + 1, "error_type": type(e).__name__}
+                )
+                await asyncio.sleep(2 ** attempt)
+
     async def _detect_distortions(
         self,
         situation: str,
@@ -210,8 +253,8 @@ class GeminiClient:
         """Detect cognitive distortions using Gemini."""
         prompt_template, version_id = await self.prompt_manager.get_distortion_prompt()
         prompt = prompt_template.format(
-            situation=situation,
-            automatic_thought=automatic_thought
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought)
         )
 
         # Configure generation for JSON output
@@ -244,6 +287,7 @@ class GeminiClient:
                 # Filter to ensure only predefined distortions are returned
                 if distortion_name in COGNITIVE_DISTORTIONS:
                     suggestions.append(DistortionSuggestion(
+                        id=item.get("id") or f"suggestion-{len(suggestions) + 1}",
                         distortion=distortion_name,
                         reasoning=item.get("reasoning", "No reasoning provided")
                     ))
@@ -267,8 +311,8 @@ class GeminiClient:
         """Generate rational reframes using Gemini."""
         prompt_template, version_id = await self.prompt_manager.get_reframing_prompt()
         prompt = prompt_template.format(
-            situation=situation,
-            automatic_thought=automatic_thought,
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought),
             distortions=", ".join(distortions)
         )
 
@@ -295,13 +339,66 @@ class GeminiClient:
             data = json.loads(response.text)
             reframes = [
                 RationalReframe(
+                    id=item.get("id") or f"reframe-{index}",
                     perspective=item["perspective"],
                     content=item["content"]
                 )
-                for item in data.get("reframes", [])
+                for index, item in enumerate(data.get("reframes", []), start=1)
             ]
             return reframes, version_id
         except (json.JSONDecodeError, KeyError, TypeError) as e:
+            logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
+            raise ParseException("Invalid AI response format")
+
+    async def _generate_reframes_and_action_plans(
+        self,
+        situation: str,
+        automatic_thought: str,
+        distortions: List[str]
+    ) -> Tuple[List[RationalReframe], List[CBTActionPlan], str]:
+        """Generate rational reframes and optional action plans using Gemini."""
+        prompt_template, version_id = await self.prompt_manager.get_reframing_prompt()
+        prompt = prompt_template.format(
+            situation=mask_provider_text(situation),
+            automatic_thought=mask_provider_text(automatic_thought),
+            distortions=", ".join(distortions)
+        )
+
+        generation_config = GenerationConfig(
+            temperature=self.config.gemini_temperature,
+            response_mime_type="application/json"
+        )
+
+        response = await asyncio.to_thread(
+            self.model.generate_content,
+            prompt,
+            generation_config=generation_config
+        )
+
+        safety_ratings = self._extract_safety_ratings(response)
+        safety_result = self.safety_handler.evaluate(safety_ratings)
+
+        if safety_result.trigger_crisis:
+            raise SafetyException(safety_result.message, safety_result.crisis_resources)
+
+        try:
+            data = json.loads(response.text)
+            reframes = [
+                RationalReframe(
+                    id=item.get("id") or f"reframe-{index}",
+                    perspective=item["perspective"],
+                    content=item["content"]
+                )
+                for index, item in enumerate(data.get("reframes", []), start=1)
+            ]
+            action_plans = []
+            for index, item in enumerate(data.get("action_plans", data.get("actionPlans", [])), start=1):
+                plan_data = dict(item)
+                if not plan_data.get("id"):
+                    plan_data["id"] = f"plan-{index}"
+                action_plans.append(CBTActionPlan.model_validate(plan_data))
+            return reframes, action_plans, version_id
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
             logger.error("Failed to parse Gemini response", extra={"error_type": type(e).__name__})
             raise ParseException("Invalid AI response format")
 
@@ -320,13 +417,13 @@ class GeminiClient:
     def _log_audit(
         self,
         request: CBTAnalysisRequest,
+        user_id: str | None,
         request_id: str,
         prompt_version_id: str,
         safety_tier: str,
         latency_ms: int,
         status: str,
         error_code: str | None = None,
-        user_id: str | None = None,
         response_payload: dict | None = None,
     ) -> str | None:
         """Record a PII-minimized AI audit entry."""
@@ -336,7 +433,7 @@ class GeminiClient:
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider="gemini",
-            model=self.config.gemini_model,
+            model=self.model_name,
             prompt_version_id=prompt_version_id,
             masked_request_payload={
                 "automatic_thought_length": len(request.automatic_thought),

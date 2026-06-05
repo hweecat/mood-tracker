@@ -1,4 +1,5 @@
 from typing import Any, List, Optional
+from pydantic import Field, model_validator
 from app.schemas.base import TunedBaseModel
 
 # --- Phase 2: AI Analysis & HITL Schemas ---
@@ -7,6 +8,7 @@ class DistortionSuggestion(TunedBaseModel):
     """
     An AI-suggested distortion that the user can review and select.
     """
+    id: str
     distortion: str
     reasoning: str
     confidence: Optional[float] = None # AI's confidence in this suggestion
@@ -15,8 +17,20 @@ class RationalReframe(TunedBaseModel):
     """
     An AI-generated healthier alternative to an automatic thought.
     """
+    id: str
     perspective: str # e.g., "Compassionate", "Logical", "Evidence-based"
     content: str
+
+
+class CBTActionPlan(TunedBaseModel):
+    """
+    An optional, concrete self-help step the user can accept or edit.
+    """
+    id: str
+    title: str
+    rationale: str
+    steps: List[str] = Field(min_length=1)
+    timeframe: str
 
 class CBTAnalysisRequest(TunedBaseModel):
     """
@@ -32,8 +46,27 @@ class CBTAnalysisResponse(TunedBaseModel):
     """
     suggestions: List[DistortionSuggestion]
     reframes: List[RationalReframe]
+    action_plans: List[CBTActionPlan] = Field(default_factory=list, max_length=3)
+    analysis_id: Optional[str] = None
     prompt_version: Optional[str] = None
     ai_analysis_id: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_unique_response_ids(self):
+        self._reject_duplicate_ids("suggestion", [item.id for item in self.suggestions])
+        self._reject_duplicate_ids("reframe", [item.id for item in self.reframes])
+        self._reject_duplicate_ids("action plan", [item.id for item in self.action_plans])
+        return self
+
+    @staticmethod
+    def _reject_duplicate_ids(label: str, ids: List[str]) -> None:
+        seen = set()
+        for item_id in ids:
+            if item_id in seen:
+                raise ValueError(f"Duplicate {label} id: {item_id}")
+            seen.add(item_id)
 
 # --- Core CBT Log Schemas ---
 

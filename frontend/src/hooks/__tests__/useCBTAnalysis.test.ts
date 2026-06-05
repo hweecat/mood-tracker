@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCBTAnalysis } from '../useCBTAnalysis';
+import type { CBTAnalysisResponse } from '@/types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 vi.mock('next-auth/react', () => ({
@@ -14,13 +15,26 @@ vi.mock('next-auth/react', () => ({
 
 // Mock responses
 const MOCK_SUCCESS_RESPONSE = {
+  analysisId: 'audit-1',
   suggestions: [
-    { distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
+    { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
   ],
   reframes: [
-    { perspective: 'Compassionate', content: 'Test reframe' }
+    { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
   ],
-  prompt_version: '1.0.0'
+  actionPlans: [
+    {
+      id: 'plan-1',
+      title: 'Take one step',
+      rationale: 'Small steps can reduce avoidance.',
+      steps: ['Write one sentence about what happened.'],
+      timeframe: 'today',
+    }
+  ],
+  promptVersion: '1.0.0',
+  aiAnalysisId: 'audit-1',
+  provider: 'openai',
+  model: 'gpt-5.5',
 };
 
 describe('useCBTAnalysis Hook', () => {
@@ -49,7 +63,27 @@ describe('useCBTAnalysis Hook', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.analysis).toEqual(MOCK_SUCCESS_RESPONSE);
+    expect(result.current.analysis?.actionPlans[0].id).toBe('plan-1');
     expect(result.current.error).toBeNull();
+  });
+
+  it('types the required analysis response contract', () => {
+    const response: CBTAnalysisResponse = {
+      analysisId: 'audit-1',
+      suggestions: [
+        { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Test reasoning' }
+      ],
+      reframes: [
+        { id: 'reframe-1', perspective: 'Compassionate', content: 'Test reframe' }
+      ],
+      actionPlans: [],
+      provider: 'openai',
+      model: 'gpt-5.5',
+      aiAnalysisId: 'audit-1',
+    };
+
+    expect(response.actionPlans).toEqual([]);
+    expect(response.analysisId).toBe('audit-1');
   });
 
   it('handles validation error (empty inputs)', async () => {

@@ -39,25 +39,42 @@ class TestCBTAnalyzeEndpoint:
         return {
             "suggestions": [
                 {
+                    "id": "suggestion-1",
                     "distortion": "all-or-nothing thinking",
                     "reasoning": "The thought uses absolute terms like 'never' despite evidence to the contrary"
                 }
             ],
             "reframes": [
                 {
+                    "id": "reframe-1",
                     "perspective": "Compassionate",
                     "content": "One test doesn't define your intelligence. You've succeeded before."
                 },
                 {
+                    "id": "reframe-2",
                     "perspective": "Logical",
                     "content": "This is one test among many. You can improve with practice."
                 },
                 {
+                    "id": "reframe-3",
                     "perspective": "Evidence-based",
                     "content": "You've gotten good grades before. This test doesn't change that."
                 }
             ],
-            "prompt_version": "1.0.0"
+            "actionPlans": [
+                {
+                    "id": "plan-1",
+                    "title": "Review one problem",
+                    "rationale": "A small review step can turn the setback into useful information.",
+                    "steps": ["Choose one missed question and identify the first confusing step."],
+                    "timeframe": "today"
+                }
+            ],
+            "prompt_version": "1.0.0",
+            "analysis_id": "audit-1",
+            "provider": "openai",
+            "model": "gpt-5.5",
+            "ai_analysis_id": "audit-1",
         }
 
     async def test_analyze_endpoint_accepts_post(self, async_client, valid_request, mock_ai_response):
@@ -137,8 +154,32 @@ class TestCBTAnalyzeEndpoint:
         assert "suggestions" in data
         assert "reframes" in data
         assert "promptVersion" in data # Pydantic converts to camelCase
+        assert "actionPlans" in data
+        assert data["provider"] == "openai"
+        assert data["model"] == "gpt-5.5"
+        assert data["analysisId"] == "audit-1"
+        assert data["aiAnalysisId"] == "audit-1"
         assert isinstance(data["suggestions"], list)
         assert isinstance(data["reframes"], list)
+        assert data["actionPlans"][0]["id"] == "plan-1"
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_passes_user_id_to_ai_client(self, mock_get_client, async_client, valid_request, mock_ai_response):
+        """Test /analyze attaches the authenticated user id to AI audit creation."""
+        captured = {}
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            captured["user_id"] = kwargs.get("user_id")
+            return mock_ai_response
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert captured["user_id"] == "1"
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):
@@ -159,6 +200,29 @@ class TestCBTAnalyzeEndpoint:
         assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
         data = response.json()
         assert "detail" in data
+        assert data["detail"]["trigger"] == "safety"
+        assert "crisis_resources" in data["detail"]
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_handles_provider_safety_block(self, mock_get_client, async_client, valid_request):
+        """Test /analyze endpoint handles provider-orchestrator safety blocks correctly."""
+        from app.services.llm_provider import LLMSafetyBlocked
+
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            raise LLMSafetyBlocked(
+                "Safety message",
+                crisis_resources=[{"name": "Test Crisis Line", "phone": "988"}],
+            )
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
+        data = response.json()
         assert data["detail"]["trigger"] == "safety"
         assert "crisis_resources" in data["detail"]
 
@@ -223,7 +287,7 @@ class TestCBTAnalyzeEndpoint:
         """Test /analyze endpoint returns suggestions with expected fields."""
         mock_ai_response = {
             "suggestions": [
-                {"distortion": "overgeneralization", "reasoning": "Using words like always/never"}
+                {"id": "suggestion-1", "distortion": "overgeneralization", "reasoning": "Using words like always/never"}
             ],
             "reframes": [],
             "promptVersion": "1.0.0"
@@ -247,7 +311,7 @@ class TestCBTAnalyzeEndpoint:
         mock_ai_response = {
             "suggestions": [],
             "reframes": [
-                {"perspective": "Compassionate", "content": "A kind response"}
+                {"id": "reframe-1", "perspective": "Compassionate", "content": "A kind response"}
             ],
             "promptVersion": "1.0.0"
         }

@@ -8,6 +8,7 @@ from app.schemas.cbt import CBTLogPublic, CBTLogCreate, CBTAnalysisRequest, CBTA
 from app.repositories.cbt import get_cbt_logs, create_cbt_log, update_cbt_log, delete_cbt_log
 from app.services.ai_client import get_ai_client
 from app.services.gemini_client import SafetyException
+from app.services.llm_provider import LLMSafetyBlocked
 from app.core.logging import get_logger
 
 from app.api.deps import get_current_user
@@ -79,6 +80,16 @@ async def analyze_cbt(
         return result
     except SafetyException as e:
         # Fixed: avoid using 'message' in extra as it's reserved
+        logger.warning("Safety exception triggered", extra={"detail": e.message})
+        raise HTTPException(
+            status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+            detail={
+                "message": e.message,
+                "trigger": "safety",
+                "crisis_resources": e.crisis_resources
+            }
+        )
+    except LLMSafetyBlocked as e:
         logger.warning("Safety exception triggered", extra={"detail": e.message})
         raise HTTPException(
             status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,

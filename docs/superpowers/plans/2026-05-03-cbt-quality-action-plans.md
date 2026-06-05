@@ -36,11 +36,28 @@
 - Response schema must include stable ids for suggestions, reframes, and action plans.
 - Existing clients should not break if they ignore `actionPlans`.
 
+## Status
+
+- Backend implementation verified with `GEMINI_API_KEY=test-key uv run --with pytest pytest -p no:cacheprovider`: 91 passed, 81 warnings.
+- Focused action-plan parser verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py -q`: 9 passed.
+- Focused review-regression verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_llm_orchestrator.py tests/services/test_gemini_client.py tests/services/test_ai_audit_service.py -q`: 42 passed, 27 warnings.
+- Focused provider safety verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py tests/services/test_ollama_client.py -q`: 8 passed.
+- Focused provider PII masking verification: `uv run --with pytest pytest -p no:cacheprovider tests/services/test_openai_client.py::test_openai_prompt_masks_direct_identifiers_before_provider_call tests/services/test_ollama_client.py::test_ollama_prompt_masks_direct_identifiers_before_provider_call tests/services/test_gemini_client.py::TestGeminiClient::test_generate_reframes_and_action_plans_masks_direct_identifiers -q`: 3 passed.
+- Backend lint verified with `uv run --with ruff ruff check .`: all checks passed.
+- Frontend type/test changes are present, but local frontend verification is blocked because `npm`, `npx`, `pnpm`, `yarn`, and `corepack` are unavailable and `frontend/node_modules` is absent in this worktree.
+- 2026-05-10 re-verification: focused backend action-plan/prompt/analyze/feedback suite passed with `25 passed, 27 warnings`; Gemini masking test passes with dummy `GEMINI_API_KEY`, but fails without it due test harness configuration.
+- 2026-05-11 RED: `Remove-Item Env:GEMINI_API_KEY; UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_quality_prompts.py::test_prompt_manager_default_prompts_do_not_read_provider_credentials -q` failed because `PromptManager.__init__` read provider credentials.
+- 2026-05-11 focused backend re-verification without `GEMINI_API_KEY`: `Remove-Item Env:GEMINI_API_KEY; UV_CACHE_DIR=.uv-cache uv run --with pytest pytest -p no:cacheprovider tests/services/test_cbt_action_plan_parser.py tests/services/test_cbt_quality_prompts.py tests/integration/test_cbt_analyze_endpoint.py tests/services/test_llm_orchestrator.py tests/services/test_gemini_client.py tests/services/test_ai_audit_service.py -q`: 44 passed, 27 warnings.
+- 2026-05-11 API v2 docs updated for `analysisId`, `provider`, `model`, stable suggestion/reframe/action-plan ids, and `actionPlans`.
+- 2026-05-11 gap: generated action plans are not surfaced or persisted from the current `CBTLogForm`; this remains dependent on `codex/mobile-usability` and is not implemented in this worktree.
+- 2026-05-19 review follow-up: stale `PromptManager` tests no longer patch the removed provider config dependency; CBT quality focused suite passed with `53 passed, 36 warnings`.
+- 2026-05-19 coordination verification: `codex/mobile-usability` surfaces action plans, submits accepted action-plan metadata, and passed TypeScript, full Vitest, and Playwright viewport checks.
+
 ## Tasks
 
 ### Task 1: Add Action Plan Schema
 
-- [ ] Write failing schema test in `backend/tests/services/test_cbt_action_plan_parser.py`.
+- [x] Write failing schema test in `backend/tests/services/test_cbt_action_plan_parser.py`.
 
 ```python
 from app.schemas.cbt import CBTActionPlan, CBTAnalysisResponse
@@ -67,40 +84,45 @@ def test_cbt_analysis_response_accepts_action_plans():
     assert response.action_plans[0].title == "Send one message"
 ```
 
-- [ ] Run `cd backend; pytest tests/services/test_cbt_action_plan_parser.py -v`.
-- [ ] Implement `CBTActionPlan` and extend `CBTAnalysisResponse`.
-- [ ] Confirm camelCase serialization still maps `actionPlans`.
+- [x] Run `cd backend; pytest tests/services/test_cbt_action_plan_parser.py -v`.
+- [x] Implement `CBTActionPlan` and extend `CBTAnalysisResponse`.
+- [x] Confirm camelCase serialization still maps `actionPlans`.
 
 ### Task 2: Empathy Prompt Regression
 
-- [ ] Write failing prompt test in `backend/tests/services/test_cbt_quality_prompts.py` that loads the reframing prompt and asserts it contains:
+- [x] Write failing prompt test in `backend/tests/services/test_cbt_quality_prompts.py` that loads the reframing prompt and asserts it contains:
   - `validate the user's feeling`
   - `avoid diagnosis`
   - `do not minimize`
   - `optional`
   - `one small next step`
-- [ ] Run the test and verify failure.
-- [ ] Add prompt version text for empathetic reframing and action planning.
-- [ ] Keep wording concise to control latency and cost.
+  - `crisis or self-harm`
+  - `safety path`
+- [x] Run the test and verify failure.
+- [x] Add prompt version text for empathetic reframing and action planning.
+- [x] Keep wording concise to control latency and cost.
 
 ### Task 3: Parse Action Plans From Provider Output
 
-- [ ] Write failing parser test with provider JSON containing `action_plans`.
-- [ ] Implement parser normalization so both snake_case `action_plans` and camelCase `actionPlans` are accepted internally.
-- [ ] Reject malformed plans with `LLMParseError` or current parse exception.
-- [ ] Ensure exactly 1 to 3 action plans are returned.
+- [x] Write failing parser test with provider JSON containing `action_plans`.
+- [x] Implement parser normalization so both snake_case `action_plans` and camelCase `actionPlans` are accepted internally.
+- [x] Reject malformed plans with `LLMParseError` or current parse exception.
+- [x] Ensure no more than 3 action plans are returned, while preserving backward compatibility for omitted `actionPlans`.
 
 ### Task 4: Endpoint Contract Test
 
-- [ ] Update integration test to mock CBT analysis result with `actionPlans`.
-- [ ] Assert `/api/v1/cbt-logs/analyze` returns `analysisId`, `provider`, `model`, `suggestions`, `reframes`, and `actionPlans`.
-- [ ] Preserve existing status handling for safety, timeout, and provider errors.
+- [x] Update integration test to mock CBT analysis result with `actionPlans`.
+- [x] Assert `/api/v1/cbt-logs/analyze` returns `analysisId`, `provider`, `model`, `suggestions`, `reframes`, and `actionPlans`.
+- [x] Preserve existing status handling for safety, timeout, and provider errors.
 
 ### Task 5: Frontend Type Contract
 
-- [ ] Update `frontend/src/types/index.ts` with `CBTActionPlan` and extended `CBTAnalysisResponse`.
-- [ ] Update `useCBTAnalysis` tests to assert `actionPlans` is preserved from response.
-- [ ] Do not redesign the full UI in this workstream; leave mobile layout to `codex/mobile-usability`.
+- [x] Update `frontend/src/types/index.ts` with `CBTActionPlan` and extended `CBTAnalysisResponse`.
+- [x] Update `useCBTAnalysis` tests to assert `actionPlans` is preserved from response.
+- [x] Do not redesign the full UI in this workstream; leave mobile layout to `codex/mobile-usability`.
+- [x] Follow-up: update `docs/api_spec_cbt_v2.md` so `/api/v1/cbt-logs/analyze` documents `analysisId`, `provider`, `model`, stable ids, and `actionPlans`.
+- [x] Follow-up: make Gemini masking/provider tests independent of a real `GEMINI_API_KEY` through fixtures or dependency injection.
+- [x] Coordination follow-up: verify mobile-usability surfaces action plans and submits accepted action-plan metadata before checking the roadmap UI acceptance criterion.
 
 ## Acceptance Criteria
 
