@@ -26,12 +26,13 @@ logger = get_logger(__name__)
 class GeminiClient:
     """Gemini AI client for cognitive distortion detection and rational reframing."""
 
-    def __init__(self):
+    def __init__(self, model: str | None = None):
         self.config = get_ai_config()
+        self.model_name = model or self.config.gemini_model
         # Initialize the SDK
         if self.config.gemini_api_key:
             genai.configure(api_key=self.config.gemini_api_key)
-        self.model = genai.GenerativeModel(self.config.gemini_model)
+        self.model = genai.GenerativeModel(self.model_name)
         self.safety_handler = SafetyHandler()
         self.prompt_manager = PromptManager()
 
@@ -72,6 +73,7 @@ class GeminiClient:
             )
 
             latency_ms = int((time.time() - start_time) * 1000)
+
             # 3. Log audit (PII-free) - Async fire and forget would be better but simple call for now
             audit_log_id = self._log_audit(
                 request=request,
@@ -98,6 +100,7 @@ class GeminiClient:
                 suggestions=distortions,
                 reframes=reframes,
                 prompt_version=prompt_version,
+                analysis_id=audit_log_id,
                 ai_analysis_id=audit_log_id,
             )
 
@@ -336,7 +339,7 @@ class GeminiClient:
             entry_type="standalone_analysis",
             operation="generate_reframes",
             provider="gemini",
-            model=self.config.gemini_model,
+            model=self.model_name,
             prompt_version_id=prompt_version_id,
             masked_request_payload={
                 "automatic_thought_length": len(request.automatic_thought),

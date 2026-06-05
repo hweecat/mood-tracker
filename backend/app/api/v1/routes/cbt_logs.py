@@ -8,6 +8,7 @@ from app.schemas.cbt import CBTLogPublic, CBTLogCreate, CBTAnalysisRequest, CBTA
 from app.repositories.cbt import get_cbt_logs, create_cbt_log, update_cbt_log, delete_cbt_log
 from app.services.ai_client import get_ai_client
 from app.services.gemini_client import SafetyException
+from app.services.llm_provider import LLMSafetyBlocked, LLMTimeoutError
 from app.core.logging import get_logger
 
 from app.api.deps import get_current_user
@@ -88,14 +89,30 @@ async def analyze_cbt(
                 "crisis_resources": e.crisis_resources
             }
         )
+    except LLMSafetyBlocked as e:
+        logger.warning("Safety exception triggered", extra={"detail": e.message})
+        raise HTTPException(
+            status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+            detail={
+                "message": e.message,
+                "trigger": "safety",
+                "crisis_resources": e.crisis_resources
+            }
+        )
     except asyncio.TimeoutError:
-        logger.warning("AI analysis timed out")
+        logger.warning("AI analysis timed out", extra={"error_type": "AsyncioTimeoutError"})
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Analysis timed out. Please try again."
+        )
+    except LLMTimeoutError:
+        logger.warning("AI provider timed out", extra={"error_type": "LLMTimeoutError"})
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Analysis timed out. Please try again."
         )
     except Exception as e:
-        logger.error("AI analysis failed", extra={"error_type": type(e).__name__})
+        logger.error("AI analysis failed", extra={"error_type": type(e).__name__, "error_class": e.__class__.__module__ + "." + e.__class__.__name__})
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Analysis service unavailable"

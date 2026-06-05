@@ -4,7 +4,7 @@ import pytest
 import logging
 from httpx import AsyncClient, ASGITransport
 from fastapi import status
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from app.main import app
 from app.api.v1.routes import cbt_logs
 from app.schemas.user import UserPublic
@@ -57,7 +57,11 @@ class TestCBTAnalyzeEndpoint:
                     "content": "You've gotten good grades before. This test doesn't change that."
                 }
             ],
-            "prompt_version": "1.0.0"
+            "prompt_version": "1.0.0",
+            "provider": "openai",
+            "model": "gpt-5.5",
+            "analysis_id": "audit-1",
+            "ai_analysis_id": "audit-1",
         }
 
     async def test_analyze_endpoint_accepts_post(self, async_client, valid_request, mock_ai_response):
@@ -137,8 +141,26 @@ class TestCBTAnalyzeEndpoint:
         assert "suggestions" in data
         assert "reframes" in data
         assert "promptVersion" in data # Pydantic converts to camelCase
+        assert data["provider"] == "openai"
+        assert data["model"] == "gpt-5.5"
+        assert data["analysisId"] == "audit-1"
+        assert data["aiAnalysisId"] == "audit-1"
         assert isinstance(data["suggestions"], list)
         assert isinstance(data["reframes"], list)
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_passes_current_user_to_ai_client(self, mock_get_client, async_client, valid_request, mock_ai_response):
+        """Audit rows need user_id so later CBT feedback can link to the returned analysis id."""
+        mock_client = Mock()
+        mock_client.analyze_cbt = AsyncMock(return_value=mock_ai_response)
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_200_OK
+        mock_client.analyze_cbt.assert_awaited_once()
+        _, kwargs = mock_client.analyze_cbt.await_args
+        assert kwargs["user_id"] == "1"
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     async def test_analyze_endpoint_handles_safety_exception(self, mock_get_client, async_client, valid_request):
@@ -163,6 +185,29 @@ class TestCBTAnalyzeEndpoint:
         assert "crisis_resources" in data["detail"]
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_handles_provider_safety_block(self, mock_get_client, async_client, valid_request):
+        """Test /analyze endpoint handles provider-orchestrator safety blocks correctly."""
+        from app.services.llm_provider import LLMSafetyBlocked
+
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            raise LLMSafetyBlocked(
+                "Safety message",
+                crisis_resources=[{"name": "Test Crisis Line", "phone": "988"}],
+            )
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
+        data = response.json()
+        assert data["detail"]["trigger"] == "safety"
+        assert "crisis_resources" in data["detail"]
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
     @patch('asyncio.wait_for')
     async def test_analyze_endpoint_handles_timeout(self, mock_wait_for, mock_get_client, async_client, valid_request):
         """Test /analyze endpoint handles timeout correctly."""
@@ -174,6 +219,30 @@ class TestCBTAnalyzeEndpoint:
         assert response.status_code == status.HTTP_504_GATEWAY_TIMEOUT
         # We verify that the status code is correct. 
         # The specific message check is proving brittle in this environment.
+        assert response.json().get("detail") is not None
+
+
+    @patch('app.api.v1.routes.cbt_logs.get_ai_client')
+    async def test_analyze_endpoint_maps_provider_timeout_to_gateway_timeout(
+        self,
+        mock_get_client,
+        async_client,
+        valid_request,
+    ):
+        """Provider timeout errors should surface as HTTP 504 responses."""
+        from app.services.llm_provider import LLMTimeoutError
+
+        mock_client = Mock()
+
+        async def mock_analyze(*args, **kwargs):
+            raise LLMTimeoutError("upstream provider timed out")
+
+        mock_client.analyze_cbt = mock_analyze
+        mock_get_client.return_value = mock_client
+
+        response = await async_client.post("/api/v1/cbt-logs/analyze", json=valid_request)
+
+        assert response.status_code == status.HTTP_504_GATEWAY_TIMEOUT
         assert response.json().get("detail") is not None
 
     @patch('app.api.v1.routes.cbt_logs.get_ai_client')
