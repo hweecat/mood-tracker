@@ -46,7 +46,7 @@
 
 ### Task 1: Normalize Public Dataset Fixtures
 
-- [ ] Write failing tests in `evals/tests/test_dataset_adapters.py`.
+- [x] Write failing tests in `evals/tests/test_dataset_adapters.py`.
 
 ```python
 from pathlib import Path
@@ -69,44 +69,56 @@ def test_load_cactus_fixture():
     assert examples[0].reference["cbt_plan"]
 ```
 
-- [ ] Run `pytest evals/tests/test_dataset_adapters.py -v`.
-- [ ] Implement `EvalExample` and dataset loaders.
-- [ ] Include license/provenance fields in every example.
+- [x] Run `pytest evals/tests/test_dataset_adapters.py -v`.
+- [x] Implement `EvalExample` and dataset loaders.
+- [x] Include license/provenance fields in every example.
 
 ### Task 2: Normalize Internal Feedback Data
 
-- [ ] Write fixture `evals/fixtures/internal_feedback_sample.jsonl` representing `ai_feedback_events` plus linked audit metadata.
-- [ ] Write failing loader test that emits examples with `task="user_preference_alignment"`.
-- [ ] Implement internal feedback loader.
-- [ ] Ensure sensitive fixture data is synthetic.
+- [x] Write fixture `evals/fixtures/internal_feedback_sample.jsonl` representing `ai_feedback_events` plus linked audit metadata.
+- [x] Write failing loader test that emits examples with `task="user_preference_alignment"`.
+- [x] Implement internal feedback loader.
+- [x] Ensure sensitive fixture data is synthetic.
 
 ### Task 3: Add Metrics
 
-- [ ] Write failing tests for:
+- [x] Write failing tests for:
   - exact/multi-label distortion precision/recall/F1,
   - accepted-vs-generated text similarity using token overlap,
   - action-plan checklist completeness.
-- [ ] Implement `evals/metrics.py`.
-- [ ] Keep metrics deterministic and explainable before adding LLM-as-judge.
+- [x] Implement `evals/metrics.py`.
+- [x] Keep metrics deterministic and explainable before adding LLM-as-judge.
 
 ### Task 4: Add Runner
 
-- [ ] Write failing runner test with a fake provider function returning deterministic outputs.
-- [ ] Implement `evals/runner.py` to run examples through a callable model adapter.
-- [ ] Save results as JSONL with provider/model/prompt metadata.
-- [ ] Do not import FastAPI app modules.
+- [x] Write failing runner test with a fake provider function returning deterministic outputs.
+- [x] Implement `evals/runner.py` to run examples through a callable model adapter.
+- [x] Save results as JSONL with provider/model/prompt metadata.
+- [x] Do not import FastAPI app modules.
 
 ### Task 5: CLI And Report
 
-- [ ] Add CLI command:
+- [x] Add CLI command:
 
 ```powershell
 python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl --output evals/out/internal-feedback-report.json
 ```
 
-- [ ] Write CLI smoke test using `tmp_path`.
-- [ ] Implement report writer with aggregate metrics and per-example failures.
-- [ ] Document usage in `docs/evals/batch-evals.md`.
+- [x] Write CLI smoke test using `tmp_path`.
+- [x] Implement report writer with aggregate metrics and per-example failures.
+- [x] Document usage in `docs/evals/batch-evals.md`.
+
+## Validation Status
+
+- [x] PR opened: https://github.com/hweecat/mood-tracker/pull/9.
+- [x] GitHub Actions CI passed for current head `66e3b7baaa0af2054542a4e47b4a962dc6655a81` (run `25492104837`).
+- [x] 2026-05-10 re-verification: `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `19 passed`.
+- [x] PR is ready for review and mergeable as of 2026-05-10.
+- [x] PR review follow-up: internal feedback loader coerces `null` or non-object nested `feedback_event`, `audit_log`, and response payload values to empty mappings before dereferencing.
+- [x] PR review follow-up: committed fixture detection uses repo-root-relative checks so external exports under similarly named paths are not misclassified as synthetic fixtures.
+- [x] Verification follow-up: coerce truthy non-object `accepted_reframe_payload` and `accepted_action_plan_payload` values before dereferencing internal feedback exports.
+- [x] 2026-05-11 TDD verification: adapter RED showed external `evals/fixtures` lookalike paths were misclassified and truthy non-object accepted payloads raised `AttributeError`; GREEN `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `21 passed`.
+- [x] 2026-05-19 review follow-up: public dataset loaders now allocate independent provenance dicts per `EvalExample`; RED regression reproduced shared mutable provenance and GREEN `uv run --no-project --with pytest pytest evals/tests -q -p no:cacheprovider` passed with `22 passed`.
 
 ## Acceptance Criteria
 
@@ -115,4 +127,5 @@ python -m evals.cli run --dataset evals/fixtures/internal_feedback_sample.jsonl 
 - Fixtures cover CBT-Bench, Cactus, and internal feedback formats.
 - Report includes metrics, provenance, provider/model, and prompt version metadata.
 - Dataset license notes are documented.
-
+- Internal feedback exports with malformed nested records do not abort the full eval run.
+- Synthetic fixture and human-authored provenance are derived from repo-root-relative fixture paths or explicit overrides, not substring-style path heuristics.

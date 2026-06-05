@@ -1,0 +1,12 @@
+[
+  {
+    "id": "synthetic-cactus-1",
+    "thought": "I forgot one errand, so the whole day is ruined.",
+    "patterns": ["catastrophizing", "all-or-nothing thinking"],
+    "intake_form": "Synthetic intake summary for eval fixture only.",
+    "cbt_technique": "Decatastrophizing",
+    "cbt_plan": "Notice the thought, list one thing that still went okay, and choose one small errand to finish today.",
+    "attitude": "negative",
+    "dialogue": "Synthetic dialogue omitted from scoring."
+  }
+]
