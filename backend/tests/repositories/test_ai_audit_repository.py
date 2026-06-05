@@ -2,6 +2,9 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
+
+from app.repositories import cbt as cbt_repository
 from app.repositories.ai_audit import AIAuditLogCreate, create_ai_audit_log
 from app.repositories.cbt import create_cbt_log, delete_cbt_log
 from app.schemas.cbt import CBTLogCreate
@@ -263,6 +266,33 @@ def test_create_cbt_log_only_links_feedback_to_same_user_audit_id():
         "cbt-cross-user-audit": None,
         "cbt-orphan-audit": None,
     }
+
+
+def test_create_cbt_log_rolls_back_log_when_feedback_event_insert_fails(monkeypatch):
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    _create_cbt_feedback_test_schema(db)
+
+    def fail_feedback_insert(*args, **kwargs):
+        raise sqlite3.IntegrityError("feedback insert failed")
+
+    monkeypatch.setattr(cbt_repository, "create_ai_feedback_event", fail_feedback_insert)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        create_cbt_log(
+            db,
+            user_id="user-1",
+            log_in=_cbt_log_create(
+                log_id="cbt-feedback-failure",
+                ai_analysis_id="audit-missing",
+            ),
+        )
+
+    row = db.execute(
+        "SELECT id FROM cbt_logs WHERE id = ?",
+        ("cbt-feedback-failure",),
+    ).fetchone()
+    assert row is None
 
 
 def test_create_cbt_log_prefers_full_feedback_payloads_when_provided():

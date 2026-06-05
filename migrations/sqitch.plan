@@ -10,3 +10,4 @@ add_prompt_versions 2026-02-25T14:30:00Z sqitch_user <hello@example.com> # Adds 
 add_user_auth_fields 2026-03-15T07:25:00Z sqitch_user <hello@example.com> # Add username, password_hash, and created_at to users table.
 add_cbt_action_plan_status 2026-03-16T00:00:00Z sqitch_user <hello@example.com> # Persist action plan checkbox state on CBT logs.
 align_ai_audit_feedback_schema 2026-05-03T00:00:00Z sqitch_user <hello@example.com> # Align AI audit logs and add feedback events.
+add_analysis_jobs 2026-05-03T01:00:00Z sqitch_user <hello@example.com> # Add async analysis job tracking.

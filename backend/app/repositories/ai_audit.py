@@ -66,7 +66,12 @@ def create_ai_audit_log(db: Connection, audit_in: AIAuditLogCreate) -> str:
     return row_id
 
 
-def create_ai_feedback_event(db: Connection, feedback_in: AIFeedbackEventCreate) -> str:
+def create_ai_feedback_event(
+    db: Connection,
+    feedback_in: AIFeedbackEventCreate,
+    *,
+    commit: bool = True,
+) -> str:
     row_id = str(uuid.uuid4())
     created_at = feedback_in.created_at or int(time.time())
 
@@ -111,5 +116,6 @@ def create_ai_feedback_event(db: Connection, feedback_in: AIFeedbackEventCreate)
             created_at,
         ),
     )
-    db.commit()
+    if commit:
+        db.commit()
     return row_id

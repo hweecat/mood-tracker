@@ -2,12 +2,15 @@
 
 from typing import List
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from app.db.session import get_db
 from app.schemas.cbt import CBTLogPublic, CBTLogCreate, CBTAnalysisRequest, CBTAnalysisResponse
 from app.repositories.cbt import get_cbt_logs, create_cbt_log, update_cbt_log, delete_cbt_log
+from app.repositories.analysis import create_analysis_job
 from app.services.ai_client import get_ai_client
+from app.services import analysis_jobs
 from app.services.gemini_client import SafetyException
+from app.services.llm_provider import LLMSafetyBlocked
 from app.core.logging import get_logger
 
 from app.api.deps import get_current_user
@@ -29,10 +32,20 @@ def read_cbt_logs(
 @router.post("/", response_model=CBTLogPublic)
 def create_cbt(
     log_in: CBTLogCreate,
+    background_tasks: BackgroundTasks,
     db = Depends(get_db),
     current_user: UserPublic = Depends(get_current_user)
 ):
-    return create_cbt_log(db, user_id=current_user.id, log_in=log_in)
+    log = create_cbt_log(db, user_id=current_user.id, log_in=log_in)
+    job_id = create_analysis_job(
+        db,
+        user_id=current_user.id,
+        entry_type="cbt_log",
+        entry_id=log_in.id,
+        analysis_type="longitudinal_cbt",
+    )
+    background_tasks.add_task(analysis_jobs.run_analysis_job, job_id)
+    return log
 
 
 @router.put("/{log_id}", response_model=CBTLogPublic)
@@ -79,6 +92,16 @@ async def analyze_cbt(
         return result
     except SafetyException as e:
         # Fixed: avoid using 'message' in extra as it's reserved
+        logger.warning("Safety exception triggered", extra={"detail": e.message})
+        raise HTTPException(
+            status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+            detail={
+                "message": e.message,
+                "trigger": "safety",
+                "crisis_resources": e.crisis_resources
+            }
+        )
+    except LLMSafetyBlocked as e:
         logger.warning("Safety exception triggered", extra={"detail": e.message})
         raise HTTPException(
             status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,

@@ -77,6 +77,13 @@ Captured on 2026-05-03 from orchestration commit `3f649b0`.
 | Frontend | `npm test` from `.worktrees/mobile-usability/frontend` | Blocked | `node` and `npm` are not available on PATH in the current shell. Mobile worker must establish a Node runtime before running Vitest/Playwright. |
 | Batch evals | No baseline command yet | Not applicable | `evals/` package does not exist before the batch-evals stream starts. |
 
+## Workstream Review Status
+
+| Worktree | Branch | Status | Latest verification |
+| --- | --- | --- | --- |
+| `.worktrees/llm-provider-fallbacks` | `codex/llm-provider-fallbacks` | PR #5 ready, mergeable, current head `26c2188`, CI green | 2026-05-10 re-verification passed focused provider suite with `43 passed, 33 warnings`; direct Gemini adapter result-shape test and provider-client caching remain open. |
+| `.worktrees/async-analysis` | `codex/async-analysis` | Backend async job lifecycle implemented and verified; review follow-ups still open | 2026-05-10 re-verification passed focused async suites with `18 passed, 22 warnings` and `18 passed, 21 warnings`; mood `aiAnalysis` compatibility, CBT feedback atomicity, duplicate-scheduling idempotency, and frontend `/analyses/` display remain open. |
+
 ## Orchestrator Responsibilities
 
 - Keep this roadmap current as streams merge or requirements change.

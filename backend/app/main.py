@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import nltk
 
-from app.api.v1.routes import moods, cbt_logs, data, users, auth
+from app.api.v1.routes import moods, cbt_logs, data, users, auth, analyses
 from app.core.logging import setup_logging
 from app.api.middleware import CorrelationIdMiddleware
 from app.db.session import init_db
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(moods.router, prefix="/api/v1/moods", tags=["moods"])
 app.include_router(cbt_logs.router, prefix="/api/v1/cbt-logs", tags=["cbt-logs"])
+app.include_router(analyses.router, prefix="/api/v1/analyses", tags=["analyses"])
 app.include_router(data.router, prefix="/api/v1/data", tags=["data"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 
