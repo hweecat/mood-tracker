@@ -127,7 +127,8 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground"
+              aria-label="Clear history search"
             >
               <X className="w-4 h-4" />
             </button>
@@ -232,8 +233,8 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
               >
                 
                 {/* Header Section */}
-                <div className="flex justify-between items-start p-6 bg-muted/50 border-b-2 border-border">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4 border-b-2 border-border bg-muted/50 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     {entry.type === 'mood' ? (
                       <div className="p-3 bg-white dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-2xl border-2 border-blue-100 dark:border-transparent shadow-sm">
                         <Smile className="w-6 h-6" />
@@ -243,8 +244,8 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                         <Brain className="w-6 h-6" />
                       </div>
                     )}
-                    <div>
-                      <h4 className="font-black text-foreground text-xl tracking-tight leading-none mb-1">
+                    <div className="min-w-0">
+                      <h4 className="break-words font-black text-foreground text-lg tracking-tight leading-tight mb-1 sm:text-xl">
                         {entry.type === 'mood' ? 'Mood Check-in' : 'CBT Journal Entry'}
                       </h4>
                       <div className="flex items-center gap-2">
@@ -263,14 +264,14 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                       </div>
                     </div>
                   </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end">
                   <Badge 
                     variant={
                       entry.type === 'mood' 
                         ? (entry.rating >= 7 ? "success" : entry.rating <= 3 ? "destructive" : "warning")
                         : "purple"
                     }
-                    className="text-base px-4 py-2 rounded-full"
+                    className="shrink-0 rounded-full px-4 py-2 text-base"
                   >
                     {entry.type === 'mood' 
                       ? entry.rating 
@@ -289,7 +290,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                           const { type: _type, ...logData } = entry;
                           onEditCBT(logData as CBTLog);
                         }}
-                        className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                         aria-label="Edit entry"
                       >
                         <Edit2 className="w-5 h-5" />
@@ -303,7 +304,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                           e.stopPropagation();
                           handleDelete(entry.id, entry.type);
                         }}
-                        className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                         aria-label="Delete entry"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -314,7 +315,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
               </div>
 
               {/* Content Section */}
-              <div className="p-8">
+              <div className="p-4 sm:p-8">
                 {entry.type === 'mood' && (
                   <div className="space-y-6">
                     <div className="flex flex-wrap gap-2">
@@ -356,17 +357,17 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
 
                 {entry.type === 'cbt' && (
                   <div className="space-y-6">
-                    <div className="bg-secondary/50 rounded-[2rem] p-8 border-2 border-border shadow-inner">
+                    <div className="rounded-2xl border-2 border-border bg-secondary/50 p-4 shadow-inner sm:rounded-[2rem] sm:p-8">
                       <p className="text-xs font-black text-muted-foreground uppercase text-center border-b-2 border-border pb-3 mb-6 tracking-[0.2em]">Synthesis</p>
                       <div className="space-y-8">
-                        <div className="flex gap-5">
+                        <div className="flex gap-4 sm:gap-5">
                           <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-[#64748b] mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
                             <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-[#e2e8f0] decoration-2">Situation</p>
                             <p className="text-base text-foreground leading-relaxed font-black">{entry.situation || 'Not specified'}</p>
                           </div>
                         </div>
-                        <div className="flex gap-5">
+                        <div className="flex gap-4 sm:gap-5">
                           <div className="w-2.5 h-2.5 rounded-full bg-purple-500 dark:bg-purple-400 mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
                             <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-purple-300 decoration-2">Insight</p>
@@ -384,7 +385,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-5">
+                        <div className="flex gap-4 sm:gap-5">
                           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-2 flex-shrink-0 shadow-sm" />
                           <div className="space-y-2">
                             <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-blue-300 decoration-2">Reframed</p>
@@ -394,7 +395,7 @@ export function HistoryView({ moodEntries, cbtLogs, onEditCBT, onDeleteMood, onD
                           </div>
                         </div>
                         {entry.behavioralLink && (
-                          <div className="flex gap-5">
+                          <div className="flex gap-4 sm:gap-5">
                             <div className="w-2.5 h-2.5 rounded-full bg-green-600 dark:bg-green-400 mt-2 flex-shrink-0 shadow-sm" />
                             <div className="space-y-2">
                               <p className="font-black text-foreground text-xs tracking-widest uppercase underline underline-offset-8 decoration-green-300 decoration-2">Action Plan</p>

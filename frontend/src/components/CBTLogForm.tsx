@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe } from '@/types';
+import { CognitiveDistortion, MoodRating, CBTLog, RationalReframe, ActionPlanSuggestion, CrisisResource, AIFeedbackSource, DistortionSuggestion, CBTAnalysisResponse } from '@/types';
 import { MoodSelector } from './MoodSelector';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Info, X, Sparkles, Brain, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, Info, X, Sparkles, Brain, CheckCircle2 } from 'lucide-react';
 import { CBT_DISTORTIONS } from '@/lib/cbt-content';
+import { CBTStepShell } from './cbt/CBTStepShell';
+import { AISuggestionPanel } from './cbt/AISuggestionPanel';
+import { ActionPlanPicker } from './cbt/ActionPlanPicker';
 
 const DISTORTIONS = CBT_DISTORTIONS.map(d => d.name) as CognitiveDistortion[];
 
@@ -15,6 +18,48 @@ interface CBTLogFormProps {
   initialData?: CBTLog;
   onSubmit: (log: Omit<CBTLog, 'id' | 'timestamp' | 'userId'>) => void;
   onCancel?: () => void;
+}
+
+function crisisResourceHref(resource: CrisisResource) {
+  if (resource.phone) {
+    return `tel:${resource.phone.replace(/[^+\d]/g, '')}`;
+  }
+
+  return resource.url || '#';
+}
+
+function getAnalysisId(analysis: CBTAnalysisResponse | null) {
+  return analysis?.aiAnalysisId || analysis?.analysisId || null;
+}
+
+function getReframeId(reframe: RationalReframe, index: number) {
+  return reframe.id ?? `reframe-${index + 1}`;
+}
+
+function getAcceptedDistortionsPayload(
+  suggestions: DistortionSuggestion[],
+  selectedDistortions: CognitiveDistortion[],
+) {
+  const selected = new Set(selectedDistortions);
+  return suggestions.filter(suggestion => selected.has(suggestion.distortion));
+}
+
+function getIgnoredDistortionsPayload(
+  suggestions: DistortionSuggestion[],
+  selectedDistortions: CognitiveDistortion[],
+) {
+  const selected = new Set(selectedDistortions);
+  return suggestions.filter(suggestion => !selected.has(suggestion.distortion));
+}
+
+function getIgnoredReframesPayload(
+  reframes: RationalReframe[],
+  ignoredReframeIds: string[],
+) {
+  const ignored = new Set(ignoredReframeIds);
+  return reframes
+    .map((reframe, index) => ({ ...reframe, id: getReframeId(reframe, index) }))
+    .filter(reframe => reframe.id && ignored.has(reframe.id));
 }
 
 const DEFAULT_FORM_DATA = {
@@ -26,11 +71,25 @@ const DEFAULT_FORM_DATA = {
   moodAfter: 5 as MoodRating,
   behavioralLink: '',
   actionPlanStatus: 'pending' as 'pending' | 'completed',
+  aiAnalysisId: null as string | null,
   aiSuggestedDistortions: [] as CognitiveDistortion[],
+  acceptedDistortionsPayload: [] as DistortionSuggestion[],
+  ignoredDistortionsPayload: [] as DistortionSuggestion[],
+  acceptedReframeId: null as string | null,
+  acceptedReframePayload: null as RationalReframe | null,
+  dismissedReframeIds: [] as string[],
+  ignoredReframeIds: [] as string[],
+  ignoredReframesPayload: [] as RationalReframe[],
+  rationalResponseSource: 'user_original' as AIFeedbackSource,
+  acceptedActionPlanId: null as string | null,
+  acceptedActionPlan: null as ActionPlanSuggestion | null,
+  acceptedActionPlanPayload: null as ActionPlanSuggestion | null,
+  actionPlanSource: 'user_original' as AIFeedbackSource,
+  feedbackSource: 'user_original' as AIFeedbackSource,
 };
 
 export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps) {
-  const { analyze, analysis, loading: analysisLoading, error: analysisError, reset: resetAnalysis } = useCBTAnalysis();
+  const { analyze, analysis, loading: analysisLoading, error: analysisError, crisisResources, reset: resetAnalysis } = useCBTAnalysis();
   
   const [draftData, setDraftData] = useLocalStorage('cbt-draft-data', DEFAULT_FORM_DATA);
   const [draftStep, setDraftStep] = useLocalStorage('cbt-draft-step', 1);
@@ -45,7 +104,21 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     moodAfter: initialData.moodAfter || 5,
     behavioralLink: initialData.behavioralLink || '',
     actionPlanStatus: initialData.actionPlanStatus || 'pending',
+    aiAnalysisId: initialData.aiAnalysisId || null,
     aiSuggestedDistortions: initialData.aiSuggestedDistortions || [],
+    acceptedDistortionsPayload: initialData.acceptedDistortionsPayload || [],
+    ignoredDistortionsPayload: initialData.ignoredDistortionsPayload || [],
+    acceptedReframeId: initialData.acceptedReframeId || null,
+    acceptedReframePayload: initialData.acceptedReframePayload || null,
+    dismissedReframeIds: initialData.dismissedReframeIds || [],
+    ignoredReframeIds: initialData.ignoredReframeIds || initialData.dismissedReframeIds || [],
+    ignoredReframesPayload: initialData.ignoredReframesPayload || [],
+    rationalResponseSource: initialData.rationalResponseSource || 'user_original',
+    acceptedActionPlanId: initialData.acceptedActionPlanId || null,
+    acceptedActionPlan: initialData.acceptedActionPlan || null,
+    acceptedActionPlanPayload: initialData.acceptedActionPlanPayload || initialData.acceptedActionPlan || null,
+    actionPlanSource: initialData.actionPlanSource || 'user_original',
+    feedbackSource: initialData.feedbackSource || initialData.actionPlanSource || initialData.rationalResponseSource || 'user_original',
   } : draftData);
 
   const [activeInfo, setActiveInfo] = useState<string | null>(null);
@@ -62,6 +135,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     if (analysis) {
       setFormData(prev => ({
         ...prev,
+        aiAnalysisId: getAnalysisId(analysis),
         aiSuggestedDistortions: analysis.suggestions.map(s => s.distortion),
       }));
     }
@@ -92,7 +166,68 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
   const selectReframe = (reframe: RationalReframe) => {
     setFormData(prev => ({
       ...prev,
-      rationalResponse: reframe.content
+      rationalResponse: reframe.content,
+      acceptedReframeId: reframe.id || null,
+      acceptedReframePayload: reframe,
+      rationalResponseSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
+    }));
+  };
+
+  const editReframe = (reframe: RationalReframe) => {
+    setFormData(prev => ({
+      ...prev,
+      rationalResponse: reframe.content,
+      acceptedReframeId: reframe.id || null,
+      acceptedReframePayload: reframe,
+      rationalResponseSource: 'edited_ai',
+      feedbackSource: 'edited_ai',
+    }));
+  };
+
+  const dismissReframe = (reframeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      acceptedReframeId: prev.acceptedReframeId === reframeId ? null : prev.acceptedReframeId,
+      acceptedReframePayload: prev.acceptedReframeId === reframeId ? null : prev.acceptedReframePayload,
+      dismissedReframeIds: (prev.dismissedReframeIds || []).includes(reframeId)
+        ? (prev.dismissedReframeIds || [])
+        : [...(prev.dismissedReframeIds || []), reframeId],
+      ignoredReframeIds: (prev.ignoredReframeIds || []).includes(reframeId)
+        ? (prev.ignoredReframeIds || [])
+        : [...(prev.ignoredReframeIds || []), reframeId],
+      ignoredReframesPayload: getIgnoredReframesPayload(
+        analysis?.reframes || [],
+        (prev.ignoredReframeIds || []).includes(reframeId)
+          ? (prev.ignoredReframeIds || [])
+          : [...(prev.ignoredReframeIds || []), reframeId],
+      ),
+    }));
+  };
+
+  const acceptActionPlan = (plan: ActionPlanSuggestion, actionText: string) => {
+    setFormData(prev => ({
+      ...prev,
+      behavioralLink: actionText,
+      actionPlanStatus: 'pending',
+      acceptedActionPlanId: plan.id || null,
+      acceptedActionPlan: plan,
+      acceptedActionPlanPayload: plan,
+      actionPlanSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
+    }));
+  };
+
+  const editActionPlan = (plan: ActionPlanSuggestion, actionText: string) => {
+    setFormData(prev => ({
+      ...prev,
+      behavioralLink: actionText,
+      actionPlanStatus: 'pending',
+      acceptedActionPlanId: plan.id || null,
+      acceptedActionPlan: plan,
+      acceptedActionPlanPayload: plan,
+      actionPlanSource: 'edited_ai',
+      feedbackSource: 'edited_ai',
     }));
   };
 
@@ -102,7 +237,22 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    const suggestions = analysis?.suggestions || [];
+    const ignoredReframeIds = formData.ignoredReframeIds || [];
+    onSubmit({
+      ...formData,
+      aiAnalysisId: formData.aiAnalysisId || getAnalysisId(analysis),
+      acceptedDistortionsPayload: suggestions.length > 0
+        ? getAcceptedDistortionsPayload(suggestions, formData.distortions)
+        : formData.acceptedDistortionsPayload,
+      ignoredDistortionsPayload: suggestions.length > 0
+        ? getIgnoredDistortionsPayload(suggestions, formData.distortions)
+        : formData.ignoredDistortionsPayload,
+      ignoredReframesPayload: analysis?.reframes
+        ? getIgnoredReframesPayload(analysis.reframes, ignoredReframeIds)
+        : formData.ignoredReframesPayload,
+      acceptedActionPlanPayload: formData.acceptedActionPlanPayload || formData.acceptedActionPlan,
+    });
     
     if (!initialData) {
       setDraftData(DEFAULT_FORM_DATA);
@@ -113,37 +263,58 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
     resetAnalysis();
   };
 
+  const headerActions = !initialData && (formData.situation || step > 1) ? (
+    <button
+      type="button"
+      onClick={clearDraft}
+      className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-destructive"
+      aria-label="Clear draft"
+      title="Clear Draft"
+    >
+      <RotateCcw size={18} />
+    </button>
+  ) : null;
+
+  const stepActions = (
+    <>
+      {(onCancel || step > 1) && (
+        <button
+          type="button"
+          onClick={step > 1 ? prevStep : onCancel}
+          className="min-h-11 flex-1 rounded-2xl border-4 border-border bg-secondary px-5 py-4 text-sm font-black uppercase tracking-wide text-foreground shadow-md transition-all active:scale-95 sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          {step > 1 ? 'Back' : 'Cancel'}
+        </button>
+      )}
+      {step < 5 ? (
+        <button
+          type="button"
+          onClick={nextStep}
+          disabled={step === 1 && !formData.situation}
+          className="min-h-11 flex-[2] rounded-2xl border-b-8 border-[#0f172a] bg-[#1e293b] px-5 py-4 text-sm font-black uppercase tracking-wide text-white shadow-2xl transition-all active:scale-95 disabled:opacity-20 dark:border-[#0c4a6e] dark:bg-[#0369a1] dark:hover:bg-[#075985] sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          Next Step
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="min-h-11 flex-[2] rounded-2xl border-b-8 border-green-800 bg-green-600 px-5 py-4 text-sm font-black uppercase tracking-wide text-white shadow-2xl transition-all active:scale-95 hover:bg-green-700 sm:px-6 sm:text-base sm:tracking-widest"
+        >
+          {initialData ? 'Update Journal' : 'Finalize Entry'}
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div className="card space-y-0 bg-card border-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
-      <div className="flex justify-between items-center p-8 bg-[#f8fafc] dark:bg-[#1e293b] border-b-2 border-border">
-        <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-          {initialData ? 'Edit Entry' : 'CBT Journal'}
-        </h2>
-        <div className="flex items-center gap-3">
-          {!initialData && (formData.situation || step > 1) && (
-            <button 
-              onClick={clearDraft}
-              className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-              title="Clear Draft"
-            >
-              <RotateCcw size={18} />
-            </button>
-          )}
-          <span className="text-xs font-black text-foreground uppercase tracking-widest bg-card px-4 py-1.5 rounded-full border-2 border-border shadow-sm">
-            Step {step} / 5
-          </span>
-        </div>
-      </div>
-
-      <div className="px-8 pt-6 pb-8 space-y-8">
-        <div className="w-full bg-secondary h-4 rounded-full overflow-hidden border-2 border-border shadow-inner p-0.5">
-          <div 
-            className="bg-brand-700 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(2,132,199,0.6)]" 
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-        </div>
-
-        <div className="min-h-[400px]">
+    <CBTStepShell
+      title={initialData ? 'Edit Entry' : 'CBT Journal'}
+      step={step}
+      totalSteps={5}
+      headerActions={headerActions}
+      actions={stepActions}
+    >
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
@@ -159,7 +330,7 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-before-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Initial Mood</label>
-                <div className="pt-2">
+                <div className="cbt-mood-selector pt-2">
                   <MoodSelector 
                     value={formData.moodBefore} 
                     onChange={val => setFormData({...formData, moodBefore: val})} 
@@ -206,7 +377,37 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   </>
                 )}
               </button>
-              {analysisError && <p className="text-xs font-bold text-red-600 dark:text-red-400 text-center">{analysisError}</p>}
+              {analysisError && (
+                <div
+                  role="alert"
+                  className="space-y-3 rounded-2xl border-2 border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                >
+                  <p>{analysisError}</p>
+                  {crisisResources.length > 0 && (
+                    <div className="grid gap-2" aria-label="Crisis resources">
+                      {crisisResources.map((resource, index) => (
+                        <a
+                          key={`${resource.name || resource.phone || resource.url}-${index}`}
+                          href={crisisResourceHref(resource)}
+                          className="flex min-h-11 flex-col justify-center rounded-xl border border-red-200 bg-card px-4 py-3 text-red-900 underline-offset-4 hover:underline dark:border-red-900 dark:text-red-200"
+                        >
+                          <span>{resource.name || 'Crisis resource'}</span>
+                          {(resource.phone || resource.url) && (
+                            <span className="text-xs text-red-700 dark:text-red-300">
+                              {resource.phone || resource.url}
+                            </span>
+                          )}
+                          {resource.description && (
+                            <span className="text-xs text-red-700 dark:text-red-300">
+                              {resource.description}
+                            </span>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -271,28 +472,15 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
               <div className="space-y-5">
                 <label htmlFor="rational-textarea" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-brand-600 pl-4 block">4. Rational Challenge</label>
                 
-                {/* AI Reframing Carousel */}
                 {analysis?.reframes && analysis.reframes.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500 flex items-center gap-2">
-                      <Sparkles size={12} /> AI Suggested Reframes (HITL)
-                    </p>
-                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                      {analysis.reframes.map((ref, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectReframe(ref)}
-                          className="shrink-0 w-[280px] p-5 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 hover:border-amber-500 transition-all text-left space-y-2 group shadow-sm"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">{ref.perspective}</span>
-                            <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                          <p className="text-xs font-bold text-foreground line-clamp-3 italic">&ldquo;{ref.content}&rdquo;</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <AISuggestionPanel
+                    reframes={analysis.reframes}
+                    acceptedReframeId={formData.acceptedReframeId}
+                    dismissedReframeIds={formData.dismissedReframeIds || []}
+                    onAccept={selectReframe}
+                    onEdit={editReframe}
+                    onDismiss={dismissReframe}
+                  />
                 )}
 
                 <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">
@@ -302,13 +490,18 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
                   id="rational-textarea"
                   className="w-full min-h-[180px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.rationalResponse}
-                  onChange={e => setFormData({...formData, rationalResponse: e.target.value})}
+                  onChange={e => setFormData({
+                    ...formData,
+                    rationalResponse: e.target.value,
+                    rationalResponseSource: formData.acceptedReframeId ? 'edited_ai' : 'user_original',
+                    feedbackSource: formData.acceptedReframeId ? 'edited_ai' : 'user_original',
+                  })}
                   placeholder="e.g., While this promotion didn't happen, my performance reviews have been consistently high..."
                 />
               </div>
               <div className="space-y-5 pt-6 border-t-2 border-border">
                 <label id="mood-after-label" className="text-sm font-bold text-foreground uppercase tracking-[0.2em] border-l-8 border-slate-600 pl-4 block">Mood After Reframing</label>
-                <div className="pt-2">
+                <div className="cbt-mood-selector pt-2">
                   <MoodSelector 
                     value={formData.moodAfter} 
                     onChange={val => setFormData({...formData, moodAfter: val})} 
@@ -322,47 +515,31 @@ export function CBTLogForm({ initialData, onSubmit, onCancel }: CBTLogFormProps)
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-5">
                 <label htmlFor="action-textarea" className="text-sm font-bold text-foreground uppercase tracking-wider border-l-8 border-brand-600 pl-4 block">5. Actionable Plan</label>
+                {analysis?.actionPlans && analysis.actionPlans.length > 0 && (
+                  <ActionPlanPicker
+                    actionPlans={analysis.actionPlans}
+                    acceptedActionPlanId={formData.acceptedActionPlanId}
+                    onAccept={acceptActionPlan}
+                    onEdit={editActionPlan}
+                  />
+                )}
                 <p className="text-sm text-foreground font-bold italic leading-relaxed bg-[#f1f5f9] dark:bg-[#1e293b] p-4 rounded-2xl border-l-4 border-border shadow-inner">What is one concrete action you can take to move forward?</p>
                 <textarea
                   id="action-textarea"
                   className="w-full min-h-[150px] p-5 rounded-[2rem] border-2 border-border bg-card text-foreground outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 font-bold placeholder:text-muted-foreground shadow-lg transition-all"
                   value={formData.behavioralLink}
-                  onChange={e => setFormData({...formData, behavioralLink: e.target.value, actionPlanStatus: 'pending'})}
+                  onChange={e => setFormData({
+                    ...formData,
+                    behavioralLink: e.target.value,
+                    actionPlanStatus: 'pending',
+                    actionPlanSource: formData.acceptedActionPlanId ? 'edited_ai' : 'user_original',
+                    feedbackSource: formData.acceptedActionPlanId ? 'edited_ai' : 'user_original',
+                  })}
                   placeholder="e.g., I will schedule a meeting with my manager to ask for feedback."
                 />
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex gap-5 pt-8 border-t-4 border-border">
-          {(onCancel || step > 1) && (
-            <button
-              type="button"
-              onClick={step > 1 ? prevStep : onCancel}
-              className="flex-1 py-5 px-8 rounded-[2rem] border-4 border-border font-black uppercase tracking-widest text-foreground bg-secondary hover:bg-muted transition-all active:scale-95 shadow-md"
-            >
-              {step > 1 ? 'Back' : 'Cancel'}
-            </button>
-          )}
-          {step < 5 ? (
-            <button
-              onClick={nextStep}
-              disabled={step === 1 && !formData.situation}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-[#1e293b] dark:bg-[#0369a1] text-white font-black uppercase tracking-widest hover:bg-black dark:hover:bg-[#075985] transition-all disabled:opacity-20 active:scale-95 shadow-2xl border-b-8 border-[#0f172a] dark:border-[#0c4a6e]"
-            >
-              Next Step
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className="flex-[2] py-5 px-8 rounded-[2rem] bg-green-600 text-white font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-2xl active:scale-95 border-b-8 border-green-800"
-            >
-              {initialData ? 'Update Journal' : 'Finalize Entry'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </CBTStepShell>
   );
 }

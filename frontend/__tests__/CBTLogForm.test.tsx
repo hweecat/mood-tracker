@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { CBTLogForm } from '@/components/CBTLogForm';
 import { useCBTAnalysis } from '@/hooks/useCBTAnalysis';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
@@ -20,20 +20,33 @@ vi.mock('lucide-react', () => ({
   X: () => <span data-testid="icon-x" />,
   RotateCcw: () => <span data-testid="icon-rotate" />,
   ArrowRight: () => <span data-testid="icon-arrow-right" />,
+  Check: () => <span data-testid="icon-check" />,
   CheckCircle2: () => <span data-testid="icon-check" />,
+  Pencil: () => <span data-testid="icon-pencil" />,
   Smile: () => <span data-testid="icon-smile" />,
   Frown: () => <span data-testid="icon-frown" />,
   Meh: () => <span data-testid="icon-meh" />,
 }));
 
 const MOCK_ANALYSIS = {
+  aiAnalysisId: 'audit-analysis-1',
   suggestions: [
-    { distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' }
+    { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' },
+    { id: 'suggestion-2', distortion: 'Catastrophizing', reasoning: 'Reason 2' }
   ],
   reframes: [
-    { perspective: 'Compassionate', content: 'Reframe 1' },
-    { perspective: 'Logical', content: 'Reframe 2' },
-    { perspective: 'Evidence-based', content: 'Reframe 3' }
+    { id: 'reframe-1', perspective: 'Compassionate', content: 'Reframe 1' },
+    { id: 'reframe-2', perspective: 'Logical', content: 'Reframe 2' },
+    { id: 'reframe-3', perspective: 'Evidence-based', content: 'Reframe 3' }
+  ],
+  actionPlans: [
+    {
+      id: 'plan-1',
+      title: 'Ask for feedback',
+      rationale: 'A small conversation can turn uncertainty into specifics.',
+      steps: ['Write down two questions', 'Book a short manager check-in'],
+      timeframe: 'today'
+    }
   ],
   prompt_version: '1.0.0'
 };
@@ -50,8 +63,25 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: null,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
+  });
+
+  it('keeps primary navigation available through the CBT mobile flow', async () => {
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    const actionGroup = screen.getByRole('group', { name: /cbt step actions/i });
+    expect(within(actionGroup).getByRole('button', { name: /next/i })).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A difficult work conversation' } });
+    await act(async () => {
+      fireEvent.click(within(actionGroup).getByRole('button', { name: /next/i }));
+    });
+
+    const updatedActionGroup = screen.getByRole('group', { name: /cbt step actions/i });
+    expect(within(updatedActionGroup).getByRole('button', { name: /back/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /seek ai perspective/i })).toBeVisible();
   });
 
   it('navigates through the steps and triggers AI analysis', async () => {
@@ -77,6 +107,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: MOCK_ANALYSIS,
       loading: false,
       error: null,
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -142,9 +173,9 @@ describe('CBTLogForm Flow & Integration', () => {
     // Check reframes
     expect(await screen.findByText(/Reframe 1/i)).toBeInTheDocument();
     
-    // Select it
+    // Accept it
     await act(async () => {
-      fireEvent.click(screen.getByText(/Reframe 1/i));
+      fireEvent.click(screen.getByRole('button', { name: /accept compassionate reframe/i }));
     });
     
     const responseTextArea = screen.getByPlaceholderText(/While this promotion didn't happen/i);
@@ -157,6 +188,7 @@ describe('CBTLogForm Flow & Integration', () => {
       analysis: null,
       loading: false,
       error: 'API failure',
+      crisisResources: [],
       reset: mockResetAnalysis,
     });
 
@@ -169,5 +201,133 @@ describe('CBTLogForm Flow & Integration', () => {
     });
 
     expect(await screen.findByText('API failure')).toBeInTheDocument();
+  });
+
+  it('keeps crisis resources available when AI analysis is safety-blocked', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: null,
+      loading: false,
+      error: 'Your safety is important. Please reach out for support.',
+      crisisResources: [
+        { name: '988 Lifeline', phone: '988', url: 'https://988lifeline.org' },
+      ],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A crisis moment' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
+    });
+
+    expect(await screen.findByText('Your safety is important. Please reach out for support.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /988 lifeline/i })).toHaveAttribute('href', 'tel:988');
+  });
+
+  it('accepts an AI action plan into the final plan text', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      crisisResources: [],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /accept ask for feedback action plan/i }));
+
+    expect(screen.getByLabelText(/actionable plan/i)).toHaveValue('Write down two questions\nBook a short manager check-in');
+  });
+
+  it('edits an AI action plan before submit', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      crisisResources: [],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /edit ask for feedback action plan/i }));
+    fireEvent.change(screen.getByLabelText(/edit ask for feedback action plan/i), {
+      target: { value: 'I will write three questions before booking the check-in.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save ask for feedback action plan edit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /finalize entry/i }));
+
+    expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      behavioralLink: 'I will write three questions before booking the check-in.',
+      acceptedActionPlanId: 'plan-1',
+      actionPlanSource: 'edited_ai',
+    }));
+  });
+
+  it('submits audit-safe suggestion metadata with accepted and ignored ids', async () => {
+    (useCBTAnalysis as Mock).mockReturnValue({
+      analyze: mockAnalyze,
+      analysis: MOCK_ANALYSIS,
+      loading: false,
+      error: null,
+      crisisResources: [],
+      reset: mockResetAnalysis,
+    });
+
+    render(<CBTLogForm onSubmit={mockSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/situation/i), { target: { value: 'A tense planning meeting' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.change(screen.getByLabelText(/automatic thoughts/i), { target: { value: 'I handled it badly' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByText('All-or-Nothing Thinking').closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /accept compassionate reframe/i }));
+    fireEvent.click(screen.getByRole('button', { name: /dismiss logical reframe/i }));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /accept ask for feedback action plan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /finalize entry/i }));
+
+    expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      aiAnalysisId: 'audit-analysis-1',
+      acceptedDistortionsPayload: [
+        { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking', reasoning: 'Reason 1' },
+      ],
+      ignoredDistortionsPayload: [
+        { id: 'suggestion-2', distortion: 'Catastrophizing', reasoning: 'Reason 2' },
+      ],
+      acceptedReframeId: 'reframe-1',
+      acceptedReframePayload: MOCK_ANALYSIS.reframes[0],
+      dismissedReframeIds: ['reframe-2'],
+      ignoredReframeIds: ['reframe-2'],
+      ignoredReframesPayload: [MOCK_ANALYSIS.reframes[1]],
+      rationalResponseSource: 'accepted_ai',
+      acceptedActionPlanId: 'plan-1',
+      acceptedActionPlan: MOCK_ANALYSIS.actionPlans[0],
+      acceptedActionPlanPayload: MOCK_ANALYSIS.actionPlans[0],
+      actionPlanSource: 'accepted_ai',
+      feedbackSource: 'accepted_ai',
+    }));
   });
 });

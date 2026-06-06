@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { CBTAnalysisResponse } from '@/types';
+import { CBTAnalysisResponse, CrisisResource } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_V1_URL = `${API_BASE_URL}/api/v1`;
@@ -12,7 +12,64 @@ interface UseCBTAnalysisReturn {
   analysis: CBTAnalysisResponse | null;
   loading: boolean;
   error: string | null;
+  crisisResources: CrisisResource[];
   reset: () => void;
+}
+
+interface StructuredErrorDetail {
+  message?: unknown;
+  detail?: unknown;
+  trigger?: unknown;
+  crisis_resources?: unknown;
+  crisisResources?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeCrisisResources(resources: unknown): CrisisResource[] {
+  if (!Array.isArray(resources)) {
+    return [];
+  }
+
+  return resources
+    .filter(isRecord)
+    .map(resource => ({
+      name: typeof resource.name === 'string' ? resource.name : undefined,
+      phone: typeof resource.phone === 'string' ? resource.phone : undefined,
+      url: typeof resource.url === 'string' ? resource.url : undefined,
+      description: typeof resource.description === 'string' ? resource.description : undefined,
+    }))
+    .filter(resource => resource.name || resource.phone || resource.url || resource.description);
+}
+
+function parseErrorResponse(errorData: unknown, status: number): { message: string; crisisResources: CrisisResource[] } {
+  if (!isRecord(errorData)) {
+    return { message: `API error: ${status}`, crisisResources: [] };
+  }
+
+  const detail = errorData.detail;
+  if (typeof detail === 'string') {
+    return { message: detail, crisisResources: [] };
+  }
+
+  if (isRecord(detail)) {
+    const structuredDetail = detail as StructuredErrorDetail;
+    const message =
+      typeof structuredDetail.message === 'string'
+        ? structuredDetail.message
+        : typeof structuredDetail.detail === 'string'
+          ? structuredDetail.detail
+          : `API error: ${status}`;
+    const crisisResources = normalizeCrisisResources(
+      structuredDetail.crisis_resources ?? structuredDetail.crisisResources
+    );
+
+    return { message, crisisResources };
+  }
+
+  return { message: `API error: ${status}`, crisisResources: [] };
 }
 
 /**
@@ -23,6 +80,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
   const [analysis, setAnalysis] = useState<CBTAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [crisisResources, setCrisisResources] = useState<CrisisResource[]>([]);
   const { data: session, status } = useSession();
 
   const analyze = async (situation: string, automaticThought: string) => {
@@ -38,6 +96,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
 
     setLoading(true);
     setError(null);
+    setCrisisResources([]);
     setAnalysis(null); // Clear previous analysis
 
     try {
@@ -58,7 +117,9 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
           throw new Error('Authentication required. Please log in again.');
         }
         const errorData = await response.json();
-        throw new Error(errorData.detail || `API error: ${response.status}`);
+        const parsedError = parseErrorResponse(errorData, response.status);
+        setCrisisResources(parsedError.crisisResources);
+        throw new Error(parsedError.message);
       }
 
       const data: CBTAnalysisResponse = await response.json();
@@ -66,7 +127,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during analysis.';
       setError(errorMessage);
-      console.error('AI Analysis Error:', err);
+      console.error('AI Analysis Error');
     } finally {
       setLoading(false);
     }
@@ -75,6 +136,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
   const reset = () => {
     setAnalysis(null);
     setError(null);
+    setCrisisResources([]);
     setLoading(false);
   };
 
@@ -83,6 +145,7 @@ export function useCBTAnalysis(): UseCBTAnalysisReturn {
     analysis,
     loading,
     error,
+    crisisResources,
     reset,
   };
 }

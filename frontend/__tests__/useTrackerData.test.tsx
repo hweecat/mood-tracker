@@ -130,6 +130,75 @@ describe('useTrackerData', () => {
     expect(result.current.cbtLogs[0].situation).toBe('Sit');
   });
 
+  it('preserves CBT audit metadata fields in the create request body', async () => {
+     // Mock initial fetch
+    (global.fetch as Mock)
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    const { result } = renderHook(() => useTrackerData());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const newLog = {
+      situation: 'Sit',
+      automaticThoughts: 'Auto',
+      distortions: ['All-or-Nothing Thinking' as const],
+      rationalResponse: 'Resp',
+      moodBefore: 5 as const,
+      aiAnalysisId: 'audit-1',
+      acceptedDistortionsPayload: [
+        { id: 'suggestion-1', distortion: 'All-or-Nothing Thinking' as const, reasoning: 'Reason' },
+      ],
+      ignoredDistortionsPayload: [
+        { id: 'suggestion-2', distortion: 'Catastrophizing' as const, reasoning: 'Other reason' },
+      ],
+      acceptedReframePayload: {
+        id: 'reframe-1',
+        perspective: 'Balanced',
+        content: 'Resp',
+      },
+      ignoredReframesPayload: [
+        {
+          id: 'reframe-2',
+          perspective: 'Compassionate',
+          content: 'Alternative',
+        },
+      ],
+      acceptedActionPlanPayload: {
+        id: 'plan-1',
+        title: 'Take a step',
+        steps: ['Send one email'],
+      },
+      feedbackSource: 'edited_ai' as const,
+    };
+    const savedLog = { ...newLog, id: 'uuid', timestamp: 123456, userId: '1' };
+
+    (global.fetch as Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => savedLog,
+    });
+
+    await act(async () => {
+      await result.current.addCBTLog(newLog);
+    });
+
+    const createRequest = (global.fetch as Mock).mock.calls.find(
+      ([url, options]) => url === `${API_V1_URL}/cbt-logs/` && options?.method === 'POST'
+    );
+    const body = JSON.parse(createRequest?.[1]?.body);
+
+    expect(body).toEqual(expect.objectContaining({
+      aiAnalysisId: 'audit-1',
+      acceptedDistortionsPayload: newLog.acceptedDistortionsPayload,
+      ignoredDistortionsPayload: newLog.ignoredDistortionsPayload,
+      acceptedReframePayload: newLog.acceptedReframePayload,
+      ignoredReframesPayload: newLog.ignoredReframesPayload,
+      acceptedActionPlanPayload: newLog.acceptedActionPlanPayload,
+      feedbackSource: 'edited_ai',
+    }));
+  });
+
   it('updates a CBT log', async () => {
     // Mock initial fetch with one log
     const initialLog = { 
@@ -138,7 +207,7 @@ describe('useTrackerData', () => {
         automaticThoughts: 'Old Auto', 
         distortions: [], 
         rationalResponse: 'Old Resp', 
-        moodBefore: 5, 
+        moodBefore: 5 as const,
         timestamp: 123,
         userId: '1'
     };

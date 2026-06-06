@@ -1,148 +1,208 @@
-import { test, expect } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
+import { createServer, Server, ServerResponse } from 'node:http';
 
-/**
- * Visual Regression Tests for the AI-powered CBT Journaling Flow.
- * These tests ensure the premium design tokens (glassmorphism, amber highlights, brain icons)
- * remain consistent across updates.
- */
-test.describe('CBT Flow Visual Regression', () => {
-  test.beforeEach(async ({ page }) => {
-    // Log browser console messages
-    page.on('console', msg => console.log('BROWSER:', msg.text()));
-    page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
+const VIEWPORTS = [
+  { width: 320, height: 900 },
+  { width: 375, height: 900 },
+  { width: 390, height: 900 },
+  { width: 768, height: 1000 },
+  { width: 1280, height: 900 },
+];
 
-    // Navigate to login
-    await page.goto('/login');
-    
-    // Wait for initial body to be present
-    await page.waitForSelector('body');
-    
-    // Check for hydration to ensure the form is interactive
-    const loginForm = page.locator('form');
-    await expect(loginForm).toBeVisible({ timeout: 10000 });
-    await expect(loginForm).toHaveAttribute('data-hydrated', 'true', { timeout: 15000 });
-    
-    // Perform login (using demo credentials as seen in Selenium tests)
-    console.log('FILLING LOGIN FORM');
-    await page.fill('#username', 'demo');
-    await page.fill('#password', 'demo');
-    
-    console.log('CLICKING SUBMIT');
-    await page.click('button[type="submit"]');
-    
-    // Wait for redirect and dashboard elements
-    console.log('WAITING FOR DASHBOARD');
-    try {
-      // Instead of waitForURL, wait for a key element on the dashboard
-      await expect(page.locator('button[aria-label="Journal"]')).toBeVisible({ timeout: 20000 });
-      console.log('DASHBOARD LOADED - JOURNAL BUTTON VISIBLE');
-    } catch (e) {
-      console.log('DASHBOARD FAILED TO LOAD - TAKING ERROR SCREENSHOT');
-      await page.screenshot({ path: '/tmp/login-failure-state.png' });
-      const currentUrl = page.url();
-      console.log('URL at failure:', currentUrl);
-      const content = await page.content();
-      console.log('HTML content length:', content.length);
-      throw e;
+let mockBackend: Server | null = null;
+
+function sendJson(res: ServerResponse, status: number, payload: unknown) {
+  res.writeHead(status, {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization,content-type',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+    'Content-Type': 'application/json',
+  });
+  res.end(JSON.stringify(payload));
+}
+
+async function startMockBackend() {
+  if (mockBackend) return;
+
+  mockBackend = createServer((req, res) => {
+    const url = req.url || '';
+
+    if (req.method === 'OPTIONS') {
+      sendJson(res, 200, {});
+      return;
     }
 
-    // Mock the analysis API
-    await page.route('**/api/v1/cbt-logs/analyze', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          distortions: ['All-or-Nothing Thinking'],
-          reframe_suggestion: 'I can learn from my mistakes even if I am not perfect.'
-        })
-      });
+    if (url === '/api/v1/auth/login' && req.method === 'POST') {
+      sendJson(res, 200, { access_token: 'visual-token', accessToken: 'visual-token' });
+      return;
+    }
+
+    if (url === '/api/v1/users/me' && req.method === 'GET') {
+      sendJson(res, 200, { id: 'visual-user', name: 'Demo User', email: 'demo@example.com' });
+      return;
+    }
+
+    if ((url === '/api/v1/moods/' || url === '/api/v1/cbt-logs/') && req.method === 'GET') {
+      sendJson(res, 200, []);
+      return;
+    }
+
+    if ((url === '/api/v1/moods/' || url === '/api/v1/cbt-logs/') && req.method === 'POST') {
+      sendJson(res, 200, {});
+      return;
+    }
+
+    sendJson(res, 404, { detail: 'Not found' });
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    mockBackend?.once('error', reject);
+    mockBackend?.listen(8123, resolve);
+  });
+}
+
+async function login(page: Page) {
+  await page.goto('/login');
+  await expect(page.locator('form')).toHaveAttribute('data-hydrated', 'true');
+  await page.fill('#identifier', 'demo');
+  await page.fill('#password', 'demo');
+  await page.click('button[type="submit"]', { noWaitAfter: true });
+  await page.waitForURL('**/', { timeout: 30000 });
+  await expect(page.locator('button[aria-label="Journal"]')).toBeVisible({ timeout: 20000 });
+}
+
+async function mockCBTAnalysis(page: Page) {
+  await page.route('**/api/v1/cbt-logs/analyze', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        analysisId: 'analysis-visual',
+        suggestions: [
+          {
+            id: 'distortion-1',
+            distortion: 'All-or-Nothing Thinking',
+            reasoning: 'The thought treats one difficult moment as a total outcome.',
+            confidence: 0.91,
+          },
+        ],
+        reframes: [
+          {
+            id: 'reframe-1',
+            perspective: 'Compassionate',
+            content: 'This was uncomfortable, and I can take one useful lesson from it without judging my whole self.',
+          },
+        ],
+        actionPlans: [
+          {
+            id: 'plan-1',
+            title: 'Ask for feedback',
+            rationale: 'A short follow-up can turn uncertainty into specifics.',
+            steps: ['Write two questions', 'Book a short check-in'],
+            timeframe: 'today',
+          },
+        ],
+        provider: 'mock',
+        model: 'mock-cbt',
+        promptVersion: 'visual-test',
+      }),
+    });
+  });
+}
+
+async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(() => ({
+    htmlOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    bodyOverflow: document.body.scrollWidth > document.body.clientWidth,
+    htmlScrollWidth: document.documentElement.scrollWidth,
+    htmlClientWidth: document.documentElement.clientWidth,
+    bodyScrollWidth: document.body.scrollWidth,
+    bodyClientWidth: document.body.clientWidth,
+  }));
+
+  expect(overflow).toEqual(expect.objectContaining({
+    htmlOverflow: false,
+    bodyOverflow: false,
+  }));
+}
+
+async function expectVisibleButtonsAreTappable(page: Page) {
+  const smallButtons = await page.locator('button:visible').evaluateAll(buttons => {
+    return buttons
+      .map(button => {
+        const rect = button.getBoundingClientRect();
+        const label = button.getAttribute('aria-label') || button.textContent?.trim() || button.outerHTML;
+        return { label, width: rect.width, height: rect.height };
+      })
+      .filter(button => button.label !== 'Open Next.js Dev Tools')
+      .filter(button => button.height < 44 || button.width < 44);
+  });
+
+  expect(smallButtons).toEqual([]);
+}
+
+test.describe('CBT mobile usability flow', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeAll(async () => {
+    await startMockBackend();
+  });
+
+  test.afterAll(async () => {
+    await new Promise<void>(resolve => {
+      if (!mockBackend) {
+        resolve();
+        return;
+      }
+      mockBackend.close(() => resolve());
+      mockBackend = null;
     });
   });
 
-  test('CBT Journal Step 1 Visual Baseline', async ({ page }) => {
-    // Navigate to Journal - based on accessibility test selectors
-    // Navigate to Journal tab using explicit label
-    await page.click('button[aria-label="Journal"]');
-    
-    // Wait for the form card to be visible
-    const card = page.locator('.card').first();
-    await expect(card).toBeVisible();
-    await expect(card).toContainText(/CBT Journal/i);
-    
-    // Allow animations to settle
-    await page.waitForTimeout(1000);
-    
-    // Take a snapshot of the Step 1 card as baseline
-    await expect(card).toHaveScreenshot('cbt-step-1-baseline.png');
+  test.beforeEach(async ({ page }) => {
+    await mockCBTAnalysis(page);
   });
 
-  test('AI Suggestion Amber Highlight Visual', async ({ page }) => {
-    await page.click('button[aria-label="Journal"]');
-    
-    // Step 1: Situation
-    await page.fill('#situation-textarea', 'My boss ignored my greeting this morning.');
-    await page.click('button:has-text("Next Step")');
-    
-    // Wait for Step 2 heading
-    await expect(page.locator('text=Automatic Thoughts')).toBeVisible();
-    
-    // Increase viewport height to ensure everything is visible
-    await page.setViewportSize({ width: 1280, height: 1200 });
+  for (const viewport of VIEWPORTS) {
+    test(`has no horizontal overflow and tappable controls at ${viewport.width}px`, async ({ page }, testInfo) => {
+      await page.setViewportSize(viewport);
+      await login(page);
+      await page.getByRole('navigation', { name: /main navigation/i }).getByRole('button', { name: 'Journal' }).click();
+      await expect(page.getByRole('heading', { name: /cbt journal entry/i })).toBeVisible();
 
-    // Step 2: Automatic Thoughts
-    const thoughtsTextarea = page.locator('#thoughts-textarea');
-    await thoughtsTextarea.click();
-    const thought = 'He is going to fire me because I am incompetent.';
-    await thoughtsTextarea.fill(thought);
-    await thoughtsTextarea.blur(); // Explicit blur
-    
-    // Verify text is present
-    await expect(thoughtsTextarea).toHaveValue(thought);
-    
-    // DEBUG: Check card inner HTML
-    const cardHtml = await page.locator('.card').first().innerHTML();
-    console.log('CARD HTML:', cardHtml);
+      await expectNoHorizontalOverflow(page);
+      await expectVisibleButtonsAreTappable(page);
 
-    // DEBUG: Check for ALL buttons on the page
-    const buttons = await page.$$eval('button', (btns) => btns.map(b => ({ text: b.textContent?.trim(), visible: b.checkVisibility(), html: b.outerHTML })));
-    console.log('VISIBLE BUTTONS:', JSON.stringify(buttons, null, 2));
+      await page.fill('#situation-textarea', 'A difficult work conversation with a long label that should wrap safely.');
+      await page.getByRole('button', { name: /next step/i }).click();
+      await expect(page.getByLabel(/automatic thoughts/i)).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectVisibleButtonsAreTappable(page);
 
-    const aiBtn = page.locator('button:has-text("Seek AI Perspective")');
-    
-    // Ensure the button is scrolled into view and visible
-    await aiBtn.scrollIntoViewIfNeeded();
-    await expect(aiBtn).toBeVisible({ timeout: 10000 });
-    
-    // Log state
-    const isDisabled = await aiBtn.evaluate((el) => (el as HTMLButtonElement).disabled);
-    console.log(`Button "Seek AI Perspective" disabled: ${isDisabled}`);
-    
-    await expect(aiBtn).toBeEnabled({ timeout: 15000 });
-    await aiBtn.click();
-    
-    // Wait for analysis to complete (loading state finishes)
-    await expect(aiBtn).toContainText('Seek AI Perspective', { timeout: 25000 });
-    await expect(aiBtn).toBeEnabled();
-    
-    // Move to Step 3 - click the visible Next Step button in the current card
-    console.log('CLICKING NEXT STEP ON STEP 2');
-    await page.locator('.card button:has-text("Next Step")').click();
-    
-    // Wait for Step 3 identification content to be absolutely certain
-    console.log('WAITING FOR STEP 3 CONTENT');
-    await expect(page.locator('h3:has-text("3. Identification")')).toBeVisible({ timeout: 15000 });
-    
-    // Allow animations and state updates to settle
-    await page.waitForTimeout(3000);
-    
-    // Take a debug screenshot
-    await page.screenshot({ path: '/tmp/debug-step3.png' });
-    console.log('DEBUG SCREENSHOT TAKEN: /tmp/debug-step3.png');
-    
-    // Take a snapshot of the Step 3 card
-    const card = page.locator('.card').first();
-    console.log('TAKING FINAL SNAPSHOT: cbt-step-3-ai-highlights.png');
-    await expect(card).toHaveScreenshot('cbt-step-3-ai-highlights.png');
-    console.log('SCREENSHOT TAKEN SUCCESSFULLY');
-  });
+      await page.fill('#thoughts-textarea', 'I ruined everything and there is no way to recover.');
+      await page.getByRole('button', { name: /seek ai perspective/i }).click();
+      await expect(page.getByRole('button', { name: /seek ai perspective/i })).toBeEnabled({ timeout: 15000 });
+      await page.getByRole('button', { name: /next step/i }).click();
+      await expect(page.getByText(/3\. Identification/i)).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectVisibleButtonsAreTappable(page);
+
+      await page.getByRole('button', { name: /next step/i }).click();
+      await expect(page.getByRole('button', { name: /accept compassionate reframe/i })).toBeVisible();
+      await page.getByRole('button', { name: /accept compassionate reframe/i }).click();
+      await expectNoHorizontalOverflow(page);
+      await expectVisibleButtonsAreTappable(page);
+
+      await page.getByRole('button', { name: /next step/i }).click();
+      await expect(page.getByRole('button', { name: /accept ask for feedback action plan/i })).toBeVisible();
+      await page.getByRole('button', { name: /accept ask for feedback action plan/i }).click();
+      await expectNoHorizontalOverflow(page);
+      await expectVisibleButtonsAreTappable(page);
+
+      await page.screenshot({
+        path: testInfo.outputPath(`cbt-flow-${viewport.width}.png`),
+        fullPage: true,
+      });
+    });
+  }
 });

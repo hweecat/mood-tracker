@@ -133,6 +133,39 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+::before,
+::after {
+  min-width: 0;
+}
+
+.cbt-mood-selector > div {
+  grid-template-columns: repeat(2, minmax(44px, 1fr));
+}
+
+.cbt-mood-selector button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 360px) {
+  .cbt-mood-selector > div {
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .cbt-mood-selector > div {
+    grid-template-columns: repeat(10, minmax(44px, 1fr));
+  }
+}
+
 .card {
   background: var(--card);
   color: var(--card-foreground);
